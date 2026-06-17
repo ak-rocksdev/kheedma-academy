@@ -8,8 +8,34 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ $title ? $title.' — Kheedma Academy' : 'Kheedma Academy — Serving with Purpose, Growing with Barakah' }}</title>
+    @php($pageTitle = $title ? $title.' — Kheedma Academy' : 'Kheedma Academy — Serving with Purpose, Growing with Barakah')
+    <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $description }}">
+    <link rel="canonical" href="{{ url()->current() }}">
+
+    {{-- Favicons --}}
+    <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
+    <link rel="icon" type="image/png" sizes="16x16" href="{{ asset('favicon-16x16.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
+    <link rel="manifest" href="{{ asset('site.webmanifest') }}">
+    <meta name="theme-color" content="#05312b">
+
+    {{-- Open Graph / Twitter --}}
+    <meta property="og:type" content="website">
+    <meta property="og:site_name" content="Kheedma Academy">
+    <meta property="og:locale" content="id_ID">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="{{ $pageTitle }}">
+    <meta property="og:description" content="{{ $description }}">
+    <meta property="og:image" content="{{ asset('images/kheedma-academy-og.jpg') }}">
+    <meta property="og:image:width" content="1660">
+    <meta property="og:image:height" content="1640">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ $pageTitle }}">
+    <meta name="twitter:description" content="{{ $description }}">
+    <meta name="twitter:image" content="{{ asset('images/kheedma-academy-og.jpg') }}">
+
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
