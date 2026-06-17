@@ -2,7 +2,7 @@
 
     {{-- ───────────────────────── Hero ───────────────────────── --}}
     <section class="relative overflow-hidden">
-        {{-- Desktop: full-bleed brand pattern — right half of the screen, full hero height --}}
+        {{-- Desktop: full-bleed brand pattern, right half of the screen, full hero height --}}
         <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 md:block">
             <div class="supergraphic absolute inset-0 opacity-[0.13]"></div>
             {{-- dissolve the inner edge so the pattern blends into the text side --}}
@@ -27,7 +27,7 @@
 
                 <p class="mt-4 max-w-xl text-base leading-relaxed text-teal-800/80 sm:mt-6 sm:text-lg">
                     Mulai dari nol menjadi affiliate marketer yang amanah dan profesional.
-                    Lewati masa observasi terbimbing 1–2 bulan — yang sungguh-sungguh, kami
+                    Lewati masa observasi terbimbing 1-2 bulan. Yang sungguh-sungguh, kami
                     antar untuk berkembang dengan cara yang <strong class="font-semibold text-teal-900">halal, terukur, dan berkah</strong>.
                 </p>
 
@@ -40,11 +40,11 @@
                 </div>
 
                 <p class="mt-5 text-sm text-teal-800/60 sm:mt-6">
-                    <span class="font-semibold text-teal-700">Cohort 1 — gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
+                    <span class="font-semibold text-teal-700">Cohort 1 gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
                 </p>
             </div>
 
-            {{-- Logo lockup — on top (over its own pattern) on mobile, centred over the
+            {{-- Logo lockup, on top (over its own pattern) on mobile, centred over the
                  right-half brand panel on desktop. --}}
             <div class="relative order-first md:order-none md:col-span-5 md:flex md:items-center md:justify-center">
                 {{-- Mobile-only pattern, bled to the screen edges and up under the header.
@@ -73,7 +73,7 @@
                 </h2>
             </div>
             <p class="text-base leading-relaxed text-teal-800/80 md:col-span-4">
-                Kheedma Academy adalah bagian dari Kheedma — agency berbasis nilai Islam. Kami
+                Kheedma Academy adalah bagian dari Kheedma, agency berbasis nilai Islam. Kami
                 memindahkan identitas yang sama: khidmat, amanah, itqan, dan barakah, lalu
                 mengarahkannya untuk membimbing individu bertumbuh.
             </p>
@@ -90,7 +90,7 @@
 
             <div class="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
                 @foreach ([
-                    ['01', 'Daftar &amp; tugas pra-seleksi', 'Isi formulir singkat dan selesaikan satu tugas kecil. Ini menyaring kesungguhan — bukan uang.'],
+                    ['01', 'Daftar &amp; tugas pra-seleksi', 'Isi formulir singkat dan selesaikan satu tugas kecil. Ini menyaring kesungguhan, bukan uang.'],
                     ['02', 'Masa observasi terbimbing', 'Selama 1–2 bulan kamu mendapat materi dan review berkala. Dipantau, bukan dilepas.'],
                     ['03', 'Bimbingan &amp; praktik', 'Mentoring berjalan langsung. Fokus pada hasil affiliate yang nyata dan dapat ditelusuri.'],
                     ['04', 'Lanjut bagi yang serius', 'Yang sungguh-sungguh diantar melangkah lebih jauh. Program yang progresif &amp; selektif.'],
@@ -114,10 +114,10 @@
 
         <div class="mt-12 grid gap-px overflow-hidden rounded-3xl border border-teal-900/10 bg-teal-900/10 sm:grid-cols-2 lg:grid-cols-4">
             @foreach ([
-                ['Khidmat', 'Melayani dengan niat ibadah — bukan sekadar transaksi.'],
+                ['Khidmat', 'Melayani dengan niat ibadah, bukan sekadar transaksi.'],
                 ['Amanah', 'Menjaga kepercayaan yang dititipkan, di setiap langkah.'],
                 ['Itqan', 'Bekerja dengan kualitas terbaik, terarah dan terukur.'],
-                ['Barakah', 'Mengedepankan yang halal &amp; thayyib — tumbuh yang berkelanjutan.'],
+                ['Barakah', 'Mengedepankan yang halal &amp; thayyib demi pertumbuhan yang berkelanjutan.'],
             ] as [$name, $desc])
                 <div class="bg-sand-50 p-7">
                     <div class="flex h-10 w-10 items-center justify-center rounded-full bg-teal-700/10 font-display text-sm font-bold text-teal-700">

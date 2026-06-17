@@ -1,6 +1,6 @@
 @props([
     'title' => null,
-    'description' => 'Kheedma Academy — kami membimbing pemula tumbuh menjadi affiliate marketer yang amanah dan profesional. Belajar dengan niat ibadah, berkembang dengan keberkahan.',
+    'description' => 'Kheedma Academy membimbing pemula tumbuh menjadi affiliate marketer yang amanah dan profesional. Belajar dengan niat ibadah, berkembang dengan keberkahan.',
 ])
 
 <!DOCTYPE html>
@@ -8,7 +8,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    @php($pageTitle = $title ? $title.' — Kheedma Academy' : 'Kheedma Academy — Serving with Purpose, Growing with Barakah')
+    @php($pageTitle = $title ? $title.' · Kheedma Academy' : 'Kheedma Academy · Serving with Purpose, Growing with Barakah')
     <title>{{ $pageTitle }}</title>
     <meta name="description" content="{{ $description }}">
     <link rel="canonical" href="{{ url()->current() }}">
@@ -44,7 +44,7 @@
     {{-- ───────────────────────── Header ───────────────────────── --}}
     <header class="sticky top-0 z-40 border-b border-teal-900/5 bg-sand-50/85 backdrop-blur">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <a href="{{ url('/') }}" class="group flex items-center" aria-label="Kheedma Academy — beranda">
+            <a href="{{ url('/') }}" class="group flex items-center" aria-label="Beranda Kheedma Academy">
                 <x-logo variant="horizontal" class="h-9 transition-transform group-hover:-translate-y-0.5 md:h-10" />
             </a>
 
@@ -76,7 +76,7 @@
                     <x-logo variant="horizontal" tone="ondark" class="h-10" />
                     <p class="mt-5 text-sm leading-relaxed text-sand-100/70">
                         Serving with Purpose, Growing with Barakah. Kami membimbing umat tumbuh
-                        secara strategis, profesional, dan berlandaskan nilai — halal &amp; thayyib.
+                        secara strategis, profesional, dan berlandaskan nilai halal &amp; thayyib.
                     </p>
                 </div>
                 <div class="grid grid-cols-2 gap-10 text-sm">

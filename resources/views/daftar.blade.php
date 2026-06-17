@@ -8,7 +8,7 @@
             Formulir sedang disiapkan
         </h1>
         <p class="mt-5 max-w-xl text-lg leading-relaxed text-teal-800/80">
-            Halaman pendaftaran Cohort 1 akan segera hadir di sini — lengkap dengan tugas
+            Halaman pendaftaran Cohort 1 akan segera hadir di sini, lengkap dengan tugas
             pra-seleksi yang menyaring kesungguhan. Pantau terus.
         </p>
         <a href="{{ url('/') }}"
