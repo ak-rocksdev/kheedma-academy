@@ -13,25 +13,25 @@
         <div class="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-teal-100 blur-3xl"></div>
         <div class="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-orange-200/50 blur-3xl"></div>
 
-        <div class="relative mx-auto grid max-w-6xl items-stretch gap-12 px-6 pb-20 pt-16 md:grid-cols-12 md:pt-24">
+        <div class="relative mx-auto grid max-w-6xl items-stretch gap-4 px-6 pb-16 pt-6 md:grid-cols-12 md:gap-12 md:pb-20 md:pt-24">
             <div class="md:col-span-7">
                 <p class="inline-flex items-center gap-2 rounded-full border border-teal-900/10 bg-white/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
                     <span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
                     Muslim Growth Partner · Affiliate Academy
                 </p>
 
-                <h1 class="mt-6 text-4xl font-bold leading-[1.1] text-teal-900 sm:text-5xl md:text-6xl">
+                <h1 class="mt-5 text-3xl font-bold leading-[1.1] text-teal-900 sm:text-5xl md:text-6xl">
                     Kami membimbing<br>
                     kamu untuk <span class="text-orange-600">tumbuh</span>.
                 </h1>
 
-                <p class="mt-6 max-w-xl text-lg leading-relaxed text-teal-800/80">
+                <p class="mt-4 max-w-xl text-base leading-relaxed text-teal-800/80 sm:mt-6 sm:text-lg">
                     Mulai dari nol menjadi affiliate marketer yang amanah dan profesional.
                     Lewati masa observasi terbimbing 1–2 bulan — yang sungguh-sungguh, kami
                     antar untuk berkembang dengan cara yang <strong class="font-semibold text-teal-900">halal, terukur, dan berkah</strong>.
                 </p>
 
-                <div class="mt-9 flex flex-wrap items-center gap-4">
+                <div class="mt-6 flex flex-wrap items-center gap-3 sm:mt-9 sm:gap-4">
                     <x-cta :href="url('/daftar')" label="Daftar Sekarang" />
                     <a href="{{ url('/#program') }}"
                        class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:border-teal-700/40 hover:bg-white/50">
@@ -39,7 +39,7 @@
                     </a>
                 </div>
 
-                <p class="mt-6 text-sm text-teal-800/60">
+                <p class="mt-5 text-sm text-teal-800/60 sm:mt-6">
                     <span class="font-semibold text-teal-700">Cohort 1 — gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
                 </p>
             </div>
@@ -53,9 +53,9 @@
                 <div aria-hidden="true" class="pointer-events-none absolute -inset-x-6 -top-16 -bottom-10 overflow-hidden md:hidden">
                     <div class="supergraphic absolute inset-0 opacity-[0.13] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_50%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_0%,black_50%,transparent_100%)]"></div>
                 </div>
-                <div class="relative py-4 text-center md:py-0">
-                    <x-logo variant="stacked" class="mx-auto h-48 sm:h-56 md:h-72 lg:h-80" />
-                    <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
+                <div class="relative py-2 text-center md:py-0">
+                    <x-logo variant="stacked" class="mx-auto h-28 sm:h-44 md:h-72 lg:h-80" />
+                    <p class="mt-6 hidden font-display text-xs uppercase tracking-[0.3em] text-teal-700/70 sm:mt-8 sm:block">
                         Serving with Purpose,<br>Growing with Barakah
                     </p>
                 </div>
