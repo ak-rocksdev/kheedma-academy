@@ -2,6 +2,13 @@
 
     {{-- ───────────────────────── Hero ───────────────────────── --}}
     <section class="relative overflow-hidden">
+        {{-- Desktop: full-bleed brand pattern — right half of the screen, full hero height --}}
+        <div aria-hidden="true" class="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 md:block">
+            <div class="supergraphic absolute inset-0 opacity-[0.13]"></div>
+            {{-- dissolve the inner edge so the pattern blends into the text side --}}
+            <div class="absolute inset-0 bg-gradient-to-r from-sand-50 via-sand-50/30 to-transparent"></div>
+        </div>
+
         {{-- ambient brand wash --}}
         <div class="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-teal-100 blur-3xl"></div>
         <div class="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-orange-200/50 blur-3xl"></div>
@@ -37,18 +44,13 @@
                 </p>
             </div>
 
-            {{-- Hero device: brand panel with official supergraphic pattern --}}
-            <div class="md:col-span-5">
-                <div class="relative h-full min-h-[24rem] md:min-h-[34rem]">
-                    <div class="absolute inset-0 overflow-hidden rounded-[2.5rem] border border-teal-900/10 bg-white shadow-sm">
-                        <div class="supergraphic absolute inset-0 opacity-[0.08]"></div>
-                    </div>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-10 p-10 text-center">
-                        <x-logo variant="stacked" class="h-56 md:h-64" />
-                        <p class="font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
-                            Serving with Purpose,<br>Growing with Barakah
-                        </p>
-                    </div>
+            {{-- Logo lockup — centred over the right-half brand panel on desktop --}}
+            <div class="md:col-span-5 md:flex md:items-center md:justify-center">
+                <div class="text-center">
+                    <x-logo variant="stacked" class="mx-auto h-56 md:h-72 lg:h-80" />
+                    <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
+                        Serving with Purpose,<br>Growing with Barakah
+                    </p>
                 </div>
             </div>
         </div>
