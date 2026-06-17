@@ -57,9 +57,9 @@
                     <div>
                         <p class="font-display text-xs uppercase tracking-[0.25em] text-orange-400">Jelajahi</p>
                         <ul class="mt-4 space-y-2.5 text-sand-100/80">
-                            <li><a href="{{ url('/#program') }}" class="hover:text-white">Program</a></li>
-                            <li><a href="{{ url('/#nilai') }}" class="hover:text-white">Nilai</a></li>
-                            <li><a href="{{ url('/daftar') }}" class="hover:text-white">Pendaftaran</a></li>
+                            <li><a href="{{ url('/#program') }}" class="transition hover:text-white">Program</a></li>
+                            <li><a href="{{ url('/#nilai') }}" class="transition hover:text-white">Nilai</a></li>
+                            <li><a href="{{ url('/daftar') }}" class="transition hover:text-white">Pendaftaran</a></li>
                         </ul>
                     </div>
                     <div>

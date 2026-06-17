@@ -9,6 +9,9 @@ const auth = useAuthStore();
 const email = ref('');
 const password = ref('');
 
+const inputClass =
+    'mt-1.5 w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
+
 // Placeholder login — Layer 2 swaps this for a real Sanctum request.
 function submit() {
     auth.loginAs(email.value || 'Admin');
@@ -20,7 +23,7 @@ function submit() {
     <div class="flex min-h-screen items-center justify-center px-6">
         <div class="w-full max-w-sm">
             <div class="flex flex-col items-center text-center">
-                <img :src="'/images/kheedma-academy-stacked.png'" alt="Kheedma Academy" class="h-24 w-auto" />
+                <img :src="'/images/kheedma-academy-stacked.png'" width="1180" height="918" alt="Kheedma Academy" class="h-24 w-auto" />
                 <span class="mt-4 text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-orange-600">Panel Admin</span>
             </div>
 
@@ -31,7 +34,7 @@ function submit() {
                         v-model="email"
                         type="email"
                         autocomplete="username"
-                        class="mt-1.5 w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        :class="inputClass"
                         placeholder="admin@kheedma.id"
                     />
                 </div>
@@ -41,7 +44,7 @@ function submit() {
                         v-model="password"
                         type="password"
                         autocomplete="current-password"
-                        class="mt-1.5 w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20"
+                        :class="inputClass"
                         placeholder="••••••••"
                     />
                 </div>

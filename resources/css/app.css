@@ -68,8 +68,8 @@
     background-image: radial-gradient(
         circle at 50% 100%,
         transparent 38px,
-        color-mix(in srgb, var(--color-teal-700) 100%, transparent) 39px,
-        color-mix(in srgb, var(--color-teal-700) 100%, transparent) 41px,
+        var(--color-teal-700) 39px,
+        var(--color-teal-700) 41px,
         transparent 42px
     );
     background-size: 88px 88px;

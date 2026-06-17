@@ -26,7 +26,7 @@ function logout() {
         <header class="border-b border-teal-900/10 bg-white/70 backdrop-blur">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
                 <div class="flex items-center gap-3">
-                    <img :src="'/images/kheedma-academy-horizontal.png'" alt="Kheedma Academy" class="h-8 w-auto" />
+                    <img :src="'/images/kheedma-academy-horizontal.png'" width="1408" height="492" alt="Kheedma Academy" class="h-8 w-auto" />
                     <span class="rounded-full bg-teal-700/10 px-2.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-teal-700">Admin</span>
                 </div>
                 <div class="flex items-center gap-4 text-sm">

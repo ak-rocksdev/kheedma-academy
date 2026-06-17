@@ -25,13 +25,7 @@
                 </p>
 
                 <div class="mt-9 flex flex-wrap items-center gap-4">
-                    <a href="{{ url('/daftar') }}"
-                       class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 hover:shadow-lg">
-                        Daftar Sekarang
-                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
-                    </a>
+                    <x-cta :href="url('/daftar')" label="Daftar Sekarang" />
                     <a href="{{ url('/#program') }}"
                        class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:border-teal-700/40 hover:bg-white/50">
                         Lihat program
@@ -138,13 +132,7 @@
                     Cohort 1 dibuka gratis sebagai eksperimen terukur. Tunjukkan kesungguhanmu
                     lewat tugas pra-seleksi, dan mulai perjalananmu.
                 </p>
-                <a href="{{ url('/daftar') }}"
-                   class="mt-8 inline-flex items-center gap-2 rounded-full bg-orange-500 px-8 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 hover:shadow-lg">
-                    Daftar Sekarang
-                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </a>
+                <x-cta :href="url('/daftar')" label="Daftar Sekarang" class="mt-8" />
             </div>
         </div>
     </section>
