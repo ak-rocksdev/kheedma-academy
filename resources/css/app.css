@@ -2,8 +2,76 @@
 
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
+@source '../views';
 
+/*
+ | Kheedma Academy — Design Tokens
+ | Derived verbatim from "Kheedma GSM (Brand Guidelines / Visualisation 2026)".
+ | Teal = trust & foundation (base). Orange = energy & calls-to-action (accent).
+ | Display: Syncopate (short headings only). Body: Montserrat.
+*/
 @theme {
-    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
-        'Segoe UI Symbol', 'Noto Color Emoji';
+    /* Typography */
+    --font-sans: 'Montserrat', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+        'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+    --font-display: 'Syncopate', var(--font-sans);
+
+    /* Brand teal — anchored on GSM swatches #14786e / #01534f / #05312b */
+    --color-teal-50: #eef6f4;
+    --color-teal-100: #d4e9e5;
+    --color-teal-200: #a8d3cb;
+    --color-teal-300: #6fb3a8;
+    --color-teal-400: #3d9387;
+    --color-teal-500: #14786e; /* GSM primary  */
+    --color-teal-600: #0f6259;
+    --color-teal-700: #01534f; /* GSM deep     */
+    --color-teal-800: #033f3a;
+    --color-teal-900: #05312b; /* GSM darkest / ink */
+
+    /* Brand orange — anchored on GSM swatches #f59c26 / #e38427 / #dc5a27 */
+    --color-orange-200: #fcdcae;
+    --color-orange-300: #f9c178;
+    --color-orange-400: #f7ae4d;
+    --color-orange-500: #f59c26; /* GSM accent */
+    --color-orange-600: #e38427; /* GSM mid    */
+    --color-orange-700: #dc5a27; /* GSM dark   */
+
+    /* Warm neutral ground (keeps the palette warm, not clinical white) */
+    --color-sand-50: #faf8f3;
+    --color-sand-100: #f3eee4;
+    --color-sand-200: #e7dfd0;
+}
+
+@layer base {
+    html {
+        scroll-behavior: smooth;
+    }
+
+    body {
+        background-color: var(--color-sand-50);
+        color: var(--color-teal-900);
+        font-family: var(--font-sans);
+        -webkit-font-smoothing: antialiased;
+    }
+
+    h1, h2, h3 {
+        font-family: var(--font-display);
+        letter-spacing: -0.01em;
+    }
+}
+
+/*
+ | Supergraphic — the modular interlocking arch/dome motif (GSM).
+ | A large-scale section/hero accent device, never placed behind body text.
+*/
+@utility supergraphic {
+    background-image: radial-gradient(
+        circle at 50% 100%,
+        transparent 38px,
+        color-mix(in srgb, var(--color-teal-700) 100%, transparent) 39px,
+        color-mix(in srgb, var(--color-teal-700) 100%, transparent) 41px,
+        transparent 42px
+    );
+    background-size: 88px 88px;
+    background-position: center bottom;
 }
