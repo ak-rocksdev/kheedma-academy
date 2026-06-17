@@ -10,7 +10,7 @@ set -euo pipefail
 #
 # Usage: bash deploy.sh [branch] [--migrate]
 #   branch    — Git branch to deploy (default: main)
-#   --migrate — Back up the database and run `php artisan migrate` after deploy
+#   --migrate — Back up the database and run `"$PHP_BIN" artisan migrate` after deploy
 #               (only needed once the app uses a database; the UI preview does not)
 #
 # Examples:
@@ -25,6 +25,7 @@ BASE_DIR="/srv/www/kheedma-academy"
 #   git@github-kheedma-academy:ak-rocksdev/kheedma-academy.git
 GIT_REPO="https://github.com/ak-rocksdev/kheedma-academy.git"
 KEEP_RELEASES=5
+PHP_BIN="php8.4"                  # server default `php` is 8.2; Laravel 13 needs >= 8.3
 PHP_FPM_SERVICE="php8.4-fpm"      # Laravel 13 requires PHP >= 8.3
 WEB_USER="www-data"
 WEB_GROUP="www-data"
@@ -114,7 +115,7 @@ step "Running pre-flight checks ..."
 [ -d "$RELEASES_DIR" ]    || { error "Releases dir missing: $RELEASES_DIR (run setup.sh first)"; exit 1; }
 [ -d "$SHARED_DIR" ]      || { error "Shared dir missing: $SHARED_DIR (run setup.sh first)"; exit 1; }
 [ -f "$SHARED_DIR/.env" ] || { error ".env missing: $SHARED_DIR/.env (run setup.sh first)"; exit 1; }
-command -v php      >/dev/null 2>&1 || { error "php not found"; exit 1; }
+command -v "$PHP_BIN" >/dev/null 2>&1 || { error "$PHP_BIN not found"; exit 1; }
 command -v composer >/dev/null 2>&1 || { error "composer not found"; exit 1; }
 command -v npm      >/dev/null 2>&1 || { error "npm not found"; exit 1; }
 command -v git      >/dev/null 2>&1 || { error "git not found"; exit 1; }
@@ -167,7 +168,7 @@ info ".env, storage, public/storage linked"
 #---------------------------------------
 CURRENT_STEP=$((CURRENT_STEP + 1)); step "$CURRENT_STEP/$TOTAL_STEPS Installing PHP dependencies ..."
 cd "$NEW_RELEASE"
-composer install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist 2>&1
+"$PHP_BIN" "$(command -v composer)" install --no-dev --optimize-autoloader --no-interaction --no-progress --prefer-dist 2>&1
 
 #---------------------------------------
 # 4. NPM build (Vite)
@@ -185,9 +186,9 @@ info "Frontend build complete. node_modules removed."
 #---------------------------------------
 CURRENT_STEP=$((CURRENT_STEP + 1)); step "$CURRENT_STEP/$TOTAL_STEPS Caching Laravel config ..."
 cd "$NEW_RELEASE"
-php artisan config:cache 2>&1 || { warn "config:cache failed, clearing instead"; php artisan config:clear 2>&1; }
-php artisan route:cache 2>&1 || warn "route:cache failed (non-critical)"
-php artisan view:cache 2>&1
+"$PHP_BIN" artisan config:cache 2>&1 || { warn "config:cache failed, clearing instead"; "$PHP_BIN" artisan config:clear 2>&1; }
+"$PHP_BIN" artisan route:cache 2>&1 || warn "route:cache failed (non-critical)"
+"$PHP_BIN" artisan view:cache 2>&1
 
 #---------------------------------------
 # 6. Permissions
@@ -225,7 +226,7 @@ if [ "$RUN_MIGRATE" = true ]; then
         if [ -s "$BACKUP_FILE" ]; then
             info "Backup complete -> $BACKUP_FILE"
             ls -1t "$DB_BACKUP_DIR"/*.sql.gz 2>/dev/null | tail -n +$((KEEP_BACKUPS + 1)) | xargs -r rm -f
-            cd "$NEW_RELEASE"; php artisan migrate --force --no-interaction 2>&1; info "Migrations complete"
+            cd "$NEW_RELEASE"; "$PHP_BIN" artisan migrate --force --no-interaction 2>&1; info "Migrations complete"
         else
             error "Backup empty! Skipping migrations."; rm -f "$BACKUP_FILE"; BACKUP_FILE=""
         fi
