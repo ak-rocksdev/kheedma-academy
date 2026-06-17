@@ -61,17 +61,13 @@
 }
 
 /*
- | Supergraphic — the modular interlocking arch/dome motif (GSM).
+ | Supergraphic — the official modular arch/dome motif (GSM, pattern_kheedma).
  | A large-scale section/hero accent device, never placed behind body text.
+ | Always pair with a low opacity at the call site so foreground stays legible.
 */
 @utility supergraphic {
-    background-image: radial-gradient(
-        circle at 50% 100%,
-        transparent 38px,
-        var(--color-teal-700) 39px,
-        var(--color-teal-700) 41px,
-        transparent 42px
-    );
-    background-size: 88px 88px;
-    background-position: center bottom;
+    background-image: url('/images/pattern-kheedma.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
 }

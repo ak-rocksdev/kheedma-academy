@@ -40,11 +40,12 @@
             {{-- Hero device: large dome / supergraphic --}}
             <div class="md:col-span-5">
                 <div class="relative mx-auto aspect-square max-w-sm">
-                    <div class="absolute inset-0 rounded-[2.5rem] bg-teal-900"></div>
-                    <div class="supergraphic absolute inset-0 rounded-[2.5rem] opacity-15"></div>
+                    <div class="absolute inset-0 overflow-hidden rounded-[2.5rem] border border-teal-900/10 bg-white shadow-sm">
+                        <div class="supergraphic absolute inset-0 opacity-[0.07]"></div>
+                    </div>
                     <div class="absolute inset-0 flex flex-col items-center justify-center gap-8 p-12 text-center">
-                        <x-logo variant="stacked" tone="ondark" class="h-44" />
-                        <p class="font-display text-xs uppercase tracking-[0.3em] text-sand-100/70">
+                        <x-logo variant="stacked" class="h-44" />
+                        <p class="font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
                             Serving with Purpose,<br>Growing with Barakah
                         </p>
                     </div>
