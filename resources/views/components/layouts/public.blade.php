@@ -18,12 +18,8 @@
     {{-- ───────────────────────── Header ───────────────────────── --}}
     <header class="sticky top-0 z-40 border-b border-teal-900/5 bg-sand-50/85 backdrop-blur">
         <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-            <a href="{{ url('/') }}" class="group flex items-center gap-3">
-                <x-dome class="h-8 w-12 transition-transform group-hover:-translate-y-0.5" />
-                <span class="leading-none">
-                    <span class="block font-display text-lg font-bold tracking-tight text-teal-700">KHEEDMA</span>
-                    <span class="block text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-orange-600">Academy</span>
-                </span>
+            <a href="{{ url('/') }}" class="group flex items-center" aria-label="Kheedma Academy — beranda">
+                <x-logo variant="horizontal" class="h-9 transition-transform group-hover:-translate-y-0.5 md:h-10" />
             </a>
 
             <nav class="hidden items-center gap-9 text-sm font-medium text-teal-800 md:flex">
@@ -51,11 +47,8 @@
         <div class="relative mx-auto max-w-6xl px-6 py-16">
             <div class="flex flex-col gap-10 md:flex-row md:items-start md:justify-between">
                 <div class="max-w-sm">
-                    <div class="flex items-center gap-3">
-                        <x-dome variant="orange" class="h-8 w-12" />
-                        <span class="font-display text-lg font-bold tracking-tight text-sand-50">KHEEDMA</span>
-                    </div>
-                    <p class="mt-4 text-sm leading-relaxed text-sand-100/70">
+                    <x-logo variant="horizontal" tone="ondark" class="h-10" />
+                    <p class="mt-5 text-sm leading-relaxed text-sand-100/70">
                         Serving with Purpose, Growing with Barakah. Kami membimbing umat tumbuh
                         secara strategis, profesional, dan berlandaskan nilai — halal &amp; thayyib.
                     </p>

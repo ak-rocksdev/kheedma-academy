@@ -25,9 +25,9 @@ function logout() {
     <div>
         <header class="border-b border-teal-900/10 bg-white/70 backdrop-blur">
             <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-                <div class="leading-none">
-                    <span class="font-display text-lg font-bold tracking-tight text-teal-700">KHEEDMA</span>
-                    <span class="ml-2 text-[0.6rem] font-semibold uppercase tracking-[0.35em] text-orange-600">Admin</span>
+                <div class="flex items-center gap-3">
+                    <img :src="'/images/kheedma-academy-horizontal.png'" alt="Kheedma Academy" class="h-8 w-auto" />
+                    <span class="rounded-full bg-teal-700/10 px-2.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-[0.2em] text-teal-700">Admin</span>
                 </div>
                 <div class="flex items-center gap-4 text-sm">
                     <span class="text-teal-800/70">{{ auth.user?.name }}</span>

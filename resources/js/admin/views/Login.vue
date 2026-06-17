@@ -20,8 +20,8 @@ function submit() {
     <div class="flex min-h-screen items-center justify-center px-6">
         <div class="w-full max-w-sm">
             <div class="flex flex-col items-center text-center">
-                <span class="font-display text-2xl font-bold tracking-tight text-teal-700">KHEEDMA</span>
-                <span class="text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-orange-600">Academy · Admin</span>
+                <img :src="'/images/kheedma-academy-stacked.png'" alt="Kheedma Academy" class="h-24 w-auto" />
+                <span class="mt-4 text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-orange-600">Panel Admin</span>
             </div>
 
             <form class="mt-10 space-y-5" @submit.prevent="submit">
