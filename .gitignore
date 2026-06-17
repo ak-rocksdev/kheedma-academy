@@ -27,3 +27,7 @@ Homestead.yaml
 Thumbs.db
 
 /.playwright-mcp
+
+# Server/VPS info — contains credentials, never commit
+/docs/server-info.md
+server-info.md
