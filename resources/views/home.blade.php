@@ -44,10 +44,17 @@
                 </p>
             </div>
 
-            {{-- Logo lockup — centred over the right-half brand panel on desktop --}}
-            <div class="md:col-span-5 md:flex md:items-center md:justify-center">
-                <div class="text-center">
-                    <x-logo variant="stacked" class="mx-auto h-56 md:h-72 lg:h-80" />
+            {{-- Logo lockup — on top (over its own pattern) on mobile, centred over the
+                 right-half brand panel on desktop. --}}
+            <div class="relative order-first md:order-none md:col-span-5 md:flex md:items-center md:justify-center">
+                {{-- Mobile-only pattern, bled to the screen edges and up under the header.
+                     Faded to transparent with a mask so it dissolves seamlessly into the
+                     page below (no solid-colour band at the edge). --}}
+                <div aria-hidden="true" class="pointer-events-none absolute -inset-x-6 -top-16 -bottom-10 overflow-hidden md:hidden">
+                    <div class="supergraphic absolute inset-0 opacity-[0.13] [-webkit-mask-image:linear-gradient(to_bottom,black_0%,black_50%,transparent_100%)] [mask-image:linear-gradient(to_bottom,black_0%,black_50%,transparent_100%)]"></div>
+                </div>
+                <div class="relative py-4 text-center md:py-0">
+                    <x-logo variant="stacked" class="mx-auto h-48 sm:h-56 md:h-72 lg:h-80" />
                     <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
                         Serving with Purpose,<br>Growing with Barakah
                     </p>
