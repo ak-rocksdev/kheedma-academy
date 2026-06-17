@@ -6,7 +6,7 @@
         <div class="pointer-events-none absolute -right-40 -top-40 h-[32rem] w-[32rem] rounded-full bg-teal-100 blur-3xl"></div>
         <div class="pointer-events-none absolute -left-24 top-24 h-72 w-72 rounded-full bg-orange-200/50 blur-3xl"></div>
 
-        <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-6 pb-20 pt-16 md:grid-cols-12 md:pt-24">
+        <div class="relative mx-auto grid max-w-6xl items-stretch gap-12 px-6 pb-20 pt-16 md:grid-cols-12 md:pt-24">
             <div class="md:col-span-7">
                 <p class="inline-flex items-center gap-2 rounded-full border border-teal-900/10 bg-white/60 px-4 py-1.5 text-xs font-semibold uppercase tracking-[0.2em] text-teal-700">
                     <span class="h-1.5 w-1.5 rounded-full bg-orange-500"></span>
@@ -37,14 +37,14 @@
                 </p>
             </div>
 
-            {{-- Hero device: large dome / supergraphic --}}
+            {{-- Hero device: brand panel with official supergraphic pattern --}}
             <div class="md:col-span-5">
-                <div class="relative mx-auto aspect-square max-w-sm">
+                <div class="relative h-full min-h-[24rem] md:min-h-[34rem]">
                     <div class="absolute inset-0 overflow-hidden rounded-[2.5rem] border border-teal-900/10 bg-white shadow-sm">
-                        <div class="supergraphic absolute inset-0 opacity-[0.07]"></div>
+                        <div class="supergraphic absolute inset-0 opacity-[0.08]"></div>
                     </div>
-                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-8 p-12 text-center">
-                        <x-logo variant="stacked" class="h-44" />
+                    <div class="absolute inset-0 flex flex-col items-center justify-center gap-10 p-10 text-center">
+                        <x-logo variant="stacked" class="h-56 md:h-64" />
                         <p class="font-display text-xs uppercase tracking-[0.3em] text-teal-700/70">
                             Serving with Purpose,<br>Growing with Barakah
                         </p>
