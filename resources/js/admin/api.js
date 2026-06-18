@@ -15,6 +15,13 @@ async function csrf() {
  * response throws an error carrying { status, message, errors }.
  */
 export async function api(path, { method = 'GET', body = null } = {}) {
+    // For state-changing requests, make sure the XSRF cookie exists (it may be
+    // missing/expired even when the session is still valid) to avoid a 419.
+    const mutating = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
+    if (mutating && !getCookie('XSRF-TOKEN')) {
+        await csrf();
+    }
+
     const headers = {
         Accept: 'application/json',
         'X-Requested-With': 'XMLHttpRequest',

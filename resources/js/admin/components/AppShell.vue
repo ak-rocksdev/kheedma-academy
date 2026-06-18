@@ -10,7 +10,7 @@ const auth = useAuthStore();
 // Modules marked enabled:false are placeholders for the upcoming Layer 2 work.
 const nav = [
     { to: { name: 'dashboard' }, label: 'Dashboard', icon: LayoutDashboard, enabled: true },
-    { label: 'Pelamar', icon: Users, enabled: false },
+    { to: { name: 'applicants' }, label: 'Pelamar', icon: Users, enabled: true },
     { label: 'Cohort', icon: GraduationCap, enabled: false },
     { label: 'Mentor', icon: UserCog, enabled: false },
 ];

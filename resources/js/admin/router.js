@@ -20,6 +20,17 @@ const routes = [
                 name: 'dashboard',
                 component: () => import('./views/Dashboard.vue'),
             },
+            {
+                path: 'pelamar',
+                name: 'applicants',
+                component: () => import('./views/Applicants.vue'),
+            },
+            {
+                path: 'pelamar/:id',
+                name: 'person',
+                component: () => import('./views/PersonDetail.vue'),
+                props: true,
+            },
         ],
     },
 ];
