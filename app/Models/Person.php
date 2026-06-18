@@ -26,12 +26,12 @@ class Person extends Model
 
     public function applications(): HasMany
     {
-        return $this->hasMany(Application::class);
+        return $this->hasMany(Application::class, 'people_id');
     }
 
     public function enrollments(): HasMany
     {
-        return $this->hasMany(Enrollment::class);
+        return $this->hasMany(Enrollment::class, 'people_id');
     }
 
     /** Optional login account (role: participant), provisioned only when needed. */

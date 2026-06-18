@@ -12,7 +12,7 @@ class Application extends Model
     use HasFactory;
 
     protected $fillable = [
-        'person_id',
+        'people_id',
         'status',
         'prefilter_submitted',
         'prefilter_link',
@@ -31,7 +31,7 @@ class Application extends Model
 
     public function person(): BelongsTo
     {
-        return $this->belongsTo(Person::class);
+        return $this->belongsTo(Person::class, 'people_id');
     }
 
     public function enrollment(): HasOne

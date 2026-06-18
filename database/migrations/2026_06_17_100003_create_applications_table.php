@@ -15,7 +15,7 @@ return new class extends Migration
         // a task format that is not yet fixed.
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->foreignId('people_id')->constrained('people')->cascadeOnDelete();
             $table->string('status')->default('pending');        // pending | accepted | rejected
             $table->boolean('prefilter_submitted')->default(false);
             $table->string('prefilter_link')->nullable();

@@ -14,12 +14,12 @@ return new class extends Migration
         // Application that led to it for traceability.
         Schema::create('enrollments', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('person_id')->constrained('people')->cascadeOnDelete();
+            $table->foreignId('people_id')->constrained('people')->cascadeOnDelete();
             $table->foreignId('cohort_id')->constrained('cohorts')->cascadeOnDelete();
             $table->foreignId('application_id')->nullable()->constrained('applications')->nullOnDelete();
             $table->timestamps();
 
-            $table->unique(['person_id', 'cohort_id']);
+            $table->unique(['people_id', 'cohort_id']);
         });
     }
 

@@ -13,14 +13,14 @@ class Enrollment extends Model
     use HasFactory;
 
     protected $fillable = [
-        'person_id',
+        'people_id',
         'cohort_id',
         'application_id',
     ];
 
     public function person(): BelongsTo
     {
-        return $this->belongsTo(Person::class);
+        return $this->belongsTo(Person::class, 'people_id');
     }
 
     public function cohort(): BelongsTo
