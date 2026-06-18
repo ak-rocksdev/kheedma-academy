@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from './stores/auth';
+import AppShell from './components/AppShell.vue';
 
 const routes = [
     {
@@ -9,27 +10,31 @@ const routes = [
         meta: { guest: true },
     },
     {
+        // Authenticated area — wrapped in the admin shell (sidebar + topbar).
         path: '/',
-        name: 'dashboard',
-        component: () => import('./views/Dashboard.vue'),
+        component: AppShell,
         meta: { auth: true },
+        children: [
+            {
+                path: '',
+                name: 'dashboard',
+                component: () => import('./views/Dashboard.vue'),
+            },
+        ],
     },
 ];
 
 const router = createRouter({
-    // Served from the /admin Blade entrypoint.
     history: createWebHistory('/admin'),
     routes,
 });
 
-// Skeleton guard — wired to the auth store; real session check lands with Layer 2 auth.
 router.beforeEach((to) => {
     const auth = useAuthStore();
 
     if (to.meta.auth && !auth.isAuthenticated) {
         return { name: 'login' };
     }
-
     if (to.meta.guest && auth.isAuthenticated) {
         return { name: 'dashboard' };
     }

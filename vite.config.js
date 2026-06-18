@@ -1,10 +1,17 @@
 import { defineConfig } from 'vite';
+import { fileURLToPath, URL } from 'node:url';
 import laravel from 'laravel-vite-plugin';
 import { bunny } from 'laravel-vite-plugin/fonts';
 import tailwindcss from '@tailwindcss/vite';
 import vue from '@vitejs/plugin-vue';
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            // '@' -> admin SPA root (shadcn-vue components, lib, etc.)
+            '@': fileURLToPath(new URL('./resources/js/admin', import.meta.url)),
+        },
+    },
     plugins: [
         laravel({
             input: [

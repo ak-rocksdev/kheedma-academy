@@ -1,22 +1,42 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
+import { auth as authApi } from '../api';
 
-/**
- * Auth store skeleton. Layer 2 will replace the placeholder login with a real
- * Sanctum-backed session (cookie + CSRF) and load the authenticated admin user.
- */
 export const useAuthStore = defineStore('auth', () => {
     const user = ref(null);
+    const ready = ref(false); // becomes true once the initial session check completes
 
     const isAuthenticated = computed(() => user.value !== null);
 
-    function loginAs(name) {
-        user.value = { name };
+    /** Hydrate from an existing session (called once on app boot). */
+    async function fetchUser() {
+        try {
+            const { user: me } = await authApi.me();
+            user.value = me;
+        } catch {
+            user.value = null;
+        } finally {
+            ready.value = true;
+        }
     }
 
-    function logout() {
-        user.value = null;
+    async function login(credentials) {
+        const { user: me } = await authApi.login(credentials);
+        user.value = me;
+        return me;
     }
 
-    return { user, isAuthenticated, loginAs, logout };
+    async function logout() {
+        try {
+            await authApi.logout();
+        } finally {
+            user.value = null;
+        }
+    }
+
+    function hasRole(role) {
+        return Array.isArray(user.value?.roles) && user.value.roles.includes(role);
+    }
+
+    return { user, ready, isAuthenticated, fetchUser, login, logout, hasRole };
 });

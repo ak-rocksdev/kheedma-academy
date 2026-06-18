@@ -1,0 +1,9 @@
+{
+    "compilerOptions": {
+        "baseUrl": ".",
+        "paths": {
+            "@/*": ["resources/js/admin/*"]
+        }
+    },
+    "exclude": ["node_modules", "public"]
+}

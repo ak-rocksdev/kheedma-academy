@@ -8,14 +8,23 @@ const auth = useAuthStore();
 
 const email = ref('');
 const password = ref('');
+const error = ref('');
+const loading = ref(false);
 
 const inputClass =
     'mt-1.5 w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
 
-// Placeholder login — Layer 2 swaps this for a real Sanctum request.
-function submit() {
-    auth.loginAs(email.value || 'Admin');
-    router.push({ name: 'dashboard' });
+async function submit() {
+    error.value = '';
+    loading.value = true;
+    try {
+        await auth.login({ email: email.value, password: password.value });
+        router.push({ name: 'dashboard' });
+    } catch (e) {
+        error.value = e.errors?.email?.[0] || e.message || 'Gagal masuk. Coba lagi.';
+    } finally {
+        loading.value = false;
+    }
 }
 </script>
 
@@ -28,37 +37,26 @@ function submit() {
             </div>
 
             <form class="mt-10 space-y-5" @submit.prevent="submit">
+                <div v-if="error" class="rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
+                    {{ error }}
+                </div>
+
                 <div>
                     <label class="block text-sm font-medium text-teal-800">Email</label>
-                    <input
-                        v-model="email"
-                        type="email"
-                        autocomplete="username"
-                        :class="inputClass"
-                        placeholder="admin@kheedma.id"
-                    />
+                    <input v-model="email" type="email" autocomplete="username" required :class="inputClass" placeholder="admin@kheedma.id" />
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-teal-800">Kata sandi</label>
-                    <input
-                        v-model="password"
-                        type="password"
-                        autocomplete="current-password"
-                        :class="inputClass"
-                        placeholder="••••••••"
-                    />
+                    <input v-model="password" type="password" autocomplete="current-password" required :class="inputClass" placeholder="••••••••" />
                 </div>
                 <button
                     type="submit"
-                    class="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800"
+                    :disabled="loading"
+                    class="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                    Masuk
+                    {{ loading ? 'Memproses…' : 'Masuk' }}
                 </button>
             </form>
-
-            <p class="mt-6 text-center text-xs text-teal-800/50">
-                Autentikasi sebenarnya (Sanctum) menyusul di Layer 2.
-            </p>
         </div>
     </div>
 </template>
