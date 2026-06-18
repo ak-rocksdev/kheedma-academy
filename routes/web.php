@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ApplicationController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -7,8 +8,15 @@ use Illuminate\Support\Facades\Route;
  */
 Route::view('/', 'home')->name('home');
 
-// Placeholder until the Layer 1 application form is built.
-Route::view('/daftar', 'daftar')->name('daftar');
+/*
+ | Layer 1 — application form.
+ */
+Route::controller(ApplicationController::class)->group(function () {
+    Route::get('/daftar', 'create')->name('daftar');
+    Route::get('/daftar/terima-kasih', 'thankYou')->name('daftar.thankyou');
+    Route::get('/daftar/cities/{province}', 'cities')->where('province', '[0-9]{2}')->name('daftar.cities');
+    Route::post('/daftar', 'store')->middleware('throttle:10,1')->name('daftar.store');
+});
 
 /*
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router
