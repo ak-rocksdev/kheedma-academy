@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\ProgramPageController;
-use App\Models\Program;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -21,17 +20,8 @@ Route::controller(ApplicationController::class)->group(function () {
     Route::post('/program/{program:slug}/daftar', 'store')->middleware('throttle:10,1')->name('program.apply.store');
 });
 
+Route::get('/daftar', [ProgramPageController::class, 'chooser'])->name('daftar');
 Route::get('/program/{program:slug}', [ProgramPageController::class, 'show'])->name('program.show');
-
-// Temporary until the chooser lands (Task 6): send /daftar to the first open
-// program, or home when none is open.
-Route::get('/daftar', function () {
-    $program = Program::openForRegistration()->first();
-
-    return $program
-        ? redirect()->route('program.apply', $program)
-        : redirect()->route('home');
-})->name('daftar');
 
 /*
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router
