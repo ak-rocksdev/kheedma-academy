@@ -31,6 +31,18 @@ const routes = [
                 component: () => import('./views/PersonDetail.vue'),
                 props: true,
             },
+            {
+                path: 'cohorts',
+                name: 'cohorts',
+                component: () => import('./views/Cohorts.vue'),
+                meta: { permission: 'cohorts.view' },
+            },
+            {
+                path: 'users',
+                name: 'users',
+                component: () => import('./views/Users.vue'),
+                meta: { permission: 'users.manage' },
+            },
         ],
     },
 ];
@@ -47,6 +59,9 @@ router.beforeEach((to) => {
         return { name: 'login' };
     }
     if (to.meta.guest && auth.isAuthenticated) {
+        return { name: 'dashboard' };
+    }
+    if (to.meta.permission && !auth.can(to.meta.permission)) {
         return { name: 'dashboard' };
     }
 });

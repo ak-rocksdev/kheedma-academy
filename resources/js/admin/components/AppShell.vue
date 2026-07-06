@@ -1,4 +1,5 @@
 <script setup>
+import { computed } from 'vue';
 import { RouterView, RouterLink, useRouter } from 'vue-router';
 import { LayoutDashboard, Users, GraduationCap, UserCog } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
@@ -7,13 +8,14 @@ import { useAuthStore } from '@/stores/auth';
 const router = useRouter();
 const auth = useAuthStore();
 
-// Modules marked enabled:false are placeholders for the upcoming Layer 2 work.
-const nav = [
-    { to: { name: 'dashboard' }, label: 'Dashboard', icon: LayoutDashboard, enabled: true },
-    { to: { name: 'applicants' }, label: 'Pelamar', icon: Users, enabled: true },
-    { label: 'Cohort', icon: GraduationCap, enabled: false },
-    { label: 'Mentor', icon: UserCog, enabled: false },
-];
+const nav = computed(() =>
+    [
+        { to: { name: 'dashboard' }, label: 'Dashboard', icon: LayoutDashboard, show: true },
+        { to: { name: 'applicants' }, label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
+        { to: { name: 'cohorts' }, label: 'Cohort', icon: GraduationCap, show: auth.can('cohorts.view') },
+        { to: { name: 'users' }, label: 'Tim', icon: UserCog, show: auth.can('users.manage') },
+    ].filter((item) => item.show),
+);
 
 async function logout() {
     await auth.logout();
@@ -29,22 +31,16 @@ async function logout() {
                 <img :src="'/images/kheedma-academy-horizontal.png'" width="1408" height="492" alt="Kheedma Academy" class="h-7 w-auto" />
             </div>
             <nav class="flex-1 space-y-1 p-3">
-                <template v-for="item in nav" :key="item.label">
-                    <RouterLink
-                        v-if="item.enabled"
-                        :to="item.to"
-                        active-class="bg-accent text-accent-foreground"
-                        class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-accent hover:text-accent-foreground"
-                    >
-                        <component :is="item.icon" class="size-4" />
-                        {{ item.label }}
-                    </RouterLink>
-                    <div v-else class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/35">
-                        <component :is="item.icon" class="size-4" />
-                        {{ item.label }}
-                        <span class="ml-auto rounded bg-secondary px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-muted-foreground">segera</span>
-                    </div>
-                </template>
+                <RouterLink
+                    v-for="item in nav"
+                    :key="item.label"
+                    :to="item.to"
+                    active-class="bg-accent text-accent-foreground"
+                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-accent hover:text-accent-foreground"
+                >
+                    <component :is="item.icon" class="size-4" />
+                    {{ item.label }}
+                </RouterLink>
             </nav>
             <div class="border-t border-border p-4 text-[0.7rem] tracking-wide text-muted-foreground">
                 Khidmat · Amanah · Itqan · Barakah

@@ -38,5 +38,9 @@ export const useAuthStore = defineStore('auth', () => {
         return Array.isArray(user.value?.roles) && user.value.roles.includes(role);
     }
 
-    return { user, ready, isAuthenticated, fetchUser, login, logout, hasRole };
+    function can(permission) {
+        return Array.isArray(user.value?.permissions) && user.value.permissions.includes(permission);
+    }
+
+    return { user, ready, isAuthenticated, fetchUser, login, logout, hasRole, can };
 });
