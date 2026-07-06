@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
 use App\Http\Controllers\Api\Admin\PersonController;
+use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
@@ -20,5 +21,12 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         Route::get('/applications', [ApplicantController::class, 'index'])->middleware('permission:applications.view');
         Route::patch('/applications/{application}', [ApplicantController::class, 'update'])->middleware('permission:applications.review');
         Route::get('/people/{person}', [PersonController::class, 'show'])->middleware('permission:people.view');
+
+        Route::middleware('permission:users.manage')->group(function () {
+            Route::get('/users', [UserController::class, 'index']);
+            Route::post('/users', [UserController::class, 'store']);
+            Route::patch('/users/{user}', [UserController::class, 'update']);
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        });
     });
 });
