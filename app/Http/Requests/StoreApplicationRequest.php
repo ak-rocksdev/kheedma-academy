@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests;
 
+use App\Models\Application;
 use App\Support\Phone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,6 +37,7 @@ class StoreApplicationRequest extends FormRequest
             ],
             'tiktok_username' => ['nullable', 'string', 'max:64'],
             'instagram_username' => ['nullable', 'string', 'max:64'],
+            'referral_source' => ['required', Rule::in(Application::REFERRAL_SOURCES)],
             // Honeypot: real users never see or fill this; bots do.
             'website' => ['prohibited'],
         ];
@@ -53,6 +55,8 @@ class StoreApplicationRequest extends FormRequest
             'province_code.exists' => 'Provinsi tidak valid.',
             'city_code.required' => 'Kota/Kabupaten wajib dipilih.',
             'city_code.exists' => 'Kota/Kabupaten tidak valid atau tidak sesuai provinsi.',
+            'referral_source.required' => 'Beritahu kami dari mana kamu tahu program ini.',
+            'referral_source.in' => 'Pilihan sumber tidak valid.',
             'website.prohibited' => 'Pengiriman ditolak.',
         ];
     }
@@ -67,6 +71,7 @@ class StoreApplicationRequest extends FormRequest
             'city_code' => 'kota/kabupaten',
             'tiktok_username' => 'akun TikTok',
             'instagram_username' => 'akun Instagram',
+            'referral_source' => 'sumber informasi',
         ];
     }
 }

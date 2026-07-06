@@ -32,6 +32,12 @@ const routes = [
                 props: true,
             },
             {
+                path: 'programs',
+                name: 'programs',
+                component: () => import('./views/Programs.vue'),
+                meta: { permission: 'programs.manage' },
+            },
+            {
                 path: 'cohorts',
                 name: 'cohorts',
                 component: () => import('./views/Cohorts.vue'),

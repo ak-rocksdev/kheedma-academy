@@ -1,5 +1,5 @@
-<x-layouts.public title="Pendaftaran"
-    description="Formulir pendaftaran Kheedma Academy Cohort 1. Mulai perjalananmu menjadi affiliate marketer yang amanah dan profesional.">
+<x-layouts.public :title="'Daftar ' . $program->name"
+    :description="'Formulir pendaftaran ' . $program->name . ' Kheedma Academy.'">
 
     @php
         $field = 'mt-1.5 w-full rounded-lg bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
@@ -12,10 +12,9 @@
             <div class="text-center">
                 <x-logo variant="stacked" class="mx-auto h-20" />
                 <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Pendaftaran</p>
-                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900 sm:text-4xl">Mulai perjalananmu.</h1>
+                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900 sm:text-4xl">{{ $program->name }}</h1>
                 <p class="mx-auto mt-4 max-w-lg text-base leading-relaxed text-teal-800/80">
-                    Isi data di bawah ini. Setelah mendaftar, kamu akan menerima tugas pra-seleksi
-                    sebagai langkah menunjukkan kesungguhan. Cohort 1 gratis, tempat terbatas.
+                    {{ $program->tagline ?: 'Isi data di bawah ini. Setelah mendaftar, kamu akan menerima tugas pra-seleksi sebagai langkah menunjukkan kesungguhan.' }}
                 </p>
             </div>
 
@@ -25,7 +24,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('daftar.store') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <form method="POST" action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
                 {{-- Honeypot: hidden from humans (inline style so it never depends on CSS build), tempting to bots --}}
@@ -95,6 +94,25 @@
                                class="{{ $field }} border border-teal-900/15" placeholder="@username">
                         @error('instagram_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
+                </div>
+
+                <div>
+                    <label for="referral_source" class="block text-sm font-medium text-teal-800">Tahu program ini dari mana?</label>
+                    <select id="referral_source" name="referral_source"
+                            class="{{ $field }} @error('referral_source') border border-red-400 @else border border-teal-900/15 @enderror">
+                        <option value="">Pilih salah satu…</option>
+                        @foreach ([
+                            'instagram' => 'Instagram',
+                            'tiktok' => 'TikTok',
+                            'whatsapp' => 'WhatsApp',
+                            'teman' => 'Teman atau keluarga',
+                            'google' => 'Pencarian Google',
+                            'lainnya' => 'Lainnya',
+                        ] as $value => $label)
+                            <option value="{{ $value }}" @selected(old('referral_source') === $value)>{{ $label }}</option>
+                        @endforeach
+                    </select>
+                    @error('referral_source') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="pt-2">

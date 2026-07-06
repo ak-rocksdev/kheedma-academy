@@ -1,0 +1,129 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Application;
+use App\Models\Cohort;
+use App\Models\Person;
+use App\Models\Program;
+use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class ProgramManagementTest extends TestCase
+{
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->seed(RoleSeeder::class);
+        $this->seed(PermissionSeeder::class);
+    }
+
+    private function admin(): User
+    {
+        return User::factory()->admin()->create();
+    }
+
+    public function test_admin_can_create_a_program(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'Program Affiliate Pemula',
+                'slug' => 'affiliate-pemula',
+                'tagline' => 'Dari nol jadi affiliator amanah.',
+                'status' => 'active',
+                'selection_mode' => 'selective',
+            ])
+            ->assertCreated()
+            ->assertJsonPath('program.slug', 'affiliate-pemula')
+            ->assertJsonPath('program.is_open', true);
+    }
+
+    public function test_slug_must_be_unique_and_kebab(): void
+    {
+        Program::factory()->create(['slug' => 'affiliate-pemula']);
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'X', 'slug' => 'affiliate-pemula', 'status' => 'draft', 'selection_mode' => 'selective',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('slug');
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'X', 'slug' => 'Bukan Slug!', 'status' => 'draft', 'selection_mode' => 'selective',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('slug');
+    }
+
+    public function test_mentor_is_forbidden(): void
+    {
+        $mentor = User::factory()->mentor()->create();
+
+        $this->actingAs($mentor)->getJson('/api/admin/programs')->assertForbidden();
+    }
+
+    public function test_partial_update_changes_only_sent_fields(): void
+    {
+        $program = Program::factory()->active()->create(['name' => 'Lama']);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['name' => 'Baru'])
+            ->assertOk()
+            ->assertJsonPath('program.name', 'Baru')
+            ->assertJsonPath('program.slug', $program->slug);
+    }
+
+    public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
+    {
+        $program = Program::factory()->active()->create([
+            'registration_opens_at' => now()->addDays(10),
+            'registration_closes_at' => now()->addDays(30),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", [
+                'registration_closes_at' => now()->addDay()->toDateTimeString(),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('registration_closes_at');
+    }
+
+    public function test_program_with_applications_cannot_be_deleted(): void
+    {
+        $program = Program::factory()->create();
+        $person = Person::create([
+            'name' => 'Peserta Uji', 'phone' => '+628123456700', 'email' => 'uji@example.test',
+        ]);
+        Application::create(['people_id' => $person->id, 'status' => 'pending', 'program_id' => $program->id]);
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/programs/{$program->id}")
+            ->assertStatus(422);
+    }
+
+    public function test_program_with_cohorts_cannot_be_deleted(): void
+    {
+        $program = Program::factory()->create();
+        Cohort::factory()->create(['program_id' => $program->id]);
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/programs/{$program->id}")
+            ->assertStatus(422);
+    }
+
+    public function test_empty_program_can_be_deleted(): void
+    {
+        $program = Program::factory()->create();
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/programs/{$program->id}")
+            ->assertNoContent();
+    }
+}

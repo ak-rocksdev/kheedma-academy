@@ -15,11 +15,13 @@ class ApplicantController extends Controller
         $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:pending,accepted,rejected'],
+            'program' => ['nullable', 'integer', 'exists:programs,id'],
         ]);
 
         $applications = Application::query()
-            ->with(['person:id,name,phone,email,city_code', 'person.city:code,name'])
+            ->with(['person:id,name,phone,email,city_code', 'person.city:code,name', 'program:id,name'])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
+            ->when($request->filled('program'), fn ($q) => $q->where('program_id', $request->integer('program')))
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->string('q').'%';
                 $q->whereHas('person', function ($p) use ($term) {
@@ -64,6 +66,8 @@ class ApplicantController extends Controller
             'prefilter_submitted' => (bool) $a->prefilter_submitted,
             'prefilter_verdict' => $a->prefilter_verdict,
             'created_at' => $a->created_at?->toIso8601String(),
+            'program' => $a->program?->name,
+            'referral_source' => $a->referral_source,
             'person' => [
                 'id' => $a->person->id,
                 'name' => $a->person->name,

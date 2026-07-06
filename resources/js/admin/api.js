@@ -101,6 +101,21 @@ export const users = {
     },
 };
 
+export const programs = {
+    list() {
+        return api('/admin/programs');
+    },
+    create(payload) {
+        return api('/admin/programs', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/programs/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/programs/${id}`, { method: 'DELETE' });
+    },
+};
+
 export const cohorts = {
     list() {
         return api('/admin/cohorts');

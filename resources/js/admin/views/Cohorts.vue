@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { cohorts as cohortsApi, users as usersApi } from '@/api';
+import { cohorts as cohortsApi, users as usersApi, programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -8,12 +8,13 @@ import { Dialog } from '@/components/ui/dialog';
 
 const items = ref([]);
 const mentors = ref([]);
+const programs = ref([]);
 const loading = ref(false);
 const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-const form = ref({ name: '', start_date: '', end_date: '', mentor_id: '' });
+const form = ref({ name: '', program_id: '', start_date: '', end_date: '', mentor_id: '' });
 const formErrors = ref({});
 const saving = ref(false);
 
@@ -30,9 +31,10 @@ async function load() {
     loading.value = true;
     error.value = '';
     try {
-        const [cRes, mRes] = await Promise.all([cohortsApi.list(), usersApi.list('?role=mentor')]);
+        const [cRes, mRes, pRes] = await Promise.all([cohortsApi.list(), usersApi.list('?role=mentor'), programsApi.list()]);
         items.value = cRes.data;
         mentors.value = mRes.data;
+        programs.value = pRes.data;
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         error.value = e.message ?? 'Gagal memuat data.';
@@ -45,7 +47,7 @@ onMounted(load);
 
 function openCreate() {
     editing.value = null;
-    form.value = { name: '', start_date: '', end_date: '', mentor_id: '' };
+    form.value = { name: '', program_id: '', start_date: '', end_date: '', mentor_id: '' };
     formErrors.value = {};
     dialogOpen.value = true;
 }
@@ -54,6 +56,7 @@ function openEdit(cohort) {
     editing.value = cohort;
     form.value = {
         name: cohort.name,
+        program_id: cohort.program?.id ?? '',
         start_date: cohort.start_date ?? '',
         end_date: cohort.end_date ?? '',
         mentor_id: cohort.mentor?.id ?? '',
@@ -68,6 +71,7 @@ async function save() {
     try {
         const payload = {
             name: form.value.name,
+            program_id: form.value.program_id || null,
             start_date: form.value.start_date || null,
             end_date: form.value.end_date || null,
             mentor_id: form.value.mentor_id || null,
@@ -124,6 +128,7 @@ function fmtDate(iso) {
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>
+                        <th class="px-4 py-3 font-semibold">Program</th>
                         <th class="px-4 py-3 font-semibold">Periode</th>
                         <th class="px-4 py-3 font-semibold">Mentor</th>
                         <th class="px-4 py-3 font-semibold">Peserta</th>
@@ -132,10 +137,11 @@ function fmtDate(iso) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-if="loading"><td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
-                    <tr v-else-if="!items.length"><td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
+                    <tr v-if="loading"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
+                    <tr v-else-if="!items.length"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
                     <tr v-for="cohort in items" :key="cohort.id" class="border-b border-border last:border-0">
                         <td class="px-4 py-3 font-medium text-foreground">{{ cohort.name }}</td>
+                        <td class="px-4 py-3 text-muted-foreground">{{ cohort.program?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(cohort.start_date) }} – {{ fmtDate(cohort.end_date) }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.mentor?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.enrollments_count }}</td>
@@ -170,6 +176,14 @@ function fmtDate(iso) {
                     </div>
                 </div>
                 <p v-if="formErrors.end_date" class="text-xs text-destructive">{{ formErrors.end_date[0] }}</p>
+                <div>
+                    <label class="text-xs text-muted-foreground">Program</label>
+                    <select v-model="form.program_id" :class="selectClass">
+                        <option value="">Pilih program…</option>
+                        <option v-for="program in programs" :key="program.id" :value="program.id">{{ program.name }}</option>
+                    </select>
+                    <p v-if="formErrors.program_id" class="mt-1 text-xs text-destructive">{{ formErrors.program_id[0] }}</p>
+                </div>
                 <div>
                     <select v-model="form.mentor_id" :class="selectClass">
                         <option value="">Tanpa mentor</option>

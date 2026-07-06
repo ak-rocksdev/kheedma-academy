@@ -11,8 +11,13 @@ class Application extends Model
 {
     use HasFactory;
 
+    /** Fixed choices for the public form's "tahu dari mana" select. */
+    public const REFERRAL_SOURCES = ['instagram', 'tiktok', 'whatsapp', 'teman', 'google', 'lainnya'];
+
     protected $fillable = [
         'people_id',
+        'program_id',
+        'referral_source',
         'status',
         'prefilter_submitted',
         'prefilter_link',
@@ -32,6 +37,11 @@ class Application extends Model
     public function person(): BelongsTo
     {
         return $this->belongsTo(Person::class, 'people_id');
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
     }
 
     public function enrollment(): HasOne

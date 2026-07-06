@@ -15,6 +15,7 @@ class Cohort extends Model
     protected $appends = ['status'];
 
     protected $fillable = [
+        'program_id',
         'name',
         'start_date',
         'end_date',
@@ -27,6 +28,11 @@ class Cohort extends Model
             'start_date' => 'date',
             'end_date' => 'date',
         ];
+    }
+
+    public function program(): BelongsTo
+    {
+        return $this->belongsTo(Program::class);
     }
 
     /** The mentor leading this cohort — a User with the `mentor` role. */

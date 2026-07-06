@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { RouterLink } from 'vue-router';
-import { api } from '@/api';
+import { api, programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,8 @@ const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const q = ref('');
 const status = ref('');
+const programs = ref([]);
+const program = ref('');
 const loading = ref(false);
 const error = ref('');
 
@@ -22,6 +24,7 @@ async function fetchPage(page = 1) {
     const params = new URLSearchParams();
     if (q.value) params.set('q', q.value);
     if (status.value) params.set('status', status.value);
+    if (program.value) params.set('program', program.value);
     params.set('page', page);
     try {
         const res = await api(`/admin/applications?${params.toString()}`);
@@ -35,12 +38,21 @@ async function fetchPage(page = 1) {
     }
 }
 
-onMounted(() => fetchPage());
+onMounted(async () => {
+    fetchPage();
+    try {
+        const res = await programsApi.list();
+        programs.value = res.data;
+    } catch {
+        programs.value = [];
+    }
+});
 watch(q, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => fetchPage(1), 300);
 });
 watch(status, () => fetchPage(1));
+watch(program, () => fetchPage(1));
 
 function fmtDate(iso) {
     if (!iso) return '—';
@@ -68,6 +80,10 @@ const selectClass =
                 <option value="">Semua status</option>
                 <option v-for="s in APPLICATION_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
             </select>
+            <select v-model="program" :class="selectClass">
+                <option value="">Semua program</option>
+                <option v-for="p in programs" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
         </div>
 
         <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
@@ -82,6 +98,7 @@ const selectClass =
                         <th class="px-4 py-3 font-semibold">Nama</th>
                         <th class="px-4 py-3 font-semibold">Kontak</th>
                         <th class="px-4 py-3 font-semibold">Domisili</th>
+                        <th class="px-4 py-3 font-semibold">Program</th>
                         <th class="px-4 py-3 font-semibold">Status</th>
                         <th class="px-4 py-3 font-semibold">Tanggal</th>
                         <th class="px-4 py-3"></th>
@@ -89,10 +106,10 @@ const selectClass =
                 </thead>
                 <tbody>
                     <tr v-if="loading">
-                        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td>
+                        <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td>
                     </tr>
                     <tr v-else-if="!items.length">
-                        <td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Belum ada pendaftar.</td>
+                        <td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada pendaftar.</td>
                     </tr>
                     <tr
                         v-for="item in items"
@@ -105,6 +122,7 @@ const selectClass =
                             <div class="text-xs">{{ item.person.email }}</div>
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ item.person.city ?? '—' }}</td>
+                        <td class="px-4 py-3 text-muted-foreground">{{ item.program ?? '—' }}</td>
                         <td class="px-4 py-3"><Badge :variant="statusVariant(item.status)">{{ statusLabel(item.status) }}</Badge></td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(item.created_at) }}</td>
                         <td class="px-4 py-3 text-right">
