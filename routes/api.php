@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
+use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
@@ -27,6 +28,13 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::post('/users', [UserController::class, 'store']);
             Route::patch('/users/{user}', [UserController::class, 'update']);
             Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        });
+
+        Route::get('/cohorts', [CohortController::class, 'index'])->middleware('permission:cohorts.view');
+        Route::middleware('permission:cohorts.manage')->group(function () {
+            Route::post('/cohorts', [CohortController::class, 'store']);
+            Route::patch('/cohorts/{cohort}', [CohortController::class, 'update']);
+            Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy']);
         });
     });
 });
