@@ -8,8 +8,8 @@ const entities = [
     { name: 'Person', desc: 'Satu record per manusia, anchor nomor HP.' },
     { name: 'Application', desc: 'Submission formulir + hasil tugas pra-seleksi.' },
     { name: 'Angkatan', desc: 'Kelas nyata: nama, tanggal, satu mentor.' },
-    { name: 'Mentor', desc: 'User dengan role mentor, memimpin cohort.' },
-    { name: 'Enrollment', desc: 'Tautan Person ↔ Cohort saat diterima.' },
+    { name: 'Mentor', desc: 'User dengan role mentor, memimpin angkatan.' },
+    { name: 'Enrollment', desc: 'Tautan Person ↔ Angkatan saat diterima.' },
     { name: 'Status Event', desc: 'Log append-only transisi status.' },
 ];
 </script>
