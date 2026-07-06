@@ -83,10 +83,21 @@ Consequences:
 
 ### Changes to existing entities
 
-- `applications.program_id` — FK, required for new submissions (no floating applications).
-- `cohorts.program_id` — FK, required (an Angkatan belongs to a program).
+- `applications.program_id` — FK, **nullable at the DB level** (legacy rows predate
+  programs) but **required by validation for every new submission** (no floating
+  applications).
+- `applications.referral_source` — **new column, closing a Layer 1 gap**: the v1 concept
+  mandates capturing how the applicant heard about the Academy (“cannot be reconstructed
+  later”), but the current `applications` table never got the column. Added to the form
+  and table in Phase 1.
+- `cohorts.program_id` — FK; an Angkatan belongs to a program. Migration note: the dev
+  DB already holds Angkatan rows, so the migration adds the column nullable and the
+  phase plan backfills existing rows to the first Program before tightening validation.
 - `cohorts.accepting_enrollments` (boolean) — marks which batch an `instant`-mode
   registration auto-enrolls into; also useful as an explicit intake flag for selective mode.
+- **Person merge (v1 Tahap E) scope grows**: when built, the merge must also repoint
+  `community_memberships` and `orders` (alongside applications/enrollments) to the
+  surviving Person.
 
 ### Enrollment machinery (unchanged, two triggers)
 
@@ -111,7 +122,7 @@ mode removes the redundant manual gate.
 /daftar (chooser: promotional cards)
 ├── Program cards (active programs only; none active → community card only)
 │     └── /program/{slug}  — promo landing (shareable primary URL)
-│           └── /daftar/{slug} — application form, program pre-linked (no dropdown)
+│           └── /program/{slug}/daftar — application form, program pre-linked (no dropdown)
 │                 └── selective: admin gate → Angkatan
 │                     instant:   auto-enrolled → Angkatan
 └── Community card (always shown)
@@ -119,8 +130,13 @@ mode removes the redundant manual gate.
             └── account + membership created immediately → member area
 ```
 
-- The existing application form fields (identity, region, socials, pre-filter task,
-  referral source) carry over; the only addition is the program link.
+- The application form lives at `/program/{slug}/daftar`, **not** `/daftar/{slug}`:
+  the latter collides with the existing `/daftar/terima-kasih` and
+  `/daftar/cities/{province}` routes (a program slugged “cities” would break routing).
+  Nesting under the program prefix removes the collision class entirely and reads
+  naturally (landing → daftar).
+- The existing application form fields (identity, region, socials, pre-filter task)
+  carry over; Phase 1 adds the program link and the missing `referral_source` field.
 - All public copy is promotional Indonesian, no internal terms, no em-dashes.
 
 ## 6. Member area (participant login)
@@ -184,3 +200,7 @@ before real applicant data accumulates.
    identity; pricing figures per product (business input).
 4. **Phase 3**: whether `instant` mode requires payment integration first for paid
    programs, or supports free-instant programs at launch.
+5. **Phase 5**: announcement reach — program participants who never joined the community
+   have no account, so they cannot see the feed. Decide whether selective-mode enrollment
+   should also provision a member account (extending the feed to all participants) or
+   whether announcements stay community-only at launch.
