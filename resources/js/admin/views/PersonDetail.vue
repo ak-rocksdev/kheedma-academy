@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { ArrowLeft } from 'lucide-vue-next';
 import { api } from '@/api';
 import { Button } from '@/components/ui/button';
@@ -9,7 +9,6 @@ import { APPLICATION_STATUSES, PREFILTER_VERDICTS, statusVariant, statusLabel } 
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
-const router = useRouter();
 const person = ref(null);
 const loading = ref(true);
 const error = ref('');
@@ -23,10 +22,7 @@ async function load() {
         const res = await api(`/admin/people/${props.id}`);
         person.value = res.person;
     } catch (e) {
-        if (e.status === 401) {
-            router.push({ name: 'login' });
-            return;
-        }
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         person.value = null;
         error.value = e.status === 404 ? 'Pelamar tidak ditemukan.' : (e.message ?? 'Gagal memuat data.');
     } finally {
@@ -49,6 +45,7 @@ async function save(app) {
         // The in-place v-model values already reflect the saved state, so no full
         // reload is needed (avoids the spinner blink / scroll jump).
     } catch (e) {
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
         await load(); // reset selects to the server's truth
     } finally {

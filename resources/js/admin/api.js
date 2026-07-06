@@ -11,8 +11,21 @@ async function csrf() {
 }
 
 /**
+ * Session-expiry hook. main.js registers a handler that opens the global
+ * re-authentication dialog; api() calls it on any 401 outside /login so the
+ * user can re-enter their password without losing page state.
+ */
+let sessionExpiredHandler = null;
+
+export function onSessionExpired(handler) {
+    sessionExpiredHandler = handler;
+}
+
+/**
  * Call the admin API. Sends cookies + the X-XSRF-TOKEN header. On a non-OK
- * response throws an error carrying { status, message, errors }.
+ * response throws an error carrying { status, message, errors }. A 401 from
+ * any endpoint except /login also sets err.sessionExpired and triggers the
+ * session-expired handler (global re-login dialog).
  */
 export async function api(path, { method = 'GET', body = null } = {}) {
     // For state-changing requests, make sure the XSRF cookie exists (it may be
@@ -44,6 +57,15 @@ export async function api(path, { method = 'GET', body = null } = {}) {
         const err = new Error((data && data.message) || `Request failed (${res.status})`);
         err.status = res.status;
         err.errors = (data && data.errors) || {};
+
+        // A dead session answers 401 everywhere except the login endpoint
+        // itself. Flag the error (so callers can stay quiet) and open the
+        // global re-login dialog instead of hard-redirecting.
+        if (res.status === 401 && path !== '/login' && sessionExpiredHandler) {
+            err.sessionExpired = true;
+            sessionExpiredHandler();
+        }
+
         throw err;
     }
 
@@ -61,5 +83,35 @@ export const auth = {
     async logout() {
         await csrf();
         return api('/logout', { method: 'POST' });
+    },
+};
+
+export const users = {
+    list(query = '') {
+        return api(`/admin/users${query}`);
+    },
+    create(payload) {
+        return api('/admin/users', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/users/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/users/${id}`, { method: 'DELETE' });
+    },
+};
+
+export const cohorts = {
+    list() {
+        return api('/admin/cohorts');
+    },
+    create(payload) {
+        return api('/admin/cohorts', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/cohorts/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/cohorts/${id}`, { method: 'DELETE' });
     },
 };

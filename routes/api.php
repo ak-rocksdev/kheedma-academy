@@ -1,8 +1,11 @@
 <?php
 
-use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\Admin\ApplicantController;
+use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\PersonController;
+use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,14 +13,28 @@ use Illuminate\Support\Facades\Route;
  */
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 
-    // Staff-only operational modules.
-    Route::middleware('role:admin|mentor')->prefix('admin')->group(function () {
-        Route::get('/applications', [ApplicantController::class, 'index']);
-        Route::patch('/applications/{application}', [ApplicantController::class, 'update']);
-        Route::get('/people/{person}', [PersonController::class, 'show']);
+    // Staff-only operational modules (granular permissions).
+    Route::prefix('admin')->group(function () {
+        Route::get('/applications', [ApplicantController::class, 'index'])->middleware('permission:applications.view');
+        Route::patch('/applications/{application}', [ApplicantController::class, 'update'])->middleware('permission:applications.review');
+        Route::get('/people/{person}', [PersonController::class, 'show'])->middleware('permission:people.view');
+
+        Route::middleware('permission:users.manage')->group(function () {
+            Route::get('/users', [UserController::class, 'index']);
+            Route::post('/users', [UserController::class, 'store']);
+            Route::patch('/users/{user}', [UserController::class, 'update']);
+            Route::delete('/users/{user}', [UserController::class, 'destroy']);
+        });
+
+        Route::get('/cohorts', [CohortController::class, 'index'])->middleware('permission:cohorts.view');
+        Route::middleware('permission:cohorts.manage')->group(function () {
+            Route::post('/cohorts', [CohortController::class, 'store']);
+            Route::patch('/cohorts/{cohort}', [CohortController::class, 'update']);
+            Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy']);
+        });
     });
 });

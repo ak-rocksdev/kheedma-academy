@@ -1,13 +1,12 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink } from 'vue-router';
 import { api } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
 
-const router = useRouter();
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const q = ref('');
@@ -29,10 +28,7 @@ async function fetchPage(page = 1) {
         items.value = res.data;
         meta.value = { current_page: res.current_page, last_page: res.last_page, total: res.total };
     } catch (e) {
-        if (e.status === 401) {
-            router.push({ name: 'login' });
-            return;
-        }
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         error.value = e.message ?? 'Gagal memuat data.';
     } finally {
         loading.value = false;
