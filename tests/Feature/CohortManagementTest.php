@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Cohort;
+use App\Models\Program;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -33,6 +34,7 @@ class CohortManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->postJson('/api/admin/cohorts', [
                 'name' => 'Angkatan 1',
+                'program_id' => Program::factory()->create()->id,
                 'start_date' => now()->addWeek()->toDateString(),
                 'end_date' => now()->addMonths(2)->toDateString(),
                 'mentor_id' => $mentor->id,
@@ -60,9 +62,27 @@ class CohortManagementTest extends TestCase
         $notMentor = User::factory()->admin()->create();
 
         $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', ['name' => 'X', 'mentor_id' => $notMentor->id])
+            ->postJson('/api/admin/cohorts', ['name' => 'X', 'program_id' => Program::factory()->create()->id, 'mentor_id' => $notMentor->id])
             ->assertStatus(422)
             ->assertJsonValidationErrors('mentor_id');
+    }
+
+    public function test_cohort_requires_a_program_on_create(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', ['name' => 'Angkatan 1'])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('program_id');
+    }
+
+    public function test_cohort_row_includes_its_program(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', ['name' => 'Angkatan 1', 'program_id' => $program->id])
+            ->assertCreated()
+            ->assertJsonPath('cohort.program.id', $program->id);
     }
 
     public function test_status_is_derived_from_dates(): void

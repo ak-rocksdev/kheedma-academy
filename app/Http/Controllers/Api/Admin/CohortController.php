@@ -15,7 +15,7 @@ class CohortController extends Controller
     public function index(): JsonResponse
     {
         $cohorts = Cohort::query()
-            ->with('mentor:id,name')
+            ->with(['mentor:id,name', 'program:id,name'])
             ->withCount('enrollments')
             ->orderByDesc('start_date')
             ->get()
@@ -29,7 +29,7 @@ class CohortController extends Controller
         $cohort = Cohort::create($this->validated($request, creating: true));
 
         return response()->json([
-            'cohort' => $this->row($cohort->load('mentor:id,name')->loadCount('enrollments')),
+            'cohort' => $this->row($cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
         ], 201);
     }
 
@@ -38,7 +38,7 @@ class CohortController extends Controller
         $cohort->update($this->validated($request, creating: false));
 
         return response()->json([
-            'cohort' => $this->row($cohort->fresh(['mentor:id,name'])->loadCount('enrollments')),
+            'cohort' => $this->row($cohort->fresh(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
         ]);
     }
 
@@ -60,6 +60,11 @@ class CohortController extends Controller
             'name' => $creating
                 ? ['required', 'string', 'max:255']
                 : ['sometimes', 'required', 'string', 'max:255'],
+            'program_id' => [
+                $creating ? 'required' : 'sometimes',
+                'required',
+                'exists:programs,id',
+            ],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'mentor_id' => [
@@ -74,13 +79,14 @@ class CohortController extends Controller
     }
 
     /**
-     * @return array{id:int,name:string,start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int}
+     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int}
      */
     private function row(Cohort $c): array
     {
         return [
             'id' => $c->id,
             'name' => $c->name,
+            'program' => $c->program ? ['id' => $c->program->id, 'name' => $c->program->name] : null,
             'start_date' => $c->start_date?->toDateString(),
             'end_date' => $c->end_date?->toDateString(),
             'status' => $c->status,
