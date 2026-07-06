@@ -1,13 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import { cohorts as cohortsApi, users as usersApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 
-const router = useRouter();
 const items = ref([]);
 const mentors = ref([]);
 const loading = ref(false);
@@ -36,7 +34,7 @@ async function load() {
         items.value = cRes.data;
         mentors.value = mRes.data;
     } catch (e) {
-        if (e.status === 401) return router.push({ name: 'login' });
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         error.value = e.message ?? 'Gagal memuat data.';
     } finally {
         loading.value = false;
@@ -82,6 +80,7 @@ async function save() {
         dialogOpen.value = false;
         await load();
     } catch (e) {
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         formErrors.value = e.errors ?? {};
         if (!Object.keys(formErrors.value).length) error.value = e.message;
     } finally {
@@ -95,6 +94,7 @@ async function remove(cohort) {
         await cohortsApi.remove(cohort.id);
         await load();
     } catch (e) {
+        if (e.sessionExpired) return; // the global re-login dialog takes over
         error.value = e.message ?? 'Gagal menghapus cohort.';
     }
 }
