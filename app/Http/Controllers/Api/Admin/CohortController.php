@@ -45,7 +45,7 @@ class CohortController extends Controller
     public function destroy(Cohort $cohort): JsonResponse
     {
         if ($cohort->enrollments()->exists()) {
-            throw ValidationException::withMessages(['cohort' => 'Cohort dengan peserta tidak bisa dihapus.']);
+            throw ValidationException::withMessages(['cohort' => 'Angkatan dengan peserta tidak bisa dihapus.']);
         }
 
         $cohort->delete();

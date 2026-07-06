@@ -12,7 +12,7 @@ const nav = computed(() =>
     [
         { to: { name: 'dashboard' }, label: 'Dashboard', icon: LayoutDashboard, show: true },
         { to: { name: 'applicants' }, label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
-        { to: { name: 'cohorts' }, label: 'Cohort', icon: GraduationCap, show: auth.can('cohorts.view') },
+        { to: { name: 'cohorts' }, label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
         { to: { name: 'users' }, label: 'Tim', icon: UserCog, show: auth.can('users.manage') },
     ].filter((item) => item.show),
 );

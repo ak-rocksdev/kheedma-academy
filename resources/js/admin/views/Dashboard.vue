@@ -7,7 +7,7 @@ const auth = useAuthStore();
 const entities = [
     { name: 'Person', desc: 'Satu record per manusia, anchor nomor HP.' },
     { name: 'Application', desc: 'Submission formulir + hasil tugas pra-seleksi.' },
-    { name: 'Cohort', desc: 'Kelas nyata: nama, tanggal, satu mentor.' },
+    { name: 'Angkatan', desc: 'Kelas nyata: nama, tanggal, satu mentor.' },
     { name: 'Mentor', desc: 'User dengan role mentor, memimpin cohort.' },
     { name: 'Enrollment', desc: 'Tautan Person ↔ Cohort saat diterima.' },
     { name: 'Status Event', desc: 'Log append-only transisi status.' },
@@ -19,7 +19,7 @@ const entities = [
         <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Dashboard</p>
         <h1 class="mt-2 text-3xl font-bold text-foreground">Selamat datang, {{ auth.user?.name }}.</h1>
         <p class="mt-3 max-w-2xl text-muted-foreground">
-            Autentikasi admin sudah aktif. Modul operasional (pelamar, cohort, enrollment,
+            Autentikasi admin sudah aktif. Modul operasional (pelamar, angkatan, enrollment,
             status event, merge) dibangun bertahap di atas fondasi data berikut.
         </p>
 

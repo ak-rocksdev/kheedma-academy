@@ -95,7 +95,7 @@ async function remove(cohort) {
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
-        error.value = e.message ?? 'Gagal menghapus cohort.';
+        error.value = e.message ?? 'Gagal menghapus angkatan.';
     }
 }
 
@@ -109,10 +109,10 @@ function fmtDate(iso) {
     <div class="mx-auto max-w-5xl">
         <div class="flex items-end justify-between gap-4">
             <div>
-                <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Cohort</p>
-                <h1 class="mt-2 text-2xl font-bold text-foreground">Daftar Cohort</h1>
+                <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan</p>
+                <h1 class="mt-2 text-2xl font-bold text-foreground">Daftar Angkatan</h1>
             </div>
-            <Button variant="accent" size="sm" @click="openCreate">Tambah Cohort</Button>
+            <Button variant="accent" size="sm" @click="openCreate">Tambah Angkatan</Button>
         </div>
 
         <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
@@ -133,7 +133,7 @@ function fmtDate(iso) {
                 </thead>
                 <tbody>
                     <tr v-if="loading"><td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
-                    <tr v-else-if="!items.length"><td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Belum ada cohort.</td></tr>
+                    <tr v-else-if="!items.length"><td colspan="6" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
                     <tr v-for="cohort in items" :key="cohort.id" class="border-b border-border last:border-0">
                         <td class="px-4 py-3 font-medium text-foreground">{{ cohort.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(cohort.start_date) }} – {{ fmtDate(cohort.end_date) }}</td>
@@ -153,10 +153,10 @@ function fmtDate(iso) {
             </table>
         </div>
 
-        <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Cohort' : 'Tambah Cohort'">
+        <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Angkatan' : 'Tambah Angkatan'">
             <form class="space-y-3" @submit.prevent="save">
                 <div>
-                    <Input v-model="form.name" placeholder="Nama cohort" />
+                    <Input v-model="form.name" placeholder="Nama angkatan" />
                     <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
                 </div>
                 <div class="flex gap-3">

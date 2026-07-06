@@ -128,7 +128,7 @@ const selectClass =
                     :key="e.id"
                     class="flex items-center justify-between border-b border-border px-5 py-3 text-sm last:border-0"
                 >
-                    <span class="font-medium text-foreground">{{ e.cohort ?? 'Cohort dihapus' }}</span>
+                    <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
                     <span class="text-muted-foreground">{{ e.latest_status ? `${e.latest_status} · ${fmtDate(e.latest_status_at)}` : 'Belum ada status' }}</span>
                 </div>
             </div>
