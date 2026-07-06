@@ -27,7 +27,13 @@ class CommunityJoinRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'phone' => ['required', 'string', 'regex:/^\+62\d{8,13}$/'],
-            'email' => ['required', 'email:rfc', 'max:160', Rule::unique('users', 'email')],
+            'email' => [
+                'required', 'email:rfc', 'max:160',
+                Rule::unique('users', 'email'),
+                Rule::unique('people', 'email')
+                    ->where(fn ($q) => $q->where('phone', '!=', $this->input('phone')))
+                    ->whereNull('deleted_at'),
+            ],
             'password' => ['required', 'string', 'min:8'],
             'referral_source' => ['required', Rule::in(Application::REFERRAL_SOURCES)],
             // Honeypot: real users never see or fill this; bots do.
@@ -43,7 +49,7 @@ class CommunityJoinRequest extends FormRequest
             'phone.regex' => 'Format nomor HP tidak valid. Contoh: 0812xxxxxxx.',
             'email.required' => 'Email wajib diisi.',
             'email.email' => 'Format email tidak valid.',
-            'email.unique' => 'Email ini sudah terdaftar. Silakan masuk.',
+            'email.unique' => 'Email ini sudah terpakai. Gunakan email lain atau masuk jika sudah punya akun.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
             'referral_source.required' => 'Beritahu kami dari mana kamu tahu komunitas ini.',

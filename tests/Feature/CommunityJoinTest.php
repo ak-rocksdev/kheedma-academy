@@ -84,6 +84,20 @@ class CommunityJoinTest extends TestCase
             ->assertSessionHasErrors('email');
     }
 
+    public function test_email_owned_by_another_person_without_account_is_rejected(): void
+    {
+        Person::create([
+            'name' => 'Orang Lain', 'phone' => '+628599999999', 'email' => 'siti@example.test',
+        ]);
+
+        $this->from('/komunitas')
+            ->post('/komunitas', $this->validPayload())
+            ->assertRedirect('/komunitas')
+            ->assertSessionHasErrors('email');
+
+        $this->assertSame(0, CommunityMembership::count());
+    }
+
     public function test_honeypot_blocks_bots(): void
     {
         $this->from('/komunitas')
