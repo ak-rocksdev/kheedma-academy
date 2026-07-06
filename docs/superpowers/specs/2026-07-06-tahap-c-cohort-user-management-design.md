@@ -75,7 +75,9 @@ Enforcement:
 
 - New idempotent `RolePermissionSeeder`: `Permission::findOrCreate` for each, then
   `Role::findOrCreate` + `syncPermissions` per role. Called from `DatabaseSeeder` **before**
-  `AdminUserSeeder`.
+  `AdminUserSeeder`. The seeder **must flush Spatie's permission cache** at the end via
+  `app(\Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions()` — otherwise
+  newly-seeded permissions can be missed by cached lookups (a common Spatie gotcha).
 - Existing routes migrate from `role:admin|mentor` to `permission:<name>`:
   - `GET /api/admin/applications` → `permission:applications.view`
   - `PATCH /api/admin/applications/{application}` → `permission:applications.review`
@@ -149,6 +151,8 @@ Safety guards (return 422/403 with a clear message):
 
 ### 6. Testing (PHPUnit feature tests)
 
+- Test setup: seed `RolePermissionSeeder` (with `RefreshDatabase`) and reset Spatie's
+  permission cache in `setUp` so permission checks resolve against fresh data.
 - Authorization: a `mentor`/unauthorized user is forbidden from `users.manage` and
   `cohorts.manage` endpoints; admin is allowed. `/me` includes the `permissions` array.
 - Users: admin can list/create/update/deactivate; created account gets the requested role;
@@ -172,7 +176,26 @@ Safety guards (return 422/403 with a clear message):
 4. Permission-gated nav/controls.
 5. Existing Applicants module still works after route permission migration (no regression).
 
+## Verified integration points (no new work needed)
+
+- `permission` and `role_or_permission` middleware aliases are already registered in
+  `bootstrap/app.php`, so `permission:<name>` route middleware works directly.
+- `Cohort::enrollments()` (HasMany) already exists, so the cohort delete guard
+  (`$cohort->enrollments()->exists()`) is directly implementable.
+- `main.js` awaits `fetchUser()` before mounting the router, so permissions are loaded
+  before the router `beforeEach` guard runs — `meta.permission` gating is reliable.
+
 ## Open considerations
+
+- Deactivated-session handling: `EnsureUserIsActive` returns 401; confirm `api.js` treats a
+  401 as auto-logout (clear store + redirect to login) so the flow completes end to end.
+- Mentor dropdown data source: the cohort mentor list is fetched from the users index
+  (`?role=mentor`), gated by `users.manage`. Fine in v1 (admin holds both permissions);
+  noted as light coupling to revisit if a `cohorts.manage`-only role ever exists.
+- Last-admin guard uses "last **active** admin" consistently. Reasoning: only admins can
+  manage users and cannot deactivate themselves, so deactivating another admin can never
+  reach zero active admins; the demote/delete + self guards are sufficient. Still covered by
+  tests.
 
 - Password policy: minimum length and whether to enforce complexity — default to a sane
   minimum (e.g. 8) unless the user wants stricter.
