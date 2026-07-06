@@ -63,3 +63,18 @@ export const auth = {
         return api('/logout', { method: 'POST' });
     },
 };
+
+export const users = {
+    list(query = '') {
+        return api(`/admin/users${query}`);
+    },
+    create(payload) {
+        return api('/admin/users', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/users/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/users/${id}`, { method: 'DELETE' });
+    },
+};
