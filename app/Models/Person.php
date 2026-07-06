@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Laravolt\Indonesia\Models\Kabupaten;
 use Laravolt\Indonesia\Models\Provinsi;
@@ -32,6 +33,12 @@ class Person extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class, 'people_id');
+    }
+
+    /** Community membership (the unselective second funnel door), if joined. */
+    public function communityMembership(): HasOne
+    {
+        return $this->hasOne(CommunityMembership::class, 'people_id');
     }
 
     /** Optional login account (role: participant), provisioned only when needed. */
