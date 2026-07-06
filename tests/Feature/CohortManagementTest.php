@@ -43,6 +43,18 @@ class CohortManagementTest extends TestCase
             ->assertJsonPath('cohort.mentor.id', $mentor->id);
     }
 
+    public function test_admin_can_partially_update_a_cohort(): void
+    {
+        $mentor = User::factory()->mentor()->create();
+        $cohort = Cohort::factory()->create(['mentor_id' => null]);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/cohorts/{$cohort->id}", ['mentor_id' => $mentor->id])
+            ->assertOk()
+            ->assertJsonPath('cohort.mentor.id', $mentor->id)
+            ->assertJsonPath('cohort.name', $cohort->name);
+    }
+
     public function test_mentor_id_must_reference_a_mentor(): void
     {
         $notMentor = User::factory()->admin()->create();

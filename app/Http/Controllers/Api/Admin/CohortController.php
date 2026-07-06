@@ -26,7 +26,7 @@ class CohortController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $cohort = Cohort::create($this->validated($request));
+        $cohort = Cohort::create($this->validated($request, creating: true));
 
         return response()->json([
             'cohort' => $this->row($cohort->load('mentor:id,name')->loadCount('enrollments')),
@@ -35,7 +35,7 @@ class CohortController extends Controller
 
     public function update(Request $request, Cohort $cohort): JsonResponse
     {
-        $cohort->update($this->validated($request));
+        $cohort->update($this->validated($request, creating: false));
 
         return response()->json([
             'cohort' => $this->row($cohort->fresh(['mentor:id,name'])->loadCount('enrollments')),
@@ -54,10 +54,12 @@ class CohortController extends Controller
     }
 
     /** Shared validation; mentor_id must reference a user holding the mentor role. */
-    private function validated(Request $request): array
+    private function validated(Request $request, bool $creating): array
     {
         return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => $creating
+                ? ['required', 'string', 'max:255']
+                : ['sometimes', 'required', 'string', 'max:255'],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
             'mentor_id' => [
