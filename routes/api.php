@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\ApplicantController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Middleware\EnsureUserIsActive;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -10,7 +11,7 @@ use Illuminate\Support\Facades\Route;
  */
 Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:10,1');
 
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function () {
     Route::get('/me', [AuthController::class, 'me']);
     Route::post('/logout', [AuthController::class, 'logout']);
 

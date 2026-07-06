@@ -37,6 +37,13 @@ class AuthController extends Controller
             ]);
         }
 
+        if (! $user->is_active) {
+            Auth::guard('web')->logout();
+            throw ValidationException::withMessages([
+                'email' => 'Akun ini dinonaktifkan. Hubungi admin.',
+            ]);
+        }
+
         $request->session()->regenerate();
 
         return response()->json(['user' => $this->profile($user)]);
