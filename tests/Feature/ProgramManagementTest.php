@@ -69,6 +69,32 @@ class ProgramManagementTest extends TestCase
         $this->actingAs($mentor)->getJson('/api/admin/programs')->assertForbidden();
     }
 
+    public function test_partial_update_changes_only_sent_fields(): void
+    {
+        $program = Program::factory()->active()->create(['name' => 'Lama']);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['name' => 'Baru'])
+            ->assertOk()
+            ->assertJsonPath('program.name', 'Baru')
+            ->assertJsonPath('program.slug', $program->slug);
+    }
+
+    public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
+    {
+        $program = Program::factory()->active()->create([
+            'registration_opens_at' => now()->addDays(10),
+            'registration_closes_at' => now()->addDays(30),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", [
+                'registration_closes_at' => now()->addDay()->toDateTimeString(),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('registration_closes_at');
+    }
+
     public function test_program_with_applications_cannot_be_deleted(): void
     {
         $program = Program::factory()->create();
