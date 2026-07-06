@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\ProgramPageController;
+use App\Models\Program;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -9,14 +11,27 @@ use Illuminate\Support\Facades\Route;
 Route::view('/', 'home')->name('home');
 
 /*
- | Layer 1 — application form.
+ | Public funnel. /daftar is the two-door chooser (Task 6); each program has
+ | its own landing + application form under a stable slug URL.
  */
 Route::controller(ApplicationController::class)->group(function () {
-    Route::get('/daftar', 'create')->name('daftar');
     Route::get('/daftar/terima-kasih', 'thankYou')->name('daftar.thankyou');
     Route::get('/daftar/cities/{province}', 'cities')->where('province', '[0-9]{2}')->name('daftar.cities');
-    Route::post('/daftar', 'store')->middleware('throttle:10,1')->name('daftar.store');
+    Route::get('/program/{program:slug}/daftar', 'create')->name('program.apply');
+    Route::post('/program/{program:slug}/daftar', 'store')->middleware('throttle:10,1')->name('program.apply.store');
 });
+
+Route::get('/program/{program:slug}', [ProgramPageController::class, 'show'])->name('program.show');
+
+// Temporary until the chooser lands (Task 6): send /daftar to the first open
+// program, or home when none is open.
+Route::get('/daftar', function () {
+    $program = Program::openForRegistration()->first();
+
+    return $program
+        ? redirect()->route('program.apply', $program)
+        : redirect()->route('home');
+})->name('daftar');
 
 /*
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router

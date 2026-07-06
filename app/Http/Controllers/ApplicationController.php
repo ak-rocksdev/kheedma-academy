@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreApplicationRequest;
 use App\Models\Person;
+use App\Models\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -12,12 +13,18 @@ use Laravolt\Indonesia\Models\Provinsi;
 
 class ApplicationController extends Controller
 {
-    /** Show the public application form. */
-    public function create(): View
+    /** Show the application form for one program (draft programs 404 via guard). */
+    public function create(Program $program): View|RedirectResponse
     {
+        abort_if($program->status === 'draft', 404);
+
+        if (! $program->isOpen()) {
+            return redirect()->route('program.show', $program);
+        }
+
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('daftar', compact('provinces'));
+        return view('funnel.apply', compact('program', 'provinces'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */
@@ -36,8 +43,14 @@ class ApplicationController extends Controller
      * returning applicant to their history) or creates one, refreshing their
      * latest details, then records a new pending Application.
      */
-    public function store(StoreApplicationRequest $request): RedirectResponse
+    public function store(StoreApplicationRequest $request, Program $program): RedirectResponse
     {
+        abort_if($program->status === 'draft', 404);
+
+        if (! $program->isOpen()) {
+            return redirect()->route('program.show', $program);
+        }
+
         $data = $request->validated();
 
         $person = Person::updateOrCreate(
@@ -52,7 +65,11 @@ class ApplicationController extends Controller
             ]
         );
 
-        $person->applications()->create(['status' => 'pending']);
+        $person->applications()->create([
+            'status' => 'pending',
+            'program_id' => $program->id,
+            'referral_source' => $data['referral_source'],
+        ]);
 
         return redirect()
             ->route('daftar.thankyou')
