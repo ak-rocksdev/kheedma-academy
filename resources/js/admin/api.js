@@ -78,3 +78,18 @@ export const users = {
         return api(`/admin/users/${id}`, { method: 'DELETE' });
     },
 };
+
+export const cohorts = {
+    list() {
+        return api('/admin/cohorts');
+    },
+    create(payload) {
+        return api('/admin/cohorts', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/cohorts/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/cohorts/${id}`, { method: 'DELETE' });
+    },
+};
