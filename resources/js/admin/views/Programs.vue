@@ -5,7 +5,6 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { DatePicker } from '@/components/ui/date-picker';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const items = ref([]);
@@ -14,7 +13,7 @@ const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-const form = ref({ name: '', slug: '', tagline: '', description: '', status: 'draft', selection_mode: 'selective', registration_opens_at: '', registration_closes_at: '' });
+const form = ref({ name: '', slug: '', tagline: '', description: '', status: 'draft', selection_mode: 'selective' });
 const formErrors = ref({});
 const saving = ref(false);
 
@@ -60,7 +59,7 @@ onMounted(load);
 
 function openCreate() {
     editing.value = null;
-    form.value = { name: '', slug: '', tagline: '', description: '', status: 'draft', selection_mode: 'selective', registration_opens_at: '', registration_closes_at: '' };
+    form.value = { name: '', slug: '', tagline: '', description: '', status: 'draft', selection_mode: 'selective' };
     formErrors.value = {};
     dialogOpen.value = true;
 }
@@ -74,8 +73,6 @@ function openEdit(program) {
         description: program.description ?? '',
         status: program.status,
         selection_mode: program.selection_mode,
-        registration_opens_at: program.registration_opens_at?.slice(0, 10) ?? '',
-        registration_closes_at: program.registration_closes_at?.slice(0, 10) ?? '',
     };
     formErrors.value = {};
     dialogOpen.value = true;
@@ -108,8 +105,6 @@ async function save() {
             description: form.value.description || null,
             status: form.value.status,
             selection_mode: form.value.selection_mode,
-            registration_opens_at: form.value.registration_opens_at || null,
-            registration_closes_at: form.value.registration_closes_at || null,
         };
         if (editing.value) {
             // Slug omitted on purpose: it never changes once published.
@@ -248,17 +243,6 @@ function fmtDate(iso) {
                         </ToggleGroupItem>
                     </ToggleGroup>
                 </div>
-                <div class="flex gap-3">
-                    <div class="min-w-0 flex-1">
-                        <label class="text-xs text-muted-foreground">Pendaftaran dibuka</label>
-                        <DatePicker v-model="form.registration_opens_at" class="mt-1.5" placeholder="Pilih tanggal" />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <label class="text-xs text-muted-foreground">Pendaftaran ditutup</label>
-                        <DatePicker v-model="form.registration_closes_at" class="mt-1.5" placeholder="Pilih tanggal" />
-                    </div>
-                </div>
-                <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
                 <div class="flex justify-end gap-2 pt-2">
                     <Button type="button" variant="outline" size="sm" @click="dialogOpen = false">Batal</Button>
                     <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 
 const items = ref([]);
 const mentors = ref([]);
@@ -14,7 +15,7 @@ const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-const form = ref({ name: '', program_id: '', start_date: '', end_date: '', mentor_id: '' });
+const form = ref({ name: '', program_id: '', start_date: '', end_date: '', mentor_id: '', registration_opens_at: '', registration_closes_at: '' });
 const formErrors = ref({});
 const saving = ref(false);
 
@@ -47,7 +48,7 @@ onMounted(load);
 
 function openCreate() {
     editing.value = null;
-    form.value = { name: '', program_id: '', start_date: '', end_date: '', mentor_id: '' };
+    form.value = { name: '', program_id: '', start_date: '', end_date: '', mentor_id: '', registration_opens_at: '', registration_closes_at: '' };
     formErrors.value = {};
     dialogOpen.value = true;
 }
@@ -60,6 +61,8 @@ function openEdit(cohort) {
         start_date: cohort.start_date ?? '',
         end_date: cohort.end_date ?? '',
         mentor_id: cohort.mentor?.id ?? '',
+        registration_opens_at: cohort.registration_opens_at?.slice(0, 10) ?? '',
+        registration_closes_at: cohort.registration_closes_at?.slice(0, 10) ?? '',
     };
     formErrors.value = {};
     dialogOpen.value = true;
@@ -75,6 +78,8 @@ async function save() {
             start_date: form.value.start_date || null,
             end_date: form.value.end_date || null,
             mentor_id: form.value.mentor_id || null,
+            registration_opens_at: form.value.registration_opens_at || null,
+            registration_closes_at: form.value.registration_closes_at || null,
         };
         if (editing.value) {
             await cohortsApi.update(editing.value.id, payload);
@@ -130,6 +135,7 @@ function fmtDate(iso) {
                         <th class="px-4 py-3 font-semibold">Nama</th>
                         <th class="px-4 py-3 font-semibold">Program</th>
                         <th class="px-4 py-3 font-semibold">Periode</th>
+                        <th class="px-4 py-3 font-semibold">Pendaftaran</th>
                         <th class="px-4 py-3 font-semibold">Mentor</th>
                         <th class="px-4 py-3 font-semibold">Peserta</th>
                         <th class="px-4 py-3 font-semibold">Status</th>
@@ -137,12 +143,17 @@ function fmtDate(iso) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-if="loading"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
-                    <tr v-else-if="!items.length"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
+                    <tr v-if="loading"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
+                    <tr v-else-if="!items.length"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
                     <tr v-for="cohort in items" :key="cohort.id" class="border-b border-border last:border-0">
                         <td class="px-4 py-3 font-medium text-foreground">{{ cohort.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.program?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(cohort.start_date) }} – {{ fmtDate(cohort.end_date) }}</td>
+                        <td class="px-4 py-3">
+                            <Badge :variant="cohort.registration_open ? 'success' : 'secondary'">
+                                {{ cohort.registration_open ? 'Buka' : 'Tutup' }}
+                            </Badge>
+                        </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.mentor?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.enrollments_count }}</td>
                         <td class="px-4 py-3">
@@ -176,6 +187,17 @@ function fmtDate(iso) {
                     </div>
                 </div>
                 <p v-if="formErrors.end_date" class="text-xs text-destructive">{{ formErrors.end_date[0] }}</p>
+                <div class="flex gap-3">
+                    <div class="min-w-0 flex-1">
+                        <label class="text-xs text-muted-foreground">Pendaftaran dibuka</label>
+                        <DatePicker v-model="form.registration_opens_at" class="mt-1.5" placeholder="Pilih tanggal" />
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <label class="text-xs text-muted-foreground">Pendaftaran ditutup</label>
+                        <DatePicker v-model="form.registration_closes_at" class="mt-1.5" placeholder="Pilih tanggal" />
+                    </div>
+                </div>
+                <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
                 <div>
                     <label class="text-xs text-muted-foreground">Program</label>
                     <select v-model="form.program_id" :class="selectClass">
