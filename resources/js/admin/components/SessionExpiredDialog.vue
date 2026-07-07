@@ -1,16 +1,14 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { Eye, EyeOff } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
 const auth = useAuthStore();
 
 const password = ref('');
-const showPassword = ref(false);
 const error = ref('');
 const loading = ref(false);
 
@@ -88,25 +86,7 @@ async function switchAccount() {
                         </div>
 
                         <form v-if="!deactivated" class="mt-4 space-y-3" @submit.prevent="submit">
-                            <div class="relative">
-                                <Input
-                                    v-model="password"
-                                    :type="showPassword ? 'text' : 'password'"
-                                    autocomplete="current-password"
-                                    autofocus
-                                    required
-                                    placeholder="Kata sandi"
-                                    class="pr-10"
-                                />
-                                <button
-                                    type="button"
-                                    :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
-                                    class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:text-foreground"
-                                    @click="showPassword = !showPassword"
-                                >
-                                    <component :is="showPassword ? EyeOff : Eye" class="size-4" />
-                                </button>
-                            </div>
+                            <PasswordInput v-model="password" autofocus required placeholder="Kata sandi" />
                             <Button type="submit" variant="accent" class="w-full" :disabled="loading || !password">
                                 {{ loading ? 'Memproses…' : 'Lanjutkan bekerja' }}
                             </Button>

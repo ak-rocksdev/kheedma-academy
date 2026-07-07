@@ -1,6 +1,7 @@
 <script setup>
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { Eye, EyeOff } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 
 const router = useRouter();
@@ -8,6 +9,7 @@ const auth = useAuthStore();
 
 const email = ref('');
 const password = ref('');
+const showPassword = ref(false);
 const error = ref('');
 const loading = ref(false);
 
@@ -47,7 +49,17 @@ async function submit() {
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-teal-800">Kata sandi</label>
-                    <input v-model="password" type="password" autocomplete="current-password" required :class="inputClass" placeholder="••••••••" />
+                    <div class="relative">
+                        <input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required :class="[inputClass, 'pr-11']" placeholder="••••••••" />
+                        <button
+                            type="button"
+                            :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                            class="absolute inset-y-0 right-0 mt-1.5 flex w-11 items-center justify-center text-teal-900/35 transition-colors hover:text-teal-700 focus-visible:outline-none"
+                            @click="showPassword = !showPassword"
+                        >
+                            <component :is="showPassword ? EyeOff : Eye" class="size-4" />
+                        </button>
+                    </div>
                 </div>
                 <button
                     type="submit"

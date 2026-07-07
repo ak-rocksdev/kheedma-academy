@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const items = ref([]);
 const loading = ref(false);
@@ -165,7 +166,7 @@ async function toggleActive(user) {
                     <option value="admin">Admin</option>
                 </select>
                 <div>
-                    <Input v-model="form.password" type="password" :placeholder="editing ? 'Kata sandi baru (opsional)' : 'Kata sandi (kosongkan untuk generate)'" />
+                    <PasswordInput v-model="form.password" autocomplete="new-password" :placeholder="editing ? 'Kata sandi baru (opsional)' : 'Kata sandi (kosongkan untuk generate)'" />
                     <p v-if="formErrors.password" class="mt-1 text-xs text-destructive">{{ formErrors.password[0] }}</p>
                     <p v-if="formErrors.role" class="mt-1 text-xs text-destructive">{{ formErrors.role[0] }}</p>
                     <p v-if="formErrors.is_active" class="mt-1 text-xs text-destructive">{{ formErrors.is_active[0] }}</p>
