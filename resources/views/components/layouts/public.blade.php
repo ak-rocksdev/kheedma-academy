@@ -53,6 +53,11 @@
                 <a href="{{ url('/#tentang') }}" class="transition hover:text-orange-600">Tentang</a>
                 <a href="{{ url('/#program') }}" class="transition hover:text-orange-600">Program</a>
                 <a href="{{ url('/#nilai') }}" class="transition hover:text-orange-600">Nilai</a>
+                @auth
+                    <a href="{{ route('member.area') }}" class="transition hover:text-orange-600">Akun Saya</a>
+                @else
+                    <a href="{{ route('member.login') }}" class="transition hover:text-orange-600">Masuk</a>
+                @endauth
             </nav>
 
             <a href="{{ url('/daftar') }}"

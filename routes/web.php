@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CommunityController;
+use App\Http\Controllers\MemberAreaController;
+use App\Http\Controllers\MemberAuthController;
 use App\Http\Controllers\ProgramPageController;
 use Illuminate\Support\Facades\Route;
 
@@ -30,8 +32,13 @@ Route::get('/program/{program:slug}', [ProgramPageController::class, 'show'])->n
 Route::get('/komunitas', [CommunityController::class, 'show'])->name('komunitas');
 Route::post('/komunitas', [CommunityController::class, 'join'])->middleware('throttle:10,1')->name('komunitas.join');
 
-// Temporary target until Task 3 builds the real member area.
-Route::get('/akun', fn () => redirect()->route('home'))->middleware('auth')->name('member.area');
+/*
+ | Member area (participants). Staff are redirected to /admin.
+ */
+Route::get('/masuk', [MemberAuthController::class, 'showLogin'])->name('member.login');
+Route::post('/masuk', [MemberAuthController::class, 'login'])->middleware('throttle:10,1')->name('member.login.store');
+Route::post('/keluar', [MemberAuthController::class, 'logout'])->name('member.logout');
+Route::get('/akun', [MemberAreaController::class, 'index'])->middleware('auth')->name('member.area');
 
 /*
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router

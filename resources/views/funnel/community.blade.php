@@ -98,7 +98,7 @@
             </form>
 
             <p class="mt-6 text-center text-sm text-teal-800/60">
-                Sudah punya akun? <a href="{{ url('/masuk') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk di sini</a>
+                Sudah punya akun? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk di sini</a>
             </p>
         </div>
     </section>
