@@ -49,7 +49,7 @@ class ApplicationController extends Controller
         // ?ubah=1 opens the editable form when something needs updating. A
         // profile predating the intake fields (no birth date yet) skips the
         // confirmation and completes the editable form directly.
-        $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null && $person->gender !== null;
+        $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null && $person->gender !== null && $person->followed_socials !== null;
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 

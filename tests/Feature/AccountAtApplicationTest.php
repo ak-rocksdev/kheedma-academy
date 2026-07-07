@@ -283,7 +283,7 @@ class AccountAtApplicationTest extends TestCase
     {
         $program = $this->openProgram();
         $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
-        Person::sole()->update(['birth_date' => null]); // legacy profile, pre-intake fields
+        Person::sole()->update(['birth_date' => null, 'gender' => null, 'followed_socials' => null]); // legacy profile, pre-intake fields
         $second = $this->openProgram();
 
         $this->get("/program/{$second->slug}/daftar")
