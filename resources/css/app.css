@@ -126,3 +126,74 @@
     background-position: center;
     background-repeat: no-repeat;
 }
+
+/*
+ | Tom Select (searchable region selects on the application form) — restyled
+ | to match the form's $field look: white box, soft teal border, teal focus
+ | ring, rounded corners. The wrapper inherits the original select's classes,
+ | so error state arrives as .has-error.
+*/
+.ts-wrapper {
+    margin-top: 0.375rem;
+}
+
+.ts-wrapper.single .ts-control {
+    border: 1px solid rgb(5 49 43 / 0.15);
+    border-radius: 0.5rem;
+    background-color: #fff;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    color: var(--color-teal-900);
+    box-shadow: none;
+    transition: border-color 150ms, box-shadow 150ms;
+}
+
+.ts-wrapper.single.focus .ts-control {
+    border-color: var(--color-teal-600);
+    box-shadow: 0 0 0 2px rgb(13 148 136 / 0.2);
+}
+
+.ts-wrapper.has-error .ts-control {
+    border-color: #f87171;
+}
+
+.ts-wrapper.single.disabled .ts-control {
+    background-color: var(--color-sand-100, #f3efe7);
+    color: rgb(5 49 43 / 0.4);
+    cursor: not-allowed;
+    opacity: 1;
+}
+
+.ts-control > input {
+    color: var(--color-teal-900);
+    font-size: 0.875rem;
+}
+
+.ts-control > input::placeholder {
+    color: rgb(5 49 43 / 0.3);
+}
+
+.ts-dropdown {
+    border: 1px solid rgb(5 49 43 / 0.12);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 24px rgb(5 49 43 / 0.10);
+    font-size: 0.875rem;
+    color: var(--color-teal-900);
+    margin-top: 0.25rem;
+    overflow: hidden;
+}
+
+.ts-dropdown .option {
+    padding: 0.5rem 0.875rem;
+}
+
+.ts-dropdown .active {
+    background-color: rgb(13 148 136 / 0.10);
+    color: var(--color-teal-900);
+}
+
+.ts-dropdown .no-results {
+    padding: 0.5rem 0.875rem;
+    color: rgb(5 49 43 / 0.5);
+}

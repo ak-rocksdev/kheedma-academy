@@ -59,10 +59,13 @@
                 </div>
 
                 <div class="grid gap-6 sm:grid-cols-2">
+                    {{-- Region selects are enhanced into searchable comboboxes by app.js
+                         (Tom Select); the wrapper inherits these classes, so keep them
+                         to the error marker only. --}}
                     <div>
                         <label for="province_code" class="block text-sm font-medium text-teal-800">Provinsi</label>
                         <select id="province_code" name="province_code"
-                                class="{{ $field }} @error('province_code') border border-red-400 @else border border-teal-900/15 @enderror">
+                                class="@error('province_code') has-error @enderror">
                             <option value="">Pilih provinsi…</option>
                             @foreach ($provinces as $province)
                                 <option value="{{ $province->code }}" @selected(old('province_code') === $province->code)>{{ $province->name }}</option>
@@ -73,8 +76,9 @@
 
                     <div>
                         <label for="city_code" class="block text-sm font-medium text-teal-800">Kota/Kabupaten</label>
-                        <select id="city_code" name="city_code" data-old="{{ old('city_code') }}" disabled
-                                class="{{ $field }} disabled:cursor-not-allowed disabled:bg-sand-100 disabled:text-teal-900/40 @error('city_code') border border-red-400 @else border border-teal-900/15 @enderror">
+                        <select id="city_code" name="city_code" data-old="{{ old('city_code') }}"
+                                data-cities-url="{{ url('/daftar/cities') }}" disabled
+                                class="@error('city_code') has-error @enderror">
                             <option value="">Pilih provinsi dulu…</option>
                         </select>
                         @error('city_code') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -131,38 +135,5 @@
             </p>
         </div>
     </section>
-
-    <script>
-        (function () {
-            const province = document.getElementById('province_code');
-            const city = document.getElementById('city_code');
-            const citiesBase = @json(url('/daftar/cities'));
-
-            async function loadCities(code, selected = '') {
-                city.innerHTML = '<option value="">Memuat…</option>';
-                city.disabled = true;
-                if (!code) {
-                    city.innerHTML = '<option value="">Pilih provinsi dulu…</option>';
-                    return;
-                }
-                try {
-                    const res = await fetch(`${citiesBase}/${code}`, { headers: { 'Accept': 'application/json' } });
-                    const list = await res.json();
-                    city.innerHTML = '<option value="">Pilih kota/kabupaten…</option>'
-                        + list.map(c => `<option value="${c.code}"${c.code === selected ? ' selected' : ''}>${c.name}</option>`).join('');
-                    city.disabled = false;
-                } catch (e) {
-                    city.innerHTML = '<option value="">Gagal memuat, pilih ulang provinsi</option>';
-                }
-            }
-
-            province.addEventListener('change', () => loadCities(province.value));
-
-            // Repopulate after a validation redirect (old input).
-            if (province.value) {
-                loadCities(province.value, city.dataset.old || '');
-            }
-        })();
-    </script>
 
 </x-layouts.public>
