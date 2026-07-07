@@ -33,9 +33,10 @@ class ApplicationController extends Controller
             abort_unless($user->person, 403);
         }
 
+        // The notice covers pending AND accepted: neither should re-apply.
         $person = $user?->person;
         $pendingApplication = $person
-            ? $person->applications()->where('program_id', $program->id)->where('status', 'pending')->exists()
+            ? $person->applications()->where('program_id', $program->id)->whereIn('status', ['pending', 'accepted'])->exists()
             : false;
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
@@ -110,10 +111,11 @@ class ApplicationController extends Controller
             $request->session()->regenerate();
         }
 
-        // One pending application per person per program (silent backstop).
+        // Silent backstop: no new application while one is pending OR already
+        // accepted for this program. Only a rejected attempt reopens the door.
         $alreadyPending = $person->applications()
             ->where('program_id', $program->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'accepted'])
             ->exists();
 
         if (! $alreadyPending) {

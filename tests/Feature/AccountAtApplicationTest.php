@@ -167,6 +167,29 @@ class AccountAtApplicationTest extends TestCase
         $this->assertSame(1, Application::count());
     }
 
+    public function test_accepted_applicant_cannot_reapply_and_sees_the_notice(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        Application::sole()->update(['status' => 'accepted']);
+
+        $this->get("/program/{$program->slug}/daftar")
+            ->assertOk()
+            ->assertSee('sudah mendaftar')
+            ->assertDontSee('Kirim Pendaftaran');
+
+        $this->post("/program/{$program->slug}/daftar", [
+            'name' => 'Budi Santoso',
+            'phone' => '081234567890',
+            'email' => 'budi@example.test',
+            'province_code' => '32',
+            'city_code' => '3273',
+            'referral_source' => 'instagram',
+        ])->assertRedirect(route('daftar.thankyou'));
+
+        $this->assertSame(1, Application::count());
+    }
+
     public function test_staff_is_redirected_to_admin(): void
     {
         $program = $this->openProgram();
