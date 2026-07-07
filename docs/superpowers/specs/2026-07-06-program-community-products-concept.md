@@ -35,6 +35,7 @@ across community, purchases, and programs.
 | 6 | **Payment is hybrid**: the Order model is gateway-ready, but launches with manual bank transfer + admin confirmation. A gateway (Midtrans/Xendit) later only adds a `payment_method`. |
 | 7 | **Vocabulary split**: “Angkatan” is admin-only vocabulary. Public pages use promotional language (“Dibuka Kelas Baru”, “Pendaftaran ditutup 31 Juli”) and never leak internal entity terms. |
 | 8 | **Slug URLs are the primary funnel**: `/program/{slug}` is what gets shared in ads/bio/WA. The generic `/daftar` chooser is the fallback path. |
+| 9 | **Account at application (added 2026-07-07, post-Phase-2):** applying to a program ALSO creates the participant account (password field on the form; auto-login; `/akun` shows application statuses). Both doors now provision accounts; community *membership* stays exclusive to the community door. Guests whose phone already carries an account are told to log in (account-existence disclosure is the accepted industry norm; stored personal data is only shown AFTER authentication). Logged-in participants get a pre-filled form without a password field, edit their data self-service in `/akun` (never "start over"), and see an honest status notice instead of the silent dedup. Admin approval therefore never creates the user — it only places them into an Angkatan (Phase 3). |
 
 ## 3. Identity rule (the core that makes data rich)
 
