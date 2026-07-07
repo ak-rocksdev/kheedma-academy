@@ -46,8 +46,10 @@ class ApplicationController extends Controller
         $showGate = $user === null && ! $request->boolean('baru');
 
         // Logged-in members CONFIRM their stored data instead of retyping it;
-        // ?ubah=1 opens the editable form when something needs updating.
-        $confirming = $user !== null && ! $request->boolean('ubah');
+        // ?ubah=1 opens the editable form when something needs updating. A
+        // profile predating the intake fields (no birth date yet) skips the
+        // confirmation and completes the editable form directly.
+        $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null;
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 

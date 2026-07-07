@@ -269,6 +269,20 @@ class AccountAtApplicationTest extends TestCase
             ->assertDontSee('Sudah punya akun Kheedma');
     }
 
+    public function test_incomplete_profile_skips_the_confirmation_card(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        Person::sole()->update(['birth_date' => null]); // legacy profile, pre-intake fields
+        $second = $this->openProgram();
+
+        $this->get("/program/{$second->slug}/daftar")
+            ->assertOk()
+            ->assertDontSee('Konfirmasi datamu')
+            ->assertSee('Kirim Pendaftaran')
+            ->assertSee('Masuk sebagai');
+    }
+
     public function test_participant_can_open_the_editable_form(): void
     {
         $program = $this->openProgram();
