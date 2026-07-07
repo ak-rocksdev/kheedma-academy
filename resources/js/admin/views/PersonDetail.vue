@@ -310,7 +310,7 @@ function fmtDate(iso) {
             <!-- Enrollments -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
-                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah diterima di cohort.</div>
+                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
                 <div
                     v-for="e in person.enrollments"
                     :key="e.id"
