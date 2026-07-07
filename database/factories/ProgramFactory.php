@@ -21,8 +21,6 @@ class ProgramFactory extends Factory
             'tagline' => fake()->sentence(6),
             'description' => fake()->paragraph(),
             'status' => 'draft',
-            'registration_opens_at' => null,
-            'registration_closes_at' => null,
             'selection_mode' => 'selective',
         ];
     }
@@ -40,15 +38,5 @@ class ProgramFactory extends Factory
     public function draft(): static
     {
         return $this->state(fn () => ['status' => 'draft']);
-    }
-
-    /** Active but its registration window has already closed. */
-    public function windowClosed(): static
-    {
-        return $this->state(fn () => [
-            'status' => 'active',
-            'registration_opens_at' => now()->subMonth(),
-            'registration_closes_at' => now()->subDay(),
-        ]);
     }
 }

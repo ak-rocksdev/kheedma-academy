@@ -17,18 +17,8 @@ class Program extends Model
         'tagline',
         'description',
         'status',
-        'registration_opens_at',
-        'registration_closes_at',
         'selection_mode',
     ];
-
-    protected function casts(): array
-    {
-        return [
-            'registration_opens_at' => 'datetime',
-            'registration_closes_at' => 'datetime',
-        ];
-    }
 
     /** Route-model binding uses the slug (public URLs never expose ids). */
     public function getRouteKeyName(): string
@@ -46,20 +36,10 @@ class Program extends Model
         return $this->hasMany(Application::class);
     }
 
-    /** Open for registration: active AND inside the window (when one is set). */
+    /** Open for registration: catalog-active AND an Angkatan's intake window is open. */
     public function isOpen(): bool
     {
-        if ($this->status !== 'active') {
-            return false;
-        }
-        if ($this->registration_opens_at && $this->registration_opens_at->isFuture()) {
-            return false;
-        }
-        if ($this->registration_closes_at && $this->registration_closes_at->isPast()) {
-            return false;
-        }
-
-        return true;
+        return $this->status === 'active' && $this->cohorts()->openForRegistration()->exists();
     }
 
     /** Query counterpart of isOpen(), for the public chooser. */
@@ -67,7 +47,15 @@ class Program extends Model
     {
         return $query
             ->where('status', 'active')
-            ->where(fn (Builder $q) => $q->whereNull('registration_opens_at')->orWhere('registration_opens_at', '<=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('registration_closes_at')->orWhere('registration_closes_at', '>=', now()));
+            ->whereHas('cohorts', fn (Builder $q) => $q->openForRegistration());
+    }
+
+    /** The Angkatan currently accepting registrations (soonest-closing first). */
+    public function openCohort(): ?Cohort
+    {
+        return $this->cohorts()
+            ->openForRegistration()
+            ->orderByRaw('registration_closes_at IS NULL, registration_closes_at ASC')
+            ->first();
     }
 }
