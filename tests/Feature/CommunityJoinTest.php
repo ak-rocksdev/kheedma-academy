@@ -9,6 +9,7 @@ use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class CommunityJoinTest extends TestCase
@@ -166,5 +167,79 @@ class CommunityJoinTest extends TestCase
                 'has_started_affiliate' => 1,
             ])
             ->assertSessionHasErrors(['affiliate_level', 'affiliate_gmv_range']);
+    }
+
+    /** A logged-in participant with a full intake profile (used by the confirmation tests). */
+    private function participantWithProfile(array $personOverrides = []): User
+    {
+        $user = User::factory()->create(['password' => Hash::make('rahasia-kuat')]);
+        $user->assignRole('participant');
+        $person = Person::create([...[
+            'name' => $user->name,
+            'phone' => '+62812'.random_int(10000000, 99999999),
+            'email' => $user->email,
+            'birth_date' => '2000-01-15',
+            'gender' => 'male',
+            'followed_socials' => true,
+        ], ...$personOverrides]);
+        $person->user_id = $user->id;
+        $person->save();
+        $user->setRelation('person', $person);
+
+        return $user;
+    }
+
+    public function test_member_sees_confirmation_instead_of_blank_form(): void
+    {
+        $this->post('/komunitas', $this->validPayload())->assertRedirect('/akun');
+
+        $this->get('/komunitas')
+            ->assertOk()
+            ->assertSee('sudah tergabung')
+            ->assertDontSee('Gabung Sekarang');
+    }
+
+    public function test_member_who_is_not_yet_in_community_confirms_stored_data(): void
+    {
+        $user = $this->participantWithProfile();
+        $person = $user->person;
+
+        $this->actingAs($user)->get('/komunitas')
+            ->assertOk()
+            ->assertSee('Konfirmasi datamu')
+            ->assertSee('Ya, Gabungkan Aku ke Komunitas')
+            ->assertDontSee('Kata sandi');
+
+        $this->actingAs($user)->post('/komunitas', [
+            'name' => $person->name,
+            'phone' => $person->phone,
+            'email' => $person->email,
+            'birth_date' => $person->birth_date->toDateString(),
+            'gender' => $person->gender,
+            'followed_socials' => 1,
+            'motivation' => 'Ingin serius belajar affiliate.',
+            'referral_source' => 'tiktok',
+        ])->assertRedirect('/akun');
+
+        $this->assertSame(1, User::count());
+        $this->assertSame('Ingin serius belajar affiliate.', $person->fresh()->communityMembership->motivation);
+    }
+
+    public function test_member_with_incomplete_profile_gets_the_editable_form(): void
+    {
+        $user = $this->participantWithProfile(['birth_date' => null, 'gender' => null, 'followed_socials' => null]);
+
+        $this->actingAs($user)->get('/komunitas')
+            ->assertOk()
+            ->assertSee('Gabung Sekarang')
+            ->assertDontSee('Konfirmasi datamu')
+            ->assertDontSee('Kata sandi');
+    }
+
+    public function test_staff_is_redirected_from_community_door(): void
+    {
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)->get('/komunitas')->assertRedirect('/admin');
     }
 }

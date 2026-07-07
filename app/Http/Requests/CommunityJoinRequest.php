@@ -6,6 +6,7 @@ use App\Models\Application;
 use App\Models\Person;
 use App\Support\Phone;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class CommunityJoinRequest extends FormRequest
@@ -31,17 +32,23 @@ class CommunityJoinRequest extends FormRequest
 
     public function rules(): array
     {
+        $person = Auth::user()?->person;
+
         return [
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'regex:/^\+62\d{8,13}$/'],
+            'phone' => array_filter([
+                'required', 'string', 'regex:/^\+62\d{8,13}$/',
+                Auth::check() ? Rule::unique('people', 'phone')->ignore($person?->id)->whereNull('deleted_at') : null,
+            ]),
             'email' => [
                 'required', 'email:rfc', 'max:160',
-                Rule::unique('users', 'email'),
+                Rule::unique('users', 'email')->ignore(Auth::id()),
                 Rule::unique('people', 'email')
+                    ->ignore($person?->id)
                     ->where(fn ($q) => $q->where('phone', '!=', $this->input('phone')))
                     ->whereNull('deleted_at'),
             ],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => Auth::check() ? ['prohibited'] : ['required', 'string', 'min:8'],
             'birth_date' => ['required', 'date', 'before:today', 'after:1900-01-01'],
             'gender' => ['required', Rule::in(Person::GENDERS)],
             'motivation' => ['required', 'string', 'max:1000'],
@@ -68,6 +75,7 @@ class CommunityJoinRequest extends FormRequest
             'email.unique' => 'Email ini sudah terpakai. Gunakan email lain atau masuk jika sudah punya akun.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
+            'password.prohibited' => 'Kamu sudah masuk; kata sandi tidak diperlukan.',
             'birth_date.required' => 'Tanggal lahir wajib diisi.',
             'birth_date.before' => 'Tanggal lahir tidak valid.',
             'gender.required' => 'Pilih jenis kelaminmu.',
