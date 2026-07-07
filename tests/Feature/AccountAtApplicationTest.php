@@ -50,6 +50,8 @@ class AccountAtApplicationTest extends TestCase
             'password' => 'rahasia-kuat',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
         ];
     }
@@ -107,6 +109,8 @@ class AccountAtApplicationTest extends TestCase
                 'email' => 'budi@example.test',
                 'province_code' => '32',
                 'city_code' => '3273',
+                'birth_date' => '2000-01-15',
+                'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
             ])
             ->assertRedirect(route('daftar.thankyou'));
@@ -131,6 +135,8 @@ class AccountAtApplicationTest extends TestCase
                 'email' => 'budi@example.test',
                 'province_code' => '32',
                 'city_code' => '3273',
+                'birth_date' => '2000-01-15',
+                'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
             ])
             ->assertRedirect(route('daftar.thankyou'));
@@ -161,6 +167,8 @@ class AccountAtApplicationTest extends TestCase
             'email' => 'budi@example.test',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
         ])->assertRedirect(route('daftar.thankyou'));
 
@@ -184,6 +192,8 @@ class AccountAtApplicationTest extends TestCase
             'email' => 'budi@example.test',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
         ])->assertRedirect(route('daftar.thankyou'));
 

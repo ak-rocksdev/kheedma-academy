@@ -30,6 +30,8 @@ class CommunityJoinTest extends TestCase
             'phone' => '081298765432',
             'email' => 'siti@example.test',
             'password' => 'rahasia-kuat',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'tiktok',
         ];
     }
@@ -44,6 +46,7 @@ class CommunityJoinTest extends TestCase
         $this->assertNotNull($person->user_id);
         $this->assertTrue($person->user->hasRole('participant'));
         $this->assertSame('tiktok', $person->communityMembership->referral_source);
+        $this->assertSame('Ingin serius belajar affiliate.', $person->communityMembership->motivation);
         $this->assertTrue(Auth::check());
         $this->assertTrue(Auth::user()->is($person->user));
     }
@@ -109,5 +112,17 @@ class CommunityJoinTest extends TestCase
     public function test_join_page_renders(): void
     {
         $this->get('/komunitas')->assertOk()->assertSee('Komunitas');
+    }
+
+    public function test_affiliate_chain_requires_level_and_gmv_when_started(): void
+    {
+        $this->from('/komunitas')
+            ->post('/komunitas', [
+                ...$this->validPayload(),
+                'tiktok_username' => 'siti.tiktok',
+                'tiktok_followers' => 2000,
+                'has_started_affiliate' => 1,
+            ])
+            ->assertSessionHasErrors(['affiliate_level', 'affiliate_gmv_range']);
     }
 }

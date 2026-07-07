@@ -31,9 +31,17 @@ class CommunityController extends Controller
             'password' => $data['password'],
         ]);
 
+        $person->update([
+            'birth_date' => $data['birth_date'],
+            'tiktok_followers' => $data['tiktok_followers'] ?? null,
+            'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
+            'affiliate_level' => $data['affiliate_level'] ?? null,
+            'affiliate_gmv_range' => $data['affiliate_gmv_range'] ?? null,
+        ]);
+
         $person->communityMembership()->firstOrCreate(
             [],
-            ['referral_source' => $data['referral_source']]
+            ['referral_source' => $data['referral_source'], 'motivation' => $data['motivation']]
         );
 
         Auth::login($user);

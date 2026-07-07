@@ -98,8 +98,13 @@ class ApplicationController extends Controller
                 'email' => $data['email'],
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
+                'birth_date' => $data['birth_date'],
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'instagram_username' => $data['instagram_username'] ?? null,
+                'tiktok_followers' => $data['tiktok_followers'] ?? null,
+                'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
+                'affiliate_level' => $data['affiliate_level'] ?? null,
+                'affiliate_gmv_range' => $data['affiliate_gmv_range'] ?? null,
             ]);
             $user->update(['name' => $data['name'], 'email' => $data['email']]);
         } else {
@@ -113,8 +118,13 @@ class ApplicationController extends Controller
             $person->update([
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
+                'birth_date' => $data['birth_date'],
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'instagram_username' => $data['instagram_username'] ?? null,
+                'tiktok_followers' => $data['tiktok_followers'] ?? null,
+                'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
+                'affiliate_level' => $data['affiliate_level'] ?? null,
+                'affiliate_gmv_range' => $data['affiliate_gmv_range'] ?? null,
             ]);
 
             Auth::login($account);
@@ -133,6 +143,7 @@ class ApplicationController extends Controller
                 'status' => 'pending',
                 'program_id' => $program->id,
                 'referral_source' => $data['referral_source'],
+                'motivation' => $data['motivation'],
             ]);
         }
 

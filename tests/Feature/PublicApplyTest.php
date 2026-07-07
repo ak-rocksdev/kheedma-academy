@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\Cohort;
+use App\Models\Person;
 use App\Models\Program;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -48,6 +49,8 @@ class PublicApplyTest extends TestCase
             'password' => 'rahasia-kuat',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
         ];
     }
@@ -154,5 +157,50 @@ class PublicApplyTest extends TestCase
         $this->post("/program/{$second->slug}/daftar", $this->authenticatedPayload());
 
         $this->assertSame(2, Application::count());
+    }
+
+    public function test_birth_date_and_motivation_are_required(): void
+    {
+        $program = $this->openProgram();
+
+        $this->from("/program/{$program->slug}/daftar")
+            ->post("/program/{$program->slug}/daftar", [
+                ...$this->validPayload(),
+                'birth_date' => '',
+                'motivation' => '',
+            ])
+            ->assertSessionHasErrors(['birth_date', 'motivation']);
+    }
+
+    public function test_affiliate_chain_requires_followers_when_tiktok_given(): void
+    {
+        $program = $this->openProgram();
+
+        $this->from("/program/{$program->slug}/daftar")
+            ->post("/program/{$program->slug}/daftar", [
+                ...$this->validPayload(),
+                'tiktok_username' => 'budi.tiktok',
+            ])
+            ->assertSessionHasErrors('tiktok_followers');
+    }
+
+    public function test_affiliate_dependents_are_nulled_without_tiktok(): void
+    {
+        $program = $this->openProgram();
+
+        $this->post("/program/{$program->slug}/daftar", [
+            ...$this->validPayload(),
+            'tiktok_username' => '',
+            'tiktok_followers' => 1500,
+            'has_started_affiliate' => 1,
+            'affiliate_level' => 3,
+            'affiliate_gmv_range' => '0-50',
+        ])->assertRedirect(route('daftar.thankyou'));
+
+        $person = Person::sole();
+        $this->assertNull($person->tiktok_followers);
+        $this->assertNull($person->has_started_affiliate);
+        $this->assertNull($person->affiliate_level);
+        $this->assertNull($person->affiliate_gmv_range);
     }
 }

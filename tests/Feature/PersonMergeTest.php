@@ -216,6 +216,8 @@ class PersonMergeTest extends TestCase
             'phone' => '081298765432',
             'email' => 'siti@example.test',
             'password' => 'rahasia-kuat',
+            'birth_date' => '2000-01-15',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'tiktok',
         ])->assertRedirect('/akun');
 
