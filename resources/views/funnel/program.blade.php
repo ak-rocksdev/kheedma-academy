@@ -23,7 +23,12 @@
             <div class="mt-10 text-center">
                 @if ($isOpen)
                     <x-cta :href="route('program.apply', $program)" label="Daftar Sekarang" />
-                    <p class="mt-4 text-xs text-teal-800/50">Pendaftaran sedang dibuka. Tempat terbatas.</p>
+                    <p class="mt-4 text-xs text-teal-800/50">
+                        Pendaftaran sedang dibuka. Tempat terbatas.
+                        @if ($openCohort?->start_date)
+                            Kelas dimulai {{ $openCohort->start_date->locale('id')->translatedFormat('j F Y') }}.
+                        @endif
+                    </p>
                 @else
                     <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                         <h2 class="text-lg font-bold text-teal-900">Pendaftaran ditutup</h2>

@@ -7,6 +7,7 @@ use App\Models\Cohort;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\ValidationException;
 
 class CohortController extends Controller
@@ -26,7 +27,7 @@ class CohortController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $cohort = Cohort::create($this->validated($request, creating: true));
+        $cohort = Cohort::create($this->validated($request));
 
         return response()->json([
             'cohort' => $this->row($cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
@@ -35,7 +36,7 @@ class CohortController extends Controller
 
     public function update(Request $request, Cohort $cohort): JsonResponse
     {
-        $cohort->update($this->validated($request, creating: false));
+        $cohort->update($this->validated($request, $cohort));
 
         return response()->json([
             'cohort' => $this->row($cohort->fresh(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
@@ -53,10 +54,16 @@ class CohortController extends Controller
         return response()->json(null, 204);
     }
 
-    /** Shared validation; mentor_id must reference a user holding the mentor role. */
-    private function validated(Request $request, bool $creating): array
+    /**
+     * Shared validation; mentor_id must reference a user holding the mentor role.
+     *
+     * @return array<string, mixed>
+     */
+    private function validated(Request $request, ?Cohort $cohort = null): array
     {
-        return $request->validate([
+        $creating = $cohort === null;
+
+        $data = $request->validate([
             'name' => $creating
                 ? ['required', 'string', 'max:255']
                 : ['sometimes', 'required', 'string', 'max:255'],
@@ -75,11 +82,30 @@ class CohortController extends Controller
                     }
                 },
             ],
+            'registration_opens_at' => ['sometimes', 'nullable', 'date'],
+            'registration_closes_at' => ['sometimes', 'nullable', 'date'],
         ]);
+
+        if (! empty($data['registration_closes_at']) && strlen($data['registration_closes_at']) === 10) {
+            $data['registration_closes_at'] .= ' 23:59:59';
+        }
+
+        // Validate the EFFECTIVE window (payload value when present, else stored)
+        // so a partial update cannot silently close registration before it opens.
+        $opensAt = array_key_exists('registration_opens_at', $data) ? $data['registration_opens_at'] : $cohort?->registration_opens_at;
+        $closesAt = array_key_exists('registration_closes_at', $data) ? $data['registration_closes_at'] : $cohort?->registration_closes_at;
+
+        if ($opensAt && $closesAt && ! Carbon::parse($closesAt)->gt(Carbon::parse($opensAt))) {
+            throw ValidationException::withMessages([
+                'registration_closes_at' => 'Tanggal tutup pendaftaran harus setelah tanggal buka.',
+            ]);
+        }
+
+        return $data;
     }
 
     /**
-     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int}
+     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool}
      */
     private function row(Cohort $c): array
     {
@@ -92,6 +118,9 @@ class CohortController extends Controller
             'status' => $c->status,
             'mentor' => $c->mentor ? ['id' => $c->mentor->id, 'name' => $c->mentor->name] : null,
             'enrollments_count' => (int) ($c->enrollments_count ?? 0),
+            'registration_opens_at' => $c->registration_opens_at?->toIso8601String(),
+            'registration_closes_at' => $c->registration_closes_at?->toIso8601String(),
+            'registration_open' => $c->isOpenForRegistration(),
         ];
     }
 }

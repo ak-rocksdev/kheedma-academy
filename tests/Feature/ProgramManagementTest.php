@@ -40,7 +40,7 @@ class ProgramManagementTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('program.slug', 'affiliate-pemula')
-            ->assertJsonPath('program.is_open', true);
+            ->assertJsonPath('program.is_open', false);
     }
 
     public function test_slug_must_be_unique_and_kebab(): void
@@ -80,21 +80,6 @@ class ProgramManagementTest extends TestCase
             ->assertJsonPath('program.slug', $program->slug);
     }
 
-    public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
-    {
-        $program = Program::factory()->active()->create([
-            'registration_opens_at' => now()->addDays(10),
-            'registration_closes_at' => now()->addDays(30),
-        ]);
-
-        $this->actingAs($this->admin())
-            ->patchJson("/api/admin/programs/{$program->id}", [
-                'registration_closes_at' => now()->addDay()->toDateTimeString(),
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('registration_closes_at');
-    }
-
     public function test_program_with_applications_cannot_be_deleted(): void
     {
         $program = Program::factory()->create();
@@ -125,5 +110,18 @@ class ProgramManagementTest extends TestCase
         $this->actingAs($this->admin())
             ->deleteJson("/api/admin/programs/{$program->id}")
             ->assertNoContent();
+    }
+
+    public function test_index_derives_is_open_without_per_row_queries(): void
+    {
+        $open = Program::factory()->active()->create(['name' => 'Terbuka']);
+        Cohort::factory()->openWindow()->create(['program_id' => $open->id]);
+        Program::factory()->active()->create(['name' => 'Tanpa Batch']);
+
+        $response = $this->actingAs($this->admin())->getJson('/api/admin/programs')->assertOk();
+
+        $rows = collect($response->json('data'))->keyBy('name');
+        $this->assertTrue($rows['Terbuka']['is_open']);
+        $this->assertFalse($rows['Tanpa Batch']['is_open']);
     }
 }

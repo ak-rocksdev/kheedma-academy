@@ -19,4 +19,22 @@ class CohortFactory extends Factory
             'mentor_id' => null,
         ];
     }
+
+    /** Intake window currently open (registration accepted right now). */
+    public function openWindow(): static
+    {
+        return $this->state(fn () => [
+            'registration_opens_at' => now()->subWeek(),
+            'registration_closes_at' => now()->addWeek(),
+        ]);
+    }
+
+    /** Intake window already closed. */
+    public function closedWindow(): static
+    {
+        return $this->state(fn () => [
+            'registration_opens_at' => now()->subMonth(),
+            'registration_closes_at' => now()->subDay(),
+        ]);
+    }
 }
