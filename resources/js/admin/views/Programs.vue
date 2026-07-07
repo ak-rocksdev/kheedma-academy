@@ -1,10 +1,12 @@
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const items = ref([]);
 const loading = ref(false);
@@ -16,14 +18,25 @@ const form = ref({ name: '', slug: '', tagline: '', description: '', status: 'dr
 const formErrors = ref({});
 const saving = ref(false);
 
-const selectClass =
-    'h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
-
 const STATUS = {
     draft: { label: 'Draf', variant: 'secondary' },
     active: { label: 'Aktif', variant: 'success' },
     inactive: { label: 'Nonaktif', variant: 'destructive' },
 };
+
+const STATUS_OPTIONS = [
+    { value: 'draft', label: 'Draf' },
+    { value: 'active', label: 'Aktif' },
+    { value: 'inactive', label: 'Nonaktif' },
+];
+
+const MODE_OPTIONS = [
+    { value: 'selective', label: 'Selektif' },
+    { value: 'instant', label: 'Langsung masuk' },
+];
+
+/** The slug is derived, never typed: live from the name on create, frozen on edit. */
+const previewSlug = computed(() => (editing.value ? editing.value.slug : form.value.slug));
 
 function slugify(text) {
     return text.toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s-]+/g, '-').replace(/^-|-$/g, '');
@@ -69,10 +82,20 @@ function openEdit(program) {
 }
 
 function onNameInput() {
-    // Auto-suggest the slug only while creating and before manual edits diverge.
-    if (!editing.value && (!form.value.slug || form.value.slug === slugify(form.value.name.slice(0, -1)))) {
+    // The slug always follows the name while creating; edits never touch it
+    // (published URLs must stay stable).
+    if (!editing.value) {
         form.value.slug = slugify(form.value.name);
     }
+}
+
+/** ToggleGroup allows deselect-to-empty; these options are mandatory, so ignore it. */
+function setStatus(value) {
+    if (value) form.value.status = value;
+}
+
+function setSelectionMode(value) {
+    if (value) form.value.selection_mode = value;
 }
 
 async function save() {
@@ -81,7 +104,6 @@ async function save() {
     try {
         const payload = {
             name: form.value.name,
-            slug: form.value.slug,
             tagline: form.value.tagline || null,
             description: form.value.description || null,
             status: form.value.status,
@@ -90,9 +112,10 @@ async function save() {
             registration_closes_at: form.value.registration_closes_at || null,
         };
         if (editing.value) {
+            // Slug omitted on purpose: it never changes once published.
             await programsApi.update(editing.value.id, payload);
         } else {
-            await programsApi.create(payload);
+            await programsApi.create({ ...payload, slug: form.value.slug });
         }
         dialogOpen.value = false;
         await load();
@@ -177,14 +200,14 @@ function fmtDate(iso) {
         </div>
 
         <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Program' : 'Tambah Program'">
-            <form class="space-y-3" @submit.prevent="save">
+            <form class="flex flex-col gap-4" @submit.prevent="save">
                 <div>
                     <Input v-model="form.name" placeholder="Nama program" @input="onNameInput" />
+                    <p class="mt-1.5 text-xs text-muted-foreground">
+                        <code>/program/{{ previewSlug || '…' }}</code>
+                        <span v-if="editing" class="ml-1">· URL tidak berubah saat nama diedit</span>
+                    </p>
                     <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
-                </div>
-                <div>
-                    <Input v-model="form.slug" placeholder="slug-url" />
-                    <p class="mt-1 text-xs text-muted-foreground">/program/{{ form.slug || '…' }}</p>
                     <p v-if="formErrors.slug" class="mt-1 text-xs text-destructive">{{ formErrors.slug[0] }}</p>
                 </div>
                 <Input v-model="form.tagline" placeholder="Tagline singkat (opsional)" />
@@ -197,31 +220,42 @@ function fmtDate(iso) {
                     ></textarea>
                     <p v-if="formErrors.description" class="mt-1 text-xs text-destructive">{{ formErrors.description[0] }}</p>
                 </div>
-                <div class="flex gap-3">
-                    <div class="flex-1">
-                        <label class="text-xs text-muted-foreground">Status</label>
-                        <select v-model="form.status" :class="selectClass">
-                            <option value="draft">Draf</option>
-                            <option value="active">Aktif</option>
-                            <option value="inactive">Nonaktif</option>
-                        </select>
-                    </div>
-                    <div class="flex-1">
-                        <label class="text-xs text-muted-foreground">Mode seleksi</label>
-                        <select v-model="form.selection_mode" :class="selectClass">
-                            <option value="selective">Selektif (dinilai admin)</option>
-                            <option value="instant">Langsung masuk</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="text-xs text-muted-foreground">Status</label>
+                    <ToggleGroup
+                        type="single"
+                        variant="outline"
+                        class="mt-1.5 w-full"
+                        :model-value="form.status"
+                        @update:model-value="setStatus"
+                    >
+                        <ToggleGroupItem v-for="option in STATUS_OPTIONS" :key="option.value" :value="option.value" class="flex-1">
+                            {{ option.label }}
+                        </ToggleGroupItem>
+                    </ToggleGroup>
+                </div>
+                <div>
+                    <label class="text-xs text-muted-foreground">Mode seleksi</label>
+                    <ToggleGroup
+                        type="single"
+                        variant="outline"
+                        class="mt-1.5 w-full"
+                        :model-value="form.selection_mode"
+                        @update:model-value="setSelectionMode"
+                    >
+                        <ToggleGroupItem v-for="option in MODE_OPTIONS" :key="option.value" :value="option.value" class="flex-1">
+                            {{ option.label }}
+                        </ToggleGroupItem>
+                    </ToggleGroup>
                 </div>
                 <div class="flex gap-3">
-                    <div class="flex-1">
+                    <div class="min-w-0 flex-1">
                         <label class="text-xs text-muted-foreground">Pendaftaran dibuka</label>
-                        <Input v-model="form.registration_opens_at" type="date" />
+                        <DatePicker v-model="form.registration_opens_at" class="mt-1.5" placeholder="Pilih tanggal" />
                     </div>
-                    <div class="flex-1">
+                    <div class="min-w-0 flex-1">
                         <label class="text-xs text-muted-foreground">Pendaftaran ditutup</label>
-                        <Input v-model="form.registration_closes_at" type="date" />
+                        <DatePicker v-model="form.registration_closes_at" class="mt-1.5" placeholder="Pilih tanggal" />
                     </div>
                 </div>
                 <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
