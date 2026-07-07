@@ -21,6 +21,11 @@
                 </p>
             </div>
 
+            @php
+                $focusedEdit = auth()->check() && request()->boolean('ubah');
+            @endphp
+
+            @unless ($focusedEdit)
             <div class="mt-10 space-y-4">
                 <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                     <h2 class="text-lg font-bold text-teal-900">Komunitas belajar, bukan sekadar kelas jualan.</h2>
@@ -83,6 +88,11 @@
                 Isi formulir di bawah dengan lengkap dan valid agar kami dapat memprosesmu masuk
                 ke ekosistem komunitas. Barakallahu fiikum.
             </p>
+            @else
+            <p class="mt-8 text-center text-sm leading-relaxed text-teal-800/70">
+                Perbarui datamu di bawah ini, lalu kirim untuk bergabung.
+            </p>
+            @endunless
 
             @if ($errors->any())
                 <div class="mt-8 rounded-xl border border-orange-600/30 bg-orange-50 px-5 py-4 text-sm text-orange-700">
@@ -208,14 +218,14 @@
                                 <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
                             </svg>
                         </button>
-                        <a href="{{ request()->fullUrlWithQuery(['ubah' => 1]) }}"
+                        <a href="{{ request()->fullUrlWithQuery(['ubah' => 1]) }}#formulir"
                            class="text-sm font-semibold text-teal-700 transition hover:text-orange-600">
                             Ubah data dulu
                         </a>
                     </div>
                 </form>
             @else
-            <form method="POST" data-submit-once action="{{ route('komunitas.join') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <form id="formulir" method="POST" data-submit-once action="{{ route('komunitas.join') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
                 {{-- Honeypot: hidden from humans, tempting to bots --}}
