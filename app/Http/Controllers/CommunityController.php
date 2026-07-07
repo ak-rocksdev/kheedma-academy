@@ -33,6 +33,7 @@ class CommunityController extends Controller
 
         $person->update([
             'birth_date' => $data['birth_date'],
+            'tiktok_username' => $data['tiktok_username'] ?? null,
             'tiktok_followers' => $data['tiktok_followers'] ?? null,
             'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
             'affiliate_level' => $data['affiliate_level'] ?? null,
