@@ -86,6 +86,10 @@ class CohortController extends Controller
             'registration_closes_at' => ['sometimes', 'nullable', 'date'],
         ]);
 
+        if (! empty($data['registration_closes_at']) && strlen($data['registration_closes_at']) === 10) {
+            $data['registration_closes_at'] .= ' 23:59:59';
+        }
+
         // Validate the EFFECTIVE window (payload value when present, else stored)
         // so a partial update cannot silently close registration before it opens.
         $opensAt = array_key_exists('registration_opens_at', $data) ? $data['registration_opens_at'] : $cohort?->registration_opens_at;

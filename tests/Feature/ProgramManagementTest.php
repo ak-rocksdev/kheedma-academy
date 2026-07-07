@@ -111,4 +111,17 @@ class ProgramManagementTest extends TestCase
             ->deleteJson("/api/admin/programs/{$program->id}")
             ->assertNoContent();
     }
+
+    public function test_index_derives_is_open_without_per_row_queries(): void
+    {
+        $open = Program::factory()->active()->create(['name' => 'Terbuka']);
+        Cohort::factory()->openWindow()->create(['program_id' => $open->id]);
+        Program::factory()->active()->create(['name' => 'Tanpa Batch']);
+
+        $response = $this->actingAs($this->admin())->getJson('/api/admin/programs')->assertOk();
+
+        $rows = collect($response->json('data'))->keyBy('name');
+        $this->assertTrue($rows['Terbuka']['is_open']);
+        $this->assertFalse($rows['Tanpa Batch']['is_open']);
+    }
 }

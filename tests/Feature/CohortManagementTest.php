@@ -117,6 +117,21 @@ class CohortManagementTest extends TestCase
         $this->assertTrue($program->fresh()->isOpen());
     }
 
+    public function test_date_only_close_date_is_inclusive(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', [
+                'name' => 'Angkatan Inklusif',
+                'program_id' => $program->id,
+                'registration_opens_at' => now()->subDay()->toDateString(),
+                'registration_closes_at' => now()->toDateString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('cohort.registration_open', true);
+    }
+
     public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
     {
         $cohort = Cohort::factory()->create([

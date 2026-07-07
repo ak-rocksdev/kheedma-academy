@@ -16,6 +16,7 @@ class ProgramController extends Controller
     {
         $programs = Program::query()
             ->withCount(['cohorts', 'applications'])
+            ->withExists(['cohorts as has_open_cohort' => fn ($q) => $q->openForRegistration()])
             ->latest()
             ->get()
             ->map(fn (Program $p) => $this->row($p));
@@ -90,7 +91,7 @@ class ProgramController extends Controller
             'description' => $p->description,
             'status' => $p->status,
             'selection_mode' => $p->selection_mode,
-            'is_open' => $p->isOpen(),
+            'is_open' => $p->hasAttribute('has_open_cohort') ? $p->status === 'active' && (bool) $p->has_open_cohort : $p->isOpen(),
             'cohorts_count' => (int) ($p->cohorts_count ?? 0),
             'applications_count' => (int) ($p->applications_count ?? 0),
         ];
