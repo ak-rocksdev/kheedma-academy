@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,15 +16,37 @@ class Person extends Model
 {
     use HasFactory, SoftDeletes;
 
+    /** Fixed choices for the GMV range selector. */
+    public const GMV_RANGES = ['0-50', '50-100', '100+'];
+
     protected $fillable = [
         'name',
         'phone',
         'email',
+        'birth_date',
         'province_code',
         'city_code',
         'tiktok_username',
         'instagram_username',
+        'tiktok_followers',
+        'has_started_affiliate',
+        'affiliate_level',
+        'affiliate_gmv_range',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'birth_date' => 'date',
+            'has_started_affiliate' => 'boolean',
+        ];
+    }
+
+    /** Derived age in years (null when birth_date is unknown). */
+    protected function age(): Attribute
+    {
+        return Attribute::make(get: fn (): ?int => $this->birth_date?->age);
+    }
 
     public function applications(): HasMany
     {
