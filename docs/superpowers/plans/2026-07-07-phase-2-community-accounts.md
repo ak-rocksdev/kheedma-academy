@@ -730,6 +730,22 @@ class MemberAuthTest extends TestCase
         $this->actingAs($user)->post('/keluar')->assertRedirect('/');
         $this->assertGuest();
     }
+
+    public function test_authenticated_participant_visiting_login_is_redirected(): void
+    {
+        $user = $this->participant();
+
+        $this->actingAs($user)->get('/masuk')->assertRedirect('/akun');
+    }
+
+    public function test_deactivated_mid_session_is_logged_out_of_akun(): void
+    {
+        $user = $this->participant();
+        $user->update(['is_active' => false]);
+
+        $this->actingAs($user)->get('/akun')->assertRedirect('/masuk');
+        $this->assertGuest();
+    }
 }
 ```
 
@@ -822,6 +838,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 
 class MemberAreaController extends Controller
@@ -830,6 +847,17 @@ class MemberAreaController extends Controller
     public function index(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        // Mid-session deactivation must end the session here too (the admin
+        // API enforces this via EnsureUserIsActive; the member area is the
+        // web counterpart).
+        if (! $user->is_active) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('member.login');
+        }
 
         if ($user->hasAnyRole(['admin', 'mentor'])) {
             return redirect('/admin');
@@ -1184,6 +1212,13 @@ In `app/Models/User.php`: add import `use App\Notifications\ResetPasswordNotific
         $this->notify(new ResetPasswordNotification($token));
     }
 ```
+
+NOTE (deliberate exception to the type-hint constraint): `$token` MUST stay untyped —
+the `Illuminate\Contracts\Auth\CanResetPassword` contract declares it untyped, and PHP
+forbids narrowing an inherited parameter (adding `string` is a fatal error). Reviewers:
+do not flag or "fix" this. The notification is intentionally NOT queued (`ShouldQueue`)
+— no queue worker runs in this deployment; synchronous send is the simpler correct
+choice until a worker exists.
 
 - [ ] **Step 4: Create the controller + routes**
 
@@ -1713,3 +1748,18 @@ git commit -m "feat: admin community members list"
 **Type consistency:** `member.area`/`member.login`/`password.reset` route names consistent across Tasks 2-4; `CommunityMembership` fillable matches controller usage; `communityMembers.list(query)` (Task 5 api.js) matches Community.vue usage; row shape `{id, joined_at, referral_source, person{...}}` consistent between controller and Vue template; `User::person()` HasOne consumed in Task 3 (verified to exist in the model).
 
 **Deploy notes (carry to PR):** re-run `PermissionSeeder` (`community.view`); production `.env` needs real SMTP (`MAIL_MAILER=smtp`, host/port/credentials, proper `MAIL_FROM_ADDRESS`) — until then reset emails go to the log; Phase 1+2 deploy together (the `/komunitas` links).
+
+## Execution notes (drift log — updated during SDD)
+
+- **Task 2 (executed):** review found a real 500 path — `people.email` is DB-unique, and
+  an email owned by a *different* Person (no account) crashed the join. Fix commit
+  `07c26dc` added `Rule::unique('people','email')->where(phone != input)->whereNull('deleted_at')`
+  plus the message "Email ini sudah terpakai. Gunakan email lain atau masuk jika sudah
+  punya akun." and a covering test (7 tests total in CommunityJoinTest). Task 2's rule
+  text above is superseded by the code — reviewers judge the code.
+- **Self-review pass (2026-07-07, karpathy-guidelines):** verified against the repo —
+  `Illuminate\Http\Request` already imported in bootstrap/app.php; password broker
+  `expire = 60` matches the email copy; `HeartHandshake` exists in lucide-vue-next;
+  `CanResetPassword` contract param is untyped (see Task 4 note). Added to Task 3:
+  mid-session deactivation guard on `/akun` (+ test) and a test for the
+  authenticated-visits-/masuk redirect.

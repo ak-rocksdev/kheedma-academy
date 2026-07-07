@@ -24,6 +24,7 @@ class PermissionSeeder extends Seeder
             'cohorts.manage',
             'users.manage',
             'programs.manage',
+            'community.view',
             'data.export',
         ];
 

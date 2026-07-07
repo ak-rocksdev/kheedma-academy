@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
 use App\Http\Controllers\Api\Admin\CohortController;
+use App\Http\Controllers\Api\Admin\CommunityMemberController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -44,5 +45,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::patch('/programs/{program:id}', [ProgramController::class, 'update']);
             Route::delete('/programs/{program:id}', [ProgramController::class, 'destroy']);
         });
+
+        Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');
     });
 });

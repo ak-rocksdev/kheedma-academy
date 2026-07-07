@@ -116,6 +116,12 @@ export const programs = {
     },
 };
 
+export const communityMembers = {
+    list(query = '') {
+        return api(`/admin/community-members${query}`);
+    },
+};
+
 export const cohorts = {
     list() {
         return api('/admin/cohorts');
