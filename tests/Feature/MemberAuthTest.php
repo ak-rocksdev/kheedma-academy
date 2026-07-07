@@ -25,10 +25,12 @@ class MemberAuthTest extends TestCase
     {
         $user = User::factory()->create([...$overrides, 'password' => Hash::make('rahasia-kuat')]);
         $user->assignRole('participant');
-        Person::create([
+        $person = Person::create([
             'name' => $user->name, 'phone' => '+62812'.random_int(10000000, 99999999),
-            'email' => $user->email, 'user_id' => $user->id,
+            'email' => $user->email,
         ]);
+        $person->user_id = $user->id;
+        $person->save();
 
         return $user;
     }
@@ -40,7 +42,8 @@ class MemberAuthTest extends TestCase
         $this->post('/masuk', ['email' => $user->email, 'password' => 'rahasia-kuat'])
             ->assertRedirect('/akun');
 
-        $this->actingAs($user)->get('/akun')->assertOk()->assertSee($user->name);
+        $user->refresh();
+        $this->actingAs($user)->get('/akun')->assertOk()->assertSee($user->name)->assertSee($user->person->phone);
     }
 
     public function test_wrong_password_is_rejected(): void
