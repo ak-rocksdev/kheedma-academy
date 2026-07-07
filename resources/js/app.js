@@ -132,6 +132,20 @@ function initPasswordToggles() {
     });
 }
 
+/** Close the header account menu when clicking anywhere outside it. */
+function initAccountMenu() {
+    const menu = document.querySelector('details.account-menu');
+    if (!menu) {
+        return;
+    }
+    document.addEventListener('click', (event) => {
+        if (menu.open && !menu.contains(event.target)) {
+            menu.open = false;
+        }
+    });
+}
+
 initRegionSelects();
 initSubmitOnce();
 initPasswordToggles();
+initAccountMenu();
