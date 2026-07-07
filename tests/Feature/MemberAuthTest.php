@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\Application;
 use App\Models\Person;
+use App\Models\Program;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -103,5 +105,20 @@ class MemberAuthTest extends TestCase
 
         $this->actingAs($user)->get('/akun')->assertRedirect('/masuk');
         $this->assertGuest();
+    }
+
+    public function test_akun_lists_application_statuses(): void
+    {
+        $user = $this->participant();
+        $program = Program::factory()->active()->create(['name' => 'Program Status']);
+        Application::create([
+            'people_id' => $user->person->id, 'status' => 'pending',
+            'program_id' => $program->id, 'referral_source' => 'teman',
+        ]);
+
+        $this->actingAs($user)->get('/akun')
+            ->assertOk()
+            ->assertSee('Program Status')
+            ->assertSee('Menunggu');
     }
 }
