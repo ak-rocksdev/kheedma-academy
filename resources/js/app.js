@@ -6,7 +6,7 @@ import 'tom-select/dist/css/tom-select.css';
 
 /** Turn a native select into a searchable single-value combobox. */
 function makeSearchable(el, placeholder) {
-    return new TomSelect(el, {
+    const instance = new TomSelect(el, {
         maxItems: 1,
         create: false,
         allowEmptyOption: false,
@@ -17,6 +17,22 @@ function makeSearchable(el, placeholder) {
             no_results: () => '<div class="no-results">Tidak ditemukan. Coba kata lain.</div>',
         },
     });
+
+    // Chrome ignores autocomplete="off" for address-like fields and overlays
+    // its own autofill popup on the search input. A readonly-until-focus input
+    // plus password-manager ignore hints is the reliable way to suppress it.
+    const input = instance.control_input;
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+    input.setAttribute('data-lpignore', 'true');
+    input.setAttribute('data-1p-ignore', 'true');
+    input.setAttribute('readonly', '');
+    input.addEventListener('focus', () => input.removeAttribute('readonly'));
+    input.addEventListener('blur', () => input.setAttribute('readonly', ''));
+
+    return instance;
 }
 
 /**
