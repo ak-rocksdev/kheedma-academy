@@ -21,10 +21,6 @@
                 </p>
             </div>
 
-            @php
-                $focusedEdit = auth()->check() && request()->boolean('ubah');
-            @endphp
-
             @unless ($focusedEdit)
             <div class="mt-10 space-y-4">
                 <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">

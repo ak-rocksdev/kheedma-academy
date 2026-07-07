@@ -33,7 +33,11 @@ class CommunityController extends Controller
         // confirmation and completes the editable form directly.
         $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null && $person->gender !== null && $person->followed_socials !== null;
 
-        return view('funnel.community', compact('person', 'alreadyMember', 'confirming'));
+        // Members editing their data (?ubah=1) get a focused page: the intro
+        // story is hidden so the form is front and center.
+        $focusedEdit = $user !== null && $request->boolean('ubah');
+
+        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit'));
     }
 
     /**
