@@ -32,6 +32,12 @@ const routes = [
                 props: true,
             },
             {
+                path: 'orang',
+                name: 'people',
+                component: () => import('./views/People.vue'),
+                meta: { permission: 'people.view' },
+            },
+            {
                 path: 'programs',
                 name: 'programs',
                 component: () => import('./views/Programs.vue'),

@@ -23,7 +23,15 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
     Route::prefix('admin')->group(function () {
         Route::get('/applications', [ApplicantController::class, 'index'])->middleware('permission:applications.view');
         Route::patch('/applications/{application}', [ApplicantController::class, 'update'])->middleware('permission:applications.review');
+        Route::get('/people', [PersonController::class, 'index'])->middleware('permission:people.view');
+        // Literal /people/merge-preview must register before the {person}
+        // wildcard, or the wildcard swallows it as a (404) person id.
+        Route::middleware('permission:people.merge')->group(function () {
+            Route::get('/people/merge-preview', [PersonController::class, 'mergePreview']);
+            Route::post('/people/merge', [PersonController::class, 'merge']);
+        });
         Route::get('/people/{person}', [PersonController::class, 'show'])->middleware('permission:people.view');
+        Route::patch('/people/{person}/account', [PersonController::class, 'updateAccount'])->middleware('permission:users.manage');
 
         Route::middleware('permission:users.manage')->group(function () {
             Route::get('/users', [UserController::class, 'index']);
