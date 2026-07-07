@@ -42,11 +42,30 @@
                     @if ($membership)
                         <div class="flex justify-between gap-4">
                             <dt class="text-teal-800/60">Anggota sejak</dt>
-                            <dd class="font-medium text-teal-900">{{ $membership->created_at->translatedFormat('d F Y') }}</dd>
+                            <dd class="font-medium text-teal-900">{{ $membership->created_at->locale('id')->translatedFormat('d F Y') }}</dd>
                         </div>
                     @endif
                 </dl>
             </div>
+
+            @if ($applications->isNotEmpty())
+                <div class="mt-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Status Pendaftaran</h2>
+                    <ul class="mt-4 space-y-3 text-sm">
+                        @foreach ($applications as $application)
+                            <li class="flex items-center justify-between gap-4">
+                                <div>
+                                    <p class="font-medium text-teal-900">{{ $application->program?->name ?? 'Program' }}</p>
+                                    <p class="text-xs text-teal-800/60">Daftar {{ $application->created_at->locale('id')->translatedFormat('j F Y') }}</p>
+                                </div>
+                                @php($statusLabel = ['pending' => 'Menunggu', 'accepted' => 'Diterima', 'rejected' => 'Belum lolos'][$application->status] ?? $application->status)
+                                @php($statusClass = ['pending' => 'bg-orange-100 text-orange-700', 'accepted' => 'bg-teal-100 text-teal-700', 'rejected' => 'bg-red-50 text-red-600'][$application->status] ?? 'bg-sand-100 text-teal-800/70')
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
 
             <div class="mt-6 rounded-3xl border border-dashed border-teal-900/15 bg-white/40 p-6 text-center sm:p-8">
                 <p class="text-sm leading-relaxed text-teal-800/60">

@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Application;
 use App\Models\Cohort;
 use App\Models\Program;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -16,6 +18,8 @@ class PublicApplyTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->seed(RoleSeeder::class);
+        $this->seed(PermissionSeeder::class);
         // Minimal region fixtures (laravolt tables) for the address validation.
         DB::table('indonesia_provinces')->insert([
             'code' => '32', 'name' => 'JAWA BARAT', 'created_at' => now(), 'updated_at' => now(),
@@ -41,6 +45,7 @@ class PublicApplyTest extends TestCase
             'name' => 'Budi Santoso',
             'phone' => '081234567890',
             'email' => 'budi@example.test',
+            'password' => 'rahasia-kuat',
             'province_code' => '32',
             'city_code' => '3273',
             'referral_source' => 'instagram',
@@ -105,12 +110,22 @@ class PublicApplyTest extends TestCase
         $this->assertSame(0, Application::count());
     }
 
+    /** @return array<string, string> */
+    private function authenticatedPayload(): array
+    {
+        $payload = $this->validPayload();
+        unset($payload['password']);
+
+        return $payload;
+    }
+
     public function test_duplicate_pending_submission_does_not_create_a_second_application(): void
     {
         $program = $this->openProgram();
 
         $this->post("/program/{$program->slug}/daftar", $this->validPayload());
-        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+        // The client is now the logged-in participant created by the first post.
+        $this->post("/program/{$program->slug}/daftar", $this->authenticatedPayload())
             ->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(1, Application::count());
@@ -123,7 +138,7 @@ class PublicApplyTest extends TestCase
         $this->post("/program/{$program->slug}/daftar", $this->validPayload());
         Application::sole()->update(['status' => 'rejected']);
 
-        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+        $this->post("/program/{$program->slug}/daftar", $this->authenticatedPayload())
             ->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(2, Application::count());
@@ -135,7 +150,8 @@ class PublicApplyTest extends TestCase
         $second = $this->openProgram();
 
         $this->post("/program/{$first->slug}/daftar", $this->validPayload());
-        $this->post("/program/{$second->slug}/daftar", $this->validPayload());
+        // The client is now the logged-in participant created by the first post.
+        $this->post("/program/{$second->slug}/daftar", $this->authenticatedPayload());
 
         $this->assertSame(2, Application::count());
     }

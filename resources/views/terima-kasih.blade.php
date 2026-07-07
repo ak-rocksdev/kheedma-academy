@@ -24,6 +24,12 @@
             bukan uang.
         </p>
 
+        @if (session('has_account'))
+            <div class="mt-8">
+                <x-cta :href="route('member.area')" label="Lihat Status Pendaftaran" />
+            </div>
+        @endif
+
         <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
             <a href="{{ url('/') }}"
                class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">

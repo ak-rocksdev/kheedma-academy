@@ -24,6 +24,17 @@
                 </div>
             @endif
 
+            @if ($pendingApplication)
+                <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
+                    <h2 class="text-lg font-bold text-teal-900">Kamu sudah mendaftar program ini.</h2>
+                    <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
+                        Pendaftaranmu sedang kami tinjau. Pantau statusnya di halaman akunmu.
+                    </p>
+                    <div class="mt-5">
+                        <x-cta :href="route('member.area')" label="Lihat Status" />
+                    </div>
+                </div>
+            @else
             <form method="POST" data-submit-once action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
@@ -36,7 +47,7 @@
 
                 <div>
                     <label for="name" class="block text-sm font-medium text-teal-800">Nama lengkap</label>
-                    <input id="name" name="name" type="text" value="{{ old('name') }}" autocomplete="name"
+                    <input id="name" name="name" type="text" value="{{ old('name', $person?->name) }}" autocomplete="name"
                            class="{{ $field }} @error('name') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="Nama sesuai identitas">
                     @error('name') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -44,7 +55,7 @@
 
                 <div>
                     <label for="phone" class="block text-sm font-medium text-teal-800">Nomor HP <span class="text-teal-800/50">(WhatsApp aktif)</span></label>
-                    <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone') }}" autocomplete="tel"
+                    <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone', $person?->phone) }}" autocomplete="tel"
                            class="{{ $field }} @error('phone') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="0812xxxxxxx">
                     @error('phone') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -52,11 +63,22 @@
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-teal-800">Email</label>
-                    <input id="email" name="email" type="email" value="{{ old('email') }}" autocomplete="email"
+                    <input id="email" name="email" type="email" value="{{ old('email', $person?->email) }}" autocomplete="email"
                            class="{{ $field }} @error('email') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="kamu@email.com">
                     @error('email') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
+
+                @guest
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-teal-800">Buat kata sandi <span class="text-teal-800/50">(minimal 8 karakter)</span></label>
+                        <input id="password" name="password" type="password" autocomplete="new-password"
+                               class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
+                               placeholder="••••••••">
+                        <p class="mt-1.5 text-xs text-teal-800/50">Akunmu dibuat otomatis untuk memantau status pendaftaran dan mengubah datamu nanti.</p>
+                        @error('password') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                @endguest
 
                 <div class="grid gap-6 sm:grid-cols-2">
                     {{-- Region selects are enhanced into searchable comboboxes by app.js
@@ -68,7 +90,7 @@
                                 class="@error('province_code') has-error @enderror">
                             <option value="">Pilih provinsi…</option>
                             @foreach ($provinces as $province)
-                                <option value="{{ $province->code }}" @selected(old('province_code') === $province->code)>{{ $province->name }}</option>
+                                <option value="{{ $province->code }}" @selected(old('province_code', $person?->province_code) === $province->code)>{{ $province->name }}</option>
                             @endforeach
                         </select>
                         @error('province_code') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -76,7 +98,7 @@
 
                     <div>
                         <label for="city_code" class="block text-sm font-medium text-teal-800">Kota/Kabupaten</label>
-                        <select id="city_code" name="city_code" data-old="{{ old('city_code') }}"
+                        <select id="city_code" name="city_code" data-old="{{ old('city_code', $person?->city_code) }}"
                                 data-cities-url="{{ url('/daftar/cities') }}" disabled
                                 class="@error('city_code') has-error @enderror">
                             <option value="">Pilih provinsi dulu…</option>
@@ -88,13 +110,13 @@
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div>
                         <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional)</span></label>
-                        <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username') }}"
+                        <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username', $person?->tiktok_username) }}"
                                class="{{ $field }} border border-teal-900/15" placeholder="@username">
                         @error('tiktok_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label for="instagram_username" class="block text-sm font-medium text-teal-800">Akun Instagram <span class="text-teal-800/50">(opsional)</span></label>
-                        <input id="instagram_username" name="instagram_username" type="text" value="{{ old('instagram_username') }}"
+                        <input id="instagram_username" name="instagram_username" type="text" value="{{ old('instagram_username', $person?->instagram_username) }}"
                                class="{{ $field }} border border-teal-900/15" placeholder="@username">
                         @error('instagram_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
@@ -119,6 +141,12 @@
                     @error('referral_source') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
+                @auth
+                    <p class="text-xs text-teal-800/60">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
+                @else
+                    <p class="text-xs text-teal-800/60">Sudah punya akun? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk dulu</a> supaya datamu terisi otomatis.</p>
+                @endauth
+
                 <div class="pt-2">
                     <button type="submit"
                             class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-orange-500 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 hover:shadow-lg sm:w-auto">
@@ -129,6 +157,7 @@
                     </button>
                 </div>
             </form>
+            @endif
 
             <p class="mt-6 text-center text-xs text-teal-800/50">
                 Dengan mendaftar, kamu setuju mengikuti masa observasi terbimbing yang dipantau.

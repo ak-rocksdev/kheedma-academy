@@ -2,18 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Http\Requests\StoreApplicationRequest;
-use App\Models\Person;
 use App\Models\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Laravolt\Indonesia\Models\Kabupaten;
 use Laravolt\Indonesia\Models\Provinsi;
 
 class ApplicationController extends Controller
 {
-    /** Show the application form for one program (draft programs 404 via guard). */
+    /** Show the application form (prefilled + honest for logged-in participants). */
     public function create(Program $program): View|RedirectResponse
     {
         abort_if($program->status === 'draft', 404);
@@ -22,9 +23,25 @@ class ApplicationController extends Controller
             return redirect()->route('program.show', $program);
         }
 
+        $user = Auth::user();
+
+        if ($user && $user->hasAnyRole(['admin', 'mentor'])) {
+            return redirect('/admin');
+        }
+
+        if ($user) {
+            abort_unless($user->person, 403);
+        }
+
+        // The notice covers pending AND accepted: neither should re-apply.
+        $person = $user?->person;
+        $pendingApplication = $person
+            ? $person->applications()->where('program_id', $program->id)->whereIn('status', ['pending', 'accepted'])->exists()
+            : false;
+
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('funnel.apply', compact('program', 'provinces'));
+        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */
@@ -39,11 +56,12 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Store a submission. Matches an existing Person by phone (reconnecting a
-     * returning applicant to their history) or creates one, refreshing their
-     * latest details, then records a new pending Application.
+     * Store a submission. Guests are provisioned a participant account (Person
+     * + User, auto-logged in). Logged-in participants self-update their
+     * identity instead. Either way, records a new pending Application unless
+     * one already exists for this program.
      */
-    public function store(StoreApplicationRequest $request, Program $program): RedirectResponse
+    public function store(StoreApplicationRequest $request, Program $program, ProvisionParticipantAccount $provisioner): RedirectResponse
     {
         abort_if($program->status === 'draft', 404);
 
@@ -51,27 +69,53 @@ class ApplicationController extends Controller
             return redirect()->route('program.show', $program);
         }
 
+        $user = Auth::user();
+
+        if ($user && $user->hasAnyRole(['admin', 'mentor'])) {
+            return redirect('/admin');
+        }
+
         $data = $request->validated();
 
-        $person = Person::updateOrCreate(
-            ['phone' => $data['phone']],
-            [
+        if ($user) {
+            // Logged-in participant: their Person is authoritative; refresh it.
+            abort_unless($user->person, 403);
+
+            $person = $user->person;
+            $person->update([
                 'name' => $data['name'],
+                'phone' => $data['phone'],
                 'email' => $data['email'],
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'instagram_username' => $data['instagram_username'] ?? null,
-            ]
-        );
+            ]);
+            $user->update(['name' => $data['name'], 'email' => $data['email']]);
+        } else {
+            // Guest: provision the account (throws on an account-carrying phone).
+            [$person, $account] = $provisioner->provision([
+                'phone' => $data['phone'],
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => $data['password'],
+            ]);
+            $person->update([
+                'province_code' => $data['province_code'],
+                'city_code' => $data['city_code'],
+                'tiktok_username' => $data['tiktok_username'] ?? null,
+                'instagram_username' => $data['instagram_username'] ?? null,
+            ]);
 
-        // One pending application per person per program: a re-submit while the
-        // first is still in review is deduplicated silently (same thank-you page,
-        // so the endpoint never reveals whether a phone number already applied).
-        // A rejected applicant CAN apply again — that history is the point.
+            Auth::login($account);
+            $request->session()->regenerate();
+        }
+
+        // Silent backstop: no new application while one is pending OR already
+        // accepted for this program. Only a rejected attempt reopens the door.
         $alreadyPending = $person->applications()
             ->where('program_id', $program->id)
-            ->where('status', 'pending')
+            ->whereIn('status', ['pending', 'accepted'])
             ->exists();
 
         if (! $alreadyPending) {
@@ -84,7 +128,8 @@ class ApplicationController extends Controller
 
         return redirect()
             ->route('daftar.thankyou')
-            ->with('applicant_name', $person->name);
+            ->with('applicant_name', $person->name)
+            ->with('has_account', true);
     }
 
     /** Confirmation page after a successful submission. */

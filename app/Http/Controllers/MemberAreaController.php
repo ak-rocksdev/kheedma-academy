@@ -29,12 +29,13 @@ class MemberAreaController extends Controller
             return redirect('/admin');
         }
 
-        $person = $user->person()->with('communityMembership')->first();
+        $person = $user->person()->with(['communityMembership', 'applications' => fn ($q) => $q->latest(), 'applications.program:id,name'])->first();
 
         return view('member.akun', [
             'user' => $user,
             'person' => $person,
             'membership' => $person?->communityMembership,
+            'applications' => $person?->applications ?? collect(),
         ]);
     }
 }
