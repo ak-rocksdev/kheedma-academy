@@ -34,6 +34,25 @@
                         <x-cta :href="route('member.area')" label="Lihat Status" />
                     </div>
                 </div>
+            @elseif ($showGate && ! $errors->any())
+                {{-- The account question comes FIRST: returning members log in and
+                     come back to a prefilled form; new people open the blank form. --}}
+                <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
+                    <h2 class="text-lg font-bold text-teal-900">Sudah punya akun Kheedma?</h2>
+                    <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
+                        Masuk dulu supaya datamu terisi otomatis dan pendaftaranmu tersambung ke akunmu.
+                    </p>
+                    <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                        <a href="{{ route('member.login', ['redirect' => url()->current()]) }}"
+                           class="inline-flex items-center justify-center rounded-full bg-teal-700 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-teal-800">
+                            Sudah, masuk ke akunku
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['baru' => 1]) }}"
+                           class="inline-flex items-center justify-center rounded-full border border-teal-900/15 bg-white px-6 py-3 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40 hover:text-orange-600">
+                            Belum, daftar baru
+                        </a>
+                    </div>
+                </div>
             @else
             <form method="POST" data-submit-once action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
@@ -143,8 +162,6 @@
 
                 @auth
                     <p class="text-xs text-teal-800/60">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
-                @else
-                    <p class="text-xs text-teal-800/60">Sudah punya akun? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk dulu</a> supaya datamu terisi otomatis.</p>
                 @endauth
 
                 <div class="pt-2">

@@ -190,6 +190,51 @@ class AccountAtApplicationTest extends TestCase
         $this->assertSame(1, Application::count());
     }
 
+    public function test_guest_sees_the_account_gate_before_the_form(): void
+    {
+        $program = $this->openProgram();
+
+        $this->get("/program/{$program->slug}/daftar")
+            ->assertOk()
+            ->assertSee('Sudah punya akun')
+            ->assertDontSee('Kirim Pendaftaran');
+    }
+
+    public function test_guest_choosing_new_account_sees_the_form(): void
+    {
+        $program = $this->openProgram();
+
+        $this->get("/program/{$program->slug}/daftar?baru=1")
+            ->assertOk()
+            ->assertSee('Kirim Pendaftaran')
+            ->assertSee('Buat kata sandi');
+    }
+
+    public function test_login_from_the_gate_returns_to_the_apply_form(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        Auth::logout();
+
+        $applyUrl = "/program/{$program->slug}/daftar";
+        $this->get("/masuk?redirect={$applyUrl}");
+
+        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => 'rahasia-kuat'])
+            ->assertRedirect($applyUrl);
+    }
+
+    public function test_external_redirect_target_is_ignored_on_login(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        Auth::logout();
+
+        $this->get('/masuk?redirect=https://evil.example');
+
+        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => 'rahasia-kuat'])
+            ->assertRedirect('/akun');
+    }
+
     public function test_staff_is_redirected_to_admin(): void
     {
         $program = $this->openProgram();

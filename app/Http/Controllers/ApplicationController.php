@@ -7,6 +7,7 @@ use App\Http\Requests\StoreApplicationRequest;
 use App\Models\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Laravolt\Indonesia\Models\Kabupaten;
@@ -15,7 +16,7 @@ use Laravolt\Indonesia\Models\Provinsi;
 class ApplicationController extends Controller
 {
     /** Show the application form (prefilled + honest for logged-in participants). */
-    public function create(Program $program): View|RedirectResponse
+    public function create(Request $request, Program $program): View|RedirectResponse
     {
         abort_if($program->status === 'draft', 404);
 
@@ -39,9 +40,14 @@ class ApplicationController extends Controller
             ? $person->applications()->where('program_id', $program->id)->whereIn('status', ['pending', 'accepted'])->exists()
             : false;
 
+        // Guests answer "sudah punya akun?" FIRST; the form only appears after
+        // they choose "belum" (?baru=1) or when they return from a validation
+        // redirect (the view also falls through on errors).
+        $showGate = $user === null && ! $request->boolean('baru');
+
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication'));
+        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication', 'showGate'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */
