@@ -40,7 +40,7 @@ class ProgramManagementTest extends TestCase
             ])
             ->assertCreated()
             ->assertJsonPath('program.slug', 'affiliate-pemula')
-            ->assertJsonPath('program.is_open', true);
+            ->assertJsonPath('program.is_open', false);
     }
 
     public function test_slug_must_be_unique_and_kebab(): void
@@ -78,21 +78,6 @@ class ProgramManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('program.name', 'Baru')
             ->assertJsonPath('program.slug', $program->slug);
-    }
-
-    public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
-    {
-        $program = Program::factory()->active()->create([
-            'registration_opens_at' => now()->addDays(10),
-            'registration_closes_at' => now()->addDays(30),
-        ]);
-
-        $this->actingAs($this->admin())
-            ->patchJson("/api/admin/programs/{$program->id}", [
-                'registration_closes_at' => now()->addDay()->toDateTimeString(),
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('registration_closes_at');
     }
 
     public function test_program_with_applications_cannot_be_deleted(): void

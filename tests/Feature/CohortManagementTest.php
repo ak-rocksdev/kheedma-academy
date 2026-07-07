@@ -100,6 +100,38 @@ class CohortManagementTest extends TestCase
         $this->assertSame('ended', $ended->status);
     }
 
+    public function test_angkatan_carries_the_registration_window(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', [
+                'name' => 'Angkatan 1',
+                'program_id' => $program->id,
+                'registration_opens_at' => now()->subDay()->toDateTimeString(),
+                'registration_closes_at' => now()->addWeek()->toDateTimeString(),
+            ])
+            ->assertCreated()
+            ->assertJsonPath('cohort.registration_open', true);
+
+        $this->assertTrue($program->fresh()->isOpen());
+    }
+
+    public function test_partial_update_cannot_close_registration_before_stored_open_date(): void
+    {
+        $cohort = Cohort::factory()->create([
+            'registration_opens_at' => now()->addDays(10),
+            'registration_closes_at' => now()->addDays(30),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/cohorts/{$cohort->id}", [
+                'registration_closes_at' => now()->addDay()->toDateTimeString(),
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('registration_closes_at');
+    }
+
     public function test_cohort_with_enrollments_cannot_be_deleted(): void
     {
         $cohort = Cohort::factory()->create();
