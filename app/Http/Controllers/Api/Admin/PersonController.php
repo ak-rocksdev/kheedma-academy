@@ -15,9 +15,13 @@ class PersonController extends Controller
             'province:code,name',
             'city:code,name',
             'applications' => fn ($q) => $q->latest(),
+            'applications.program:id,name',
             'enrollments.cohort:id,name,start_date,end_date',
             'enrollments.latestStatusEvent',
         ]);
+
+        // Oldest submission = attempt #1; the list itself stays newest-first.
+        $total = $person->applications->count();
 
         return response()->json([
             'person' => [
@@ -30,8 +34,10 @@ class PersonController extends Controller
                 'tiktok_username' => $person->tiktok_username,
                 'instagram_username' => $person->instagram_username,
                 'created_at' => $person->created_at?->toIso8601String(),
-                'applications' => $person->applications->map(fn ($a) => [
+                'applications' => $person->applications->values()->map(fn ($a, $index) => [
                     'id' => $a->id,
+                    'attempt' => $total - $index,
+                    'program' => $a->program?->name,
                     'status' => $a->status,
                     'prefilter_submitted' => (bool) $a->prefilter_submitted,
                     'prefilter_link' => $a->prefilter_link,

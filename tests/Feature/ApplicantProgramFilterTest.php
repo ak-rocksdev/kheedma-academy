@@ -55,4 +55,40 @@ class ApplicantProgramFilterTest extends TestCase
             ->assertJsonPath('data.0.program', 'Program A')
             ->assertJsonPath('data.0.referral_source', 'instagram');
     }
+
+    public function test_rows_carry_the_person_application_count(): void
+    {
+        $program = Program::factory()->active()->create();
+        $application = $this->makeApplication($program, '+628333333333');
+        Application::create([
+            'people_id' => $application->people_id, 'status' => 'rejected',
+            'program_id' => $program->id, 'referral_source' => 'tiktok',
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/applications')
+            ->assertOk()
+            ->assertJsonPath('data.0.person.applications_count', 2);
+    }
+
+    public function test_person_detail_history_names_the_program_and_attempt(): void
+    {
+        $program = Program::factory()->active()->create(['name' => 'Program Detail']);
+        $application = $this->makeApplication($program, '+628444444444');
+        Application::create([
+            'people_id' => $application->people_id, 'status' => 'pending',
+            'program_id' => $program->id, 'referral_source' => 'teman',
+        ]);
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->getJson("/api/admin/people/{$application->people_id}")
+            ->assertOk()
+            ->assertJsonPath('person.applications.0.program', 'Program Detail')
+            ->assertJsonPath('person.applications.0.attempt', 2)
+            ->assertJsonPath('person.applications.1.attempt', 1);
+    }
 }

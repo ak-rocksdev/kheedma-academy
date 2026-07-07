@@ -116,7 +116,12 @@ const selectClass =
                         :key="item.id"
                         class="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
                     >
-                        <td class="px-4 py-3 font-medium text-foreground">{{ item.person.name }}</td>
+                        <td class="px-4 py-3 font-medium text-foreground">
+                            {{ item.person.name }}
+                            <Badge v-if="item.person.applications_count > 1" variant="warning" class="ml-1.5">
+                                {{ item.person.applications_count }}× daftar
+                            </Badge>
+                        </td>
                         <td class="px-4 py-3 text-muted-foreground">
                             <div>{{ item.person.phone }}</div>
                             <div class="text-xs">{{ item.person.email }}</div>

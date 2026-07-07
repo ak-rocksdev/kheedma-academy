@@ -65,11 +65,22 @@ class ApplicationController extends Controller
             ]
         );
 
-        $person->applications()->create([
-            'status' => 'pending',
-            'program_id' => $program->id,
-            'referral_source' => $data['referral_source'],
-        ]);
+        // One pending application per person per program: a re-submit while the
+        // first is still in review is deduplicated silently (same thank-you page,
+        // so the endpoint never reveals whether a phone number already applied).
+        // A rejected applicant CAN apply again — that history is the point.
+        $alreadyPending = $person->applications()
+            ->where('program_id', $program->id)
+            ->where('status', 'pending')
+            ->exists();
+
+        if (! $alreadyPending) {
+            $person->applications()->create([
+                'status' => 'pending',
+                'program_id' => $program->id,
+                'referral_source' => $data['referral_source'],
+            ]);
+        }
 
         return redirect()
             ->route('daftar.thankyou')

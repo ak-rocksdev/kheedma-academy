@@ -91,9 +91,15 @@ const selectClass =
             </div>
             <div class="mt-3 space-y-3">
                 <div v-for="app in person.applications" :key="app.id" class="rounded-xl border border-border bg-card p-5">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-muted-foreground">Daftar {{ fmtDate(app.created_at) }}</div>
-                        <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="min-w-0 text-sm">
+                            <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
+                            <span class="text-muted-foreground"> · Daftar {{ fmtDate(app.created_at) }}</span>
+                        </div>
+                        <div class="flex shrink-0 items-center gap-2">
+                            <Badge v-if="person.applications.length > 1" variant="secondary">Pendaftaran ke-{{ app.attempt }}</Badge>
+                            <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
+                        </div>
                     </div>
                     <div class="mt-4 flex flex-wrap items-end gap-3">
                         <label class="text-sm">
