@@ -45,9 +45,13 @@ class ApplicationController extends Controller
         // redirect (the view also falls through on errors).
         $showGate = $user === null && ! $request->boolean('baru');
 
+        // Logged-in members CONFIRM their stored data instead of retyping it;
+        // ?ubah=1 opens the editable form when something needs updating.
+        $confirming = $user !== null && ! $request->boolean('ubah');
+
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication', 'showGate'));
+        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication', 'showGate', 'confirming'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */

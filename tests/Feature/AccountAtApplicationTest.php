@@ -243,7 +243,7 @@ class AccountAtApplicationTest extends TestCase
         $this->actingAs($admin)->get("/program/{$program->slug}/daftar")->assertRedirect('/admin');
     }
 
-    public function test_prefilled_form_shows_identity_for_participant(): void
+    public function test_participant_confirms_stored_data_before_applying(): void
     {
         $program = $this->openProgram();
         $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
@@ -251,7 +251,35 @@ class AccountAtApplicationTest extends TestCase
 
         $this->get("/program/{$second->slug}/daftar")
             ->assertOk()
+            ->assertSee('Konfirmasi datamu')
+            ->assertSee('Budi Santoso')
+            ->assertSee('Data Benar, Kirim Pendaftaran')
+            ->assertSee('Ubah data dulu')
+            ->assertDontSee('Buat kata sandi')
+            ->assertDontSee('Sudah punya akun Kheedma');
+    }
+
+    public function test_participant_can_open_the_editable_form(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        $second = $this->openProgram();
+
+        $this->get("/program/{$second->slug}/daftar?ubah=1")
+            ->assertOk()
             ->assertSee('value="Budi Santoso"', false)
-            ->assertSee('Masuk sebagai');
+            ->assertSee('Masuk sebagai')
+            ->assertSee('Kirim Pendaftaran');
+    }
+
+    public function test_thank_you_offers_status_and_home_choices(): void
+    {
+        $program = $this->openProgram();
+
+        $this->followingRedirects()
+            ->post("/program/{$program->slug}/daftar", $this->guestPayload())
+            ->assertOk()
+            ->assertSee('Kelola Status Pendaftaran')
+            ->assertSee('Kembali ke beranda');
     }
 }
