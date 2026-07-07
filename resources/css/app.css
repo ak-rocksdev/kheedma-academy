@@ -197,3 +197,38 @@
     padding: 0.5rem 0.875rem;
     color: rgb(5 49 43 / 0.5);
 }
+
+/*
+ | Password visibility toggle (public forms) — the wrapper keeps the input's
+ | own field styling; the eye button floats inside its right edge.
+*/
+.password-field {
+    position: relative;
+}
+
+.password-field .password-field-input {
+    padding-right: 2.75rem;
+}
+
+.password-toggle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    display: flex;
+    width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+    color: rgb(5 49 43 / 0.35);
+    transition: color 150ms;
+}
+
+.password-toggle:hover,
+.password-toggle:focus-visible {
+    color: var(--color-teal-700, #0b4f47);
+}
+
+.password-toggle svg {
+    width: 1.1rem;
+    height: 1.1rem;
+}

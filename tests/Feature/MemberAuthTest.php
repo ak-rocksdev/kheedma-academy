@@ -91,6 +91,33 @@ class MemberAuthTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_participant_cannot_open_the_admin_panel_shell(): void
+    {
+        $user = $this->participant();
+
+        $this->actingAs($user)->get('/admin')->assertRedirect('/akun');
+        $this->actingAs($user)->get('/admin/programs')->assertRedirect('/akun');
+    }
+
+    public function test_guest_and_staff_still_reach_the_admin_shell(): void
+    {
+        $this->get('/admin')->assertOk();
+
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->get('/admin')->assertOk();
+    }
+
+    public function test_nav_account_menu_matches_the_role(): void
+    {
+        $this->get('/')->assertSee('Masuk')->assertDontSee('Panel Admin');
+
+        $participant = $this->participant();
+        $this->actingAs($participant)->get('/')->assertSee('Akun Saya')->assertDontSee('Panel Admin');
+
+        $admin = User::factory()->admin()->create();
+        $this->actingAs($admin)->get('/')->assertSee('Panel Admin')->assertSee('Keluar');
+    }
+
     public function test_authenticated_participant_visiting_login_is_redirected(): void
     {
         $user = $this->participant();

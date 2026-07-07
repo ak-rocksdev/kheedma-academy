@@ -6,6 +6,7 @@ use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\MemberAuthController;
 use App\Http\Controllers\MemberPasswordController;
 use App\Http\Controllers\ProgramPageController;
+use App\Http\Middleware\RedirectNonStaffFromAdmin;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -54,4 +55,4 @@ Route::post('/reset-password', [MemberPasswordController::class, 'update'])->mid
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router
  | owns every nested path under /admin via history mode.
  */
-Route::view('/admin/{any?}', 'admin')->where('any', '.*')->name('admin');
+Route::view('/admin/{any?}', 'admin')->where('any', '.*')->middleware(RedirectNonStaffFromAdmin::class)->name('admin');
