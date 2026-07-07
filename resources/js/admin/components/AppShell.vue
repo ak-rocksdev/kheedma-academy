@@ -1,23 +1,34 @@
 <script setup>
 import { computed } from 'vue';
-import { RouterView, RouterLink, useRouter } from 'vue-router';
+import { RouterView, RouterLink, useRouter, useRoute } from 'vue-router';
 import { LayoutDashboard, Users, BookOpen, GraduationCap, UserCog, HeartHandshake } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
+const route = useRoute();
 const auth = useAuthStore();
 
+// `match` is the path prefix that keeps an item highlighted, so detail pages
+// (e.g. /pelamar/5) still light up their section. Dashboard matches exactly.
 const nav = computed(() =>
     [
-        { to: { name: 'dashboard' }, label: 'Dashboard', icon: LayoutDashboard, show: true },
-        { to: { name: 'applicants' }, label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
-        { to: { name: 'programs' }, label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
-        { to: { name: 'community' }, label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
-        { to: { name: 'cohorts' }, label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
-        { to: { name: 'users' }, label: 'Tim', icon: UserCog, show: auth.can('users.manage') },
+        { to: { name: 'dashboard' }, match: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
+        { to: { name: 'applicants' }, match: '/pelamar', label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
+        { to: { name: 'programs' }, match: '/programs', label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
+        { to: { name: 'community' }, match: '/community', label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
+        { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
+        { to: { name: 'users' }, match: '/users', label: 'Tim', icon: UserCog, show: auth.can('users.manage') },
     ].filter((item) => item.show),
 );
+
+function isActive(item) {
+    if (item.match === '/') {
+        return route.path === '/';
+    }
+
+    return route.path === item.match || route.path.startsWith(`${item.match}/`);
+}
 
 async function logout() {
     await auth.logout();
@@ -37,8 +48,10 @@ async function logout() {
                     v-for="item in nav"
                     :key="item.label"
                     :to="item.to"
-                    active-class="bg-accent text-accent-foreground"
-                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-foreground/70 transition-colors hover:bg-accent hover:text-accent-foreground"
+                    class="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors"
+                    :class="isActive(item)
+                        ? 'bg-teal-700 text-white shadow-sm'
+                        : 'text-foreground/70 hover:bg-accent hover:text-accent-foreground'"
                 >
                     <component :is="item.icon" class="size-4" />
                     {{ item.label }}
