@@ -38,6 +38,12 @@ const routes = [
                 meta: { permission: 'programs.manage' },
             },
             {
+                path: 'community',
+                name: 'community',
+                component: () => import('./views/Community.vue'),
+                meta: { permission: 'community.view' },
+            },
+            {
                 path: 'cohorts',
                 name: 'cohorts',
                 component: () => import('./views/Cohorts.vue'),
