@@ -51,6 +51,44 @@ class CommunityJoinTest extends TestCase
         $this->assertTrue(Auth::user()->is($person->user));
     }
 
+    public function test_join_persists_the_affiliate_profile(): void
+    {
+        $this->post('/komunitas', [
+            ...$this->validPayload(),
+            'tiktok_username' => 'sitiaminah',
+            'tiktok_followers' => 2500,
+            'has_started_affiliate' => 1,
+            'affiliate_level' => 4,
+            'affiliate_gmv_range' => '0-50',
+        ])->assertRedirect('/akun');
+
+        $person = Person::sole();
+        $this->assertSame('sitiaminah', $person->tiktok_username);
+        $this->assertSame(2500, (int) $person->tiktok_followers);
+        $this->assertTrue($person->has_started_affiliate);
+        $this->assertSame(4, (int) $person->affiliate_level);
+        $this->assertSame('0-50', $person->affiliate_gmv_range);
+    }
+
+    public function test_join_nulls_affiliate_dependents_without_tiktok(): void
+    {
+        $this->post('/komunitas', [
+            ...$this->validPayload(),
+            'tiktok_username' => '',
+            'tiktok_followers' => 999,
+            'has_started_affiliate' => 1,
+            'affiliate_level' => 8,
+            'affiliate_gmv_range' => '100+',
+        ])->assertRedirect('/akun');
+
+        $person = Person::sole();
+        $this->assertNull($person->tiktok_username);
+        $this->assertNull($person->tiktok_followers);
+        $this->assertNull($person->has_started_affiliate);
+        $this->assertNull($person->affiliate_level);
+        $this->assertNull($person->affiliate_gmv_range);
+    }
+
     public function test_join_reuses_existing_person_by_phone(): void
     {
         $existing = Person::create([
