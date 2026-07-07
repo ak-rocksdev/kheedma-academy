@@ -42,7 +42,7 @@
                     @if ($membership)
                         <div class="flex justify-between gap-4">
                             <dt class="text-teal-800/60">Anggota sejak</dt>
-                            <dd class="font-medium text-teal-900">{{ $membership->created_at->translatedFormat('d F Y') }}</dd>
+                            <dd class="font-medium text-teal-900">{{ $membership->created_at->locale('id')->translatedFormat('d F Y') }}</dd>
                         </div>
                     @endif
                 </dl>
@@ -56,7 +56,7 @@
                             <li class="flex items-center justify-between gap-4">
                                 <div>
                                     <p class="font-medium text-teal-900">{{ $application->program?->name ?? 'Program' }}</p>
-                                    <p class="text-xs text-teal-800/60">Daftar {{ $application->created_at->translatedFormat('j F Y') }}</p>
+                                    <p class="text-xs text-teal-800/60">Daftar {{ $application->created_at->locale('id')->translatedFormat('j F Y') }}</p>
                                 </div>
                                 @php($statusLabel = ['pending' => 'Menunggu', 'accepted' => 'Diterima', 'rejected' => 'Belum lolos'][$application->status] ?? $application->status)
                                 @php($statusClass = ['pending' => 'bg-orange-100 text-orange-700', 'accepted' => 'bg-teal-100 text-teal-700', 'rejected' => 'bg-red-50 text-red-600'][$application->status] ?? 'bg-sand-100 text-teal-800/70')
