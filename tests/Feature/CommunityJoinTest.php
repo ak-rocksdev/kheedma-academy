@@ -31,8 +31,10 @@ class CommunityJoinTest extends TestCase
             'email' => 'siti@example.test',
             'password' => 'rahasia-kuat',
             'birth_date' => '2000-01-15',
+            'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'tiktok',
+            'followed_socials' => 1,
         ];
     }
 
@@ -47,6 +49,8 @@ class CommunityJoinTest extends TestCase
         $this->assertTrue($person->user->hasRole('participant'));
         $this->assertSame('tiktok', $person->communityMembership->referral_source);
         $this->assertSame('Ingin serius belajar affiliate.', $person->communityMembership->motivation);
+        $this->assertSame('male', $person->gender);
+        $this->assertTrue($person->followed_socials);
         $this->assertTrue(Auth::check());
         $this->assertTrue(Auth::user()->is($person->user));
     }

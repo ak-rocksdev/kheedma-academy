@@ -50,8 +50,10 @@ class PublicApplyTest extends TestCase
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',
+            'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ];
     }
 
@@ -170,6 +172,19 @@ class PublicApplyTest extends TestCase
                 'motivation' => '',
             ])
             ->assertSessionHasErrors(['birth_date', 'motivation']);
+    }
+
+    public function test_gender_and_social_follow_are_required(): void
+    {
+        $program = $this->openProgram();
+
+        $this->from("/program/{$program->slug}/daftar")
+            ->post("/program/{$program->slug}/daftar", [
+                ...$this->validPayload(),
+                'gender' => '',
+                'followed_socials' => '',
+            ])
+            ->assertSessionHasErrors(['gender', 'followed_socials']);
     }
 
     public function test_affiliate_chain_requires_followers_when_tiktok_given(): void

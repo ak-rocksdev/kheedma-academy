@@ -66,10 +66,12 @@
                     <input type="hidden" name="tiktok_username" value="{{ $person->tiktok_username }}">
                     <input type="hidden" name="instagram_username" value="{{ $person->instagram_username }}">
                     <input type="hidden" name="birth_date" value="{{ $person->birth_date?->toDateString() }}">
+                    <input type="hidden" name="gender" value="{{ $person->gender }}">
                     <input type="hidden" name="tiktok_followers" value="{{ $person->tiktok_followers }}">
                     <input type="hidden" name="has_started_affiliate" value="{{ $person->has_started_affiliate === null ? '' : ($person->has_started_affiliate ? '1' : '0') }}">
                     <input type="hidden" name="affiliate_level" value="{{ $person->affiliate_level }}">
                     <input type="hidden" name="affiliate_gmv_range" value="{{ $person->affiliate_gmv_range }}">
+                    <input type="hidden" name="followed_socials" value="{{ $person->followed_socials === null ? '' : ($person->followed_socials ? 1 : 0) }}">
 
                     <div>
                         <h2 class="text-lg font-bold text-teal-900">Konfirmasi datamu</h2>
@@ -111,6 +113,12 @@
                             <div class="flex justify-between gap-4">
                                 <dt class="text-teal-800/60">Tanggal lahir</dt>
                                 <dd class="font-medium text-teal-900">{{ $person->birth_date->locale('id')->translatedFormat('j F Y') }} ({{ $person->age }} tahun)</dd>
+                            </div>
+                        @endif
+                        @if ($person->gender)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Jenis kelamin</dt>
+                                <dd class="font-medium text-teal-900">{{ $person->gender === 'male' ? 'Laki-laki' : 'Perempuan' }}</dd>
                             </div>
                         @endif
                         @if ($person->tiktok_followers !== null)
@@ -215,6 +223,22 @@
                            value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
                            class="{{ $field }} @error('birth_date') border border-red-400 @else border border-teal-900/15 @enderror">
                     @error('birth_date') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                @php $genderOld = old('gender', $person?->gender); @endphp
+                <div>
+                    <span class="block text-sm font-medium text-teal-800">Jenis kelamin</span>
+                    <div class="mt-1.5 flex gap-3">
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="male" class="sr-only" @checked($genderOld === 'male')>
+                            Laki-laki
+                        </label>
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="female" class="sr-only" @checked($genderOld === 'female')>
+                            Perempuan
+                        </label>
+                    </div>
+                    @error('gender') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @guest
@@ -326,6 +350,8 @@
                         </div>
                     </div>
                 </div>
+
+                <x-social-follow :old="old('followed_socials', isset($person) && $person?->followed_socials !== null ? ($person->followed_socials ? '1' : '0') : null)" />
 
                 <div>
                     <label for="motivation" class="block text-sm font-medium text-teal-800">Kenapa kamu ingin ikut program ini?</label>

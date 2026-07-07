@@ -49,7 +49,7 @@ class ApplicationController extends Controller
         // ?ubah=1 opens the editable form when something needs updating. A
         // profile predating the intake fields (no birth date yet) skips the
         // confirmation and completes the editable form directly.
-        $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null;
+        $confirming = $user !== null && ! $request->boolean('ubah') && $person?->birth_date !== null && $person->gender !== null;
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
@@ -101,12 +101,14 @@ class ApplicationController extends Controller
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
                 'birth_date' => $data['birth_date'],
+                'gender' => $data['gender'],
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'instagram_username' => $data['instagram_username'] ?? null,
                 'tiktok_followers' => $data['tiktok_followers'] ?? null,
                 'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
                 'affiliate_level' => $data['affiliate_level'] ?? null,
                 'affiliate_gmv_range' => $data['affiliate_gmv_range'] ?? null,
+                'followed_socials' => $data['followed_socials'],
             ]);
             $user->update(['name' => $data['name'], 'email' => $data['email']]);
         } else {
@@ -121,12 +123,14 @@ class ApplicationController extends Controller
                 'province_code' => $data['province_code'],
                 'city_code' => $data['city_code'],
                 'birth_date' => $data['birth_date'],
+                'gender' => $data['gender'],
                 'tiktok_username' => $data['tiktok_username'] ?? null,
                 'instagram_username' => $data['instagram_username'] ?? null,
                 'tiktok_followers' => $data['tiktok_followers'] ?? null,
                 'has_started_affiliate' => $data['has_started_affiliate'] ?? null,
                 'affiliate_level' => $data['affiliate_level'] ?? null,
                 'affiliate_gmv_range' => $data['affiliate_gmv_range'] ?? null,
+                'followed_socials' => $data['followed_socials'],
             ]);
 
             Auth::login($account);

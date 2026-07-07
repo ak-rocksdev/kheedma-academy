@@ -51,8 +51,10 @@ class AccountAtApplicationTest extends TestCase
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',
+            'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ];
     }
 
@@ -110,8 +112,10 @@ class AccountAtApplicationTest extends TestCase
                 'province_code' => '32',
                 'city_code' => '3273',
                 'birth_date' => '2000-01-15',
+                'gender' => 'male',
                 'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
+                'followed_socials' => 1,
             ])
             ->assertRedirect(route('daftar.thankyou'));
 
@@ -136,8 +140,10 @@ class AccountAtApplicationTest extends TestCase
                 'province_code' => '32',
                 'city_code' => '3273',
                 'birth_date' => '2000-01-15',
+                'gender' => 'male',
                 'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
+                'followed_socials' => 1,
             ])
             ->assertRedirect(route('daftar.thankyou'));
 
@@ -168,8 +174,10 @@ class AccountAtApplicationTest extends TestCase
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',
+            'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ])->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(1, Application::count());
@@ -193,8 +201,10 @@ class AccountAtApplicationTest extends TestCase
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',
+            'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ])->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(1, Application::count());

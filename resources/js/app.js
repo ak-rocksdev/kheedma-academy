@@ -172,8 +172,33 @@ function initAffiliateChain() {
     syncStarted();
 }
 
+/**
+ * Social-follow nudge: clicking a TikTok/Instagram CTA reveals its check
+ * mark; answering "Belum" to the pill question below nudges the user back
+ * to the CTAs instead of silently accepting it.
+ */
+function initSocialFollow() {
+    document.querySelectorAll('[data-social-cta]').forEach((cta) => {
+        cta.addEventListener('click', () => {
+            cta.querySelector('[data-social-check]')?.classList.remove('hidden');
+        });
+    });
+
+    const nudge = document.querySelector('[data-follow-nudge]');
+    const radios = document.querySelectorAll('input[name="followed_socials"]');
+    if (!radios.length) return;
+
+    function syncFollowNudge() {
+        const checked = document.querySelector('input[name="followed_socials"]:checked')?.value;
+        nudge?.classList.toggle('hidden', checked !== '0');
+    }
+    radios.forEach((r) => r.addEventListener('change', syncFollowNudge));
+    syncFollowNudge();
+}
+
 initRegionSelects();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();
 initAffiliateChain();
+initSocialFollow();

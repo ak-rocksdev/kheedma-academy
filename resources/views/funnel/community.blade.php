@@ -69,6 +69,21 @@
                 </div>
 
                 <div>
+                    <span class="block text-sm font-medium text-teal-800">Jenis kelamin</span>
+                    <div class="mt-1.5 flex gap-3">
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="male" class="sr-only" @checked(old('gender') === 'male')>
+                            Laki-laki
+                        </label>
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="female" class="sr-only" @checked(old('gender') === 'female')>
+                            Perempuan
+                        </label>
+                    </div>
+                    @error('gender') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
                     <label for="password" class="block text-sm font-medium text-teal-800">Kata sandi <span class="text-teal-800/50">(minimal 8 karakter)</span></label>
                     <input id="password" name="password" type="password" autocomplete="new-password"
                            class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
@@ -133,6 +148,8 @@
                         </div>
                     </div>
                 </div>
+
+                <x-social-follow :old="old('followed_socials')" />
 
                 <div>
                     <label for="motivation" class="block text-sm font-medium text-teal-800">Apa alasanmu ingin gabung komunitas ini?</label>

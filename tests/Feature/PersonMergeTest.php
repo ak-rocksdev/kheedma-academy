@@ -217,8 +217,10 @@ class PersonMergeTest extends TestCase
             'email' => 'siti@example.test',
             'password' => 'rahasia-kuat',
             'birth_date' => '2000-01-15',
+            'gender' => 'female',
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'tiktok',
+            'followed_socials' => 1,
         ])->assertRedirect('/akun');
 
         $this->assertSame('+6281298765432', Person::where('email', 'siti@example.test')->sole()->phone);

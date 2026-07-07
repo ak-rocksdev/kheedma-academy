@@ -13,6 +13,7 @@ import { useAuthStore } from '@/stores/auth';
 import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
 
 const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
+const GENDER_LABELS = { male: 'Laki-laki', female: 'Perempuan' };
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -222,6 +223,7 @@ function fmtDate(iso) {
                     <div><span class="text-muted-foreground">TikTok</span><div class="font-medium">{{ person.tiktok_username || '—' }}</div></div>
                     <div><span class="text-muted-foreground">Instagram</span><div class="font-medium">{{ person.instagram_username || '—' }}</div></div>
                     <div><span class="text-muted-foreground">Usia</span><div class="font-medium">{{ person.age !== null ? `${person.age} tahun` : '—' }}</div></div>
+                    <div><span class="text-muted-foreground">Jenis kelamin</span><div class="font-medium">{{ GENDER_LABELS[person.gender] ?? '—' }}</div></div>
                     <div><span class="text-muted-foreground">Followers TikTok</span><div class="font-medium">{{ person.tiktok_followers ?? '—' }}</div></div>
                     <div>
                         <span class="text-muted-foreground">Affiliate TikTok</span>
@@ -230,6 +232,14 @@ function fmtDate(iso) {
                                 Sudah · Level {{ person.affiliate_level }} · {{ GMV_LABELS[person.affiliate_gmv_range] }}
                             </template>
                             <template v-else-if="person.has_started_affiliate === false">Belum mulai</template>
+                            <template v-else>—</template>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Follow sosmed</span>
+                        <div class="font-medium">
+                            <template v-if="person.followed_socials === true">Sudah</template>
+                            <template v-else-if="person.followed_socials === false">Belum</template>
                             <template v-else>—</template>
                         </div>
                     </div>

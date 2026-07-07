@@ -19,11 +19,15 @@ class Person extends Model
     /** Fixed choices for the GMV range selector. */
     public const GMV_RANGES = ['0-50', '50-100', '100+'];
 
+    /** Fixed choices for the gender selector. */
+    public const GENDERS = ['male', 'female'];
+
     protected $fillable = [
         'name',
         'phone',
         'email',
         'birth_date',
+        'gender',
         'province_code',
         'city_code',
         'tiktok_username',
@@ -32,6 +36,7 @@ class Person extends Model
         'has_started_affiliate',
         'affiliate_level',
         'affiliate_gmv_range',
+        'followed_socials',
     ];
 
     protected function casts(): array
@@ -39,6 +44,7 @@ class Person extends Model
         return [
             'birth_date' => 'date',
             'has_started_affiliate' => 'boolean',
+            'followed_socials' => 'boolean',
         ];
     }
 
