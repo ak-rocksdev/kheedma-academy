@@ -20,6 +20,12 @@ class ProgramPageController extends Controller
     {
         abort_if($program->status === 'draft', 404);
 
-        return view('funnel.program', ['program' => $program, 'isOpen' => $program->isOpen()]);
+        $isOpen = $program->isOpen();
+
+        return view('funnel.program', [
+            'program' => $program,
+            'isOpen' => $isOpen,
+            'openCohort' => $isOpen ? $program->openCohort() : null,
+        ]);
     }
 }

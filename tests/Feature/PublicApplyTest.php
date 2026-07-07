@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Cohort;
 use App\Models\Program;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,15 @@ class PublicApplyTest extends TestCase
         ]);
     }
 
+    /** Active program with an open-window Angkatan: open for registration. */
+    private function openProgram(): Program
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+
+        return $program;
+    }
+
     /** @return array<string, string> */
     private function validPayload(): array
     {
@@ -39,7 +49,7 @@ class PublicApplyTest extends TestCase
 
     public function test_form_renders_for_open_program(): void
     {
-        $program = Program::factory()->active()->create();
+        $program = $this->openProgram();
 
         $this->get("/program/{$program->slug}/daftar")
             ->assertOk()
@@ -64,7 +74,7 @@ class PublicApplyTest extends TestCase
 
     public function test_submission_links_program_and_referral_source(): void
     {
-        $program = Program::factory()->active()->create();
+        $program = $this->openProgram();
 
         $this->post("/program/{$program->slug}/daftar", $this->validPayload())
             ->assertRedirect(route('daftar.thankyou'));
@@ -77,7 +87,7 @@ class PublicApplyTest extends TestCase
 
     public function test_referral_source_is_required_and_validated(): void
     {
-        $program = Program::factory()->active()->create();
+        $program = $this->openProgram();
 
         $this->from("/program/{$program->slug}/daftar")
             ->post("/program/{$program->slug}/daftar", [...$this->validPayload(), 'referral_source' => 'radio'])
@@ -86,7 +96,8 @@ class PublicApplyTest extends TestCase
 
     public function test_submission_rejected_when_program_closed(): void
     {
-        $program = Program::factory()->windowClosed()->create();
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->closedWindow()->create(['program_id' => $program->id]);
 
         $this->post("/program/{$program->slug}/daftar", $this->validPayload())
             ->assertRedirect("/program/{$program->slug}");
