@@ -124,7 +124,7 @@
                     <input type="hidden" name="has_started_affiliate" value="{{ $person->has_started_affiliate === null ? '' : ($person->has_started_affiliate ? '1' : '0') }}">
                     <input type="hidden" name="affiliate_level" value="{{ $person->affiliate_level }}">
                     <input type="hidden" name="affiliate_gmv_range" value="{{ $person->affiliate_gmv_range }}">
-                    <input type="hidden" name="followed_socials" value="{{ $person->followed_socials ? 1 : 0 }}">
+                    <input type="hidden" name="followed_socials" value="{{ $person->followed_socials === null ? '' : ($person->followed_socials ? 1 : 0) }}">
 
                     <div>
                         <h2 class="text-lg font-bold text-teal-900">Konfirmasi datamu</h2>
