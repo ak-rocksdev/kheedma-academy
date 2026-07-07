@@ -16,7 +16,7 @@ class MergePeople
      * Fields the survivor inherits from the duplicate when its own value is
      * missing. Identity fields (name/phone/email) always stay the survivor's.
      */
-    private const BACKFILL_FIELDS = ['province_code', 'city_code', 'tiktok_username', 'instagram_username'];
+    private const BACKFILL_FIELDS = ['province_code', 'city_code', 'birth_date', 'tiktok_username', 'instagram_username', 'tiktok_followers', 'has_started_affiliate', 'affiliate_level', 'affiliate_gmv_range'];
 
     /**
      * Dry-run: what would move, and what blocks the merge. Shares the exact

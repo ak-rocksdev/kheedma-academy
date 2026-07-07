@@ -211,7 +211,7 @@
 
                 <div>
                     <label for="birth_date" class="block text-sm font-medium text-teal-800">Tanggal lahir</label>
-                    <input id="birth_date" name="birth_date" type="date" max="{{ now()->toDateString() }}"
+                    <input id="birth_date" name="birth_date" type="date" max="{{ now()->subDay()->toDateString() }}"
                            value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
                            class="{{ $field }} @error('birth_date') border border-red-400 @else border border-teal-900/15 @enderror">
                     @error('birth_date') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror

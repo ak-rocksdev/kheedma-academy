@@ -42,7 +42,7 @@ class ApplicantController extends Controller
         return response()->json($applications);
     }
 
-    /** Record the intake decision / pre-filter task result on an application. */
+    /** Record the intake decision on an application. */
     public function update(Request $request, Application $application): JsonResponse
     {
         $data = $request->validate([
