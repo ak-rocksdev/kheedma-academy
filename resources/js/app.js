@@ -253,7 +253,7 @@ function renderLiveError(form, name, message) {
         }
         line = document.createElement('p');
         line.setAttribute('data-live-error-for', name);
-        line.className = 'mt-1.5 text-sm text-red-600';
+        line.className = 'mt-1.5 text-xs text-red-600';
         container.appendChild(line);
     }
     line.textContent = message;
@@ -280,22 +280,24 @@ function initLiveValidation() {
             if (input.name === 'website') {
                 return; // honeypot — never validated
             }
-            input.addEventListener('change', () => validator.validate(input.name));
+            // The current value must be passed along: the validator dedupes on
+            // it, and a bare validate(name) never fires a request.
+            input.addEventListener('change', () => validator.validate(input.name, input.value));
             // Once a field is showing an error, re-validate as the user types
             // so a fix clears it immediately instead of waiting for blur.
             input.addEventListener('input', () => {
                 if (validator.errors()[input.name]) {
-                    validator.validate(input.name);
+                    validator.validate(input.name, input.value);
                 }
             });
         });
 
         form.querySelectorAll('select').forEach((select) => {
-            select.addEventListener('change', () => validator.validate(select.name));
+            select.addEventListener('change', () => validator.validate(select.name, select.value));
         });
 
         form.querySelectorAll('input[type="radio"]').forEach((radio) => {
-            radio.addEventListener('change', () => validator.validate(radio.name));
+            radio.addEventListener('change', () => validator.validate(radio.name, radio.value));
         });
     });
 }
