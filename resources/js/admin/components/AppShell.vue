@@ -1,7 +1,7 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterView, RouterLink, useRouter, useRoute } from 'vue-router';
-import { LayoutDashboard, Users, BookOpen, GraduationCap, UserCog, HeartHandshake } from 'lucide-vue-next';
+import { LayoutDashboard, Users, BookUser, BookOpen, GraduationCap, UserCog, HeartHandshake } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth';
 
@@ -15,6 +15,7 @@ const nav = computed(() =>
     [
         { to: { name: 'dashboard' }, match: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
         { to: { name: 'applicants' }, match: '/pelamar', label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
+        { to: { name: 'people' }, match: '/orang', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
         { to: { name: 'programs' }, match: '/programs', label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
         { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },

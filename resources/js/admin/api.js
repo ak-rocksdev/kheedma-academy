@@ -116,6 +116,24 @@ export const programs = {
     },
 };
 
+export const people = {
+    list(query = '') {
+        return api(`/admin/people${query}`);
+    },
+    mergePreview(survivorId, duplicateId) {
+        return api(`/admin/people/merge-preview?survivor_id=${survivorId}&duplicate_id=${duplicateId}`);
+    },
+    merge(survivorId, duplicateId) {
+        return api('/admin/people/merge', {
+            method: 'POST',
+            body: { survivor_id: survivorId, duplicate_id: duplicateId },
+        });
+    },
+    updateAccount(personId, payload) {
+        return api(`/admin/people/${personId}/account`, { method: 'PATCH', body: payload });
+    },
+};
+
 export const communityMembers = {
     list(query = '') {
         return api(`/admin/community-members${query}`);
