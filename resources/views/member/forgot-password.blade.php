@@ -1,5 +1,5 @@
-<x-layouts.public title="Masuk"
-    description="Masuk ke akun Kheedma Academy kamu.">
+<x-layouts.public title="Lupa Kata Sandi"
+    description="Atur ulang kata sandi akun Kheedma Academy kamu.">
 
     @php
         $field = 'mt-1.5 w-full rounded-lg bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
@@ -12,16 +12,19 @@
             <div class="text-center">
                 <x-logo variant="stacked" class="mx-auto h-20" />
                 <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Akun</p>
-                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Masuk.</h1>
+                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Lupa kata sandi?</h1>
+                <p class="mx-auto mt-4 text-sm leading-relaxed text-teal-800/70">
+                    Masukkan emailmu. Kami kirimkan tautan untuk mengatur ulang kata sandi.
+                </p>
             </div>
 
-            @if (session('reset'))
+            @if (session('status'))
                 <div class="mt-8 rounded-xl border border-teal-600/30 bg-teal-50 px-5 py-4 text-sm text-teal-800">
-                    {{ session('reset') }}
+                    {{ session('status') }}
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('member.login.store') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <form method="POST" action="{{ route('member.password.email') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
                 <div>
@@ -32,28 +35,14 @@
                     @error('email') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                <div>
-                    <label for="password" class="block text-sm font-medium text-teal-800">Kata sandi</label>
-                    <input id="password" name="password" type="password" autocomplete="current-password" required
-                           class="{{ $field }} border border-teal-900/15" placeholder="••••••••">
-                </div>
-
-                <div class="flex items-center justify-between text-sm">
-                    <label class="flex items-center gap-2 text-teal-800/70">
-                        <input type="checkbox" name="remember" value="1" class="rounded border-teal-900/20 text-teal-700 focus:ring-teal-600/30">
-                        Ingat saya
-                    </label>
-                    <a href="{{ route('member.password.request') }}" class="font-medium text-teal-700 hover:text-orange-600">Lupa kata sandi?</a>
-                </div>
-
                 <button type="submit"
                         class="inline-flex w-full items-center justify-center rounded-full bg-teal-700 px-7 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-teal-800">
-                    Masuk
+                    Kirim Tautan
                 </button>
             </form>
 
             <p class="mt-6 text-center text-sm text-teal-800/60">
-                Belum punya akun? <a href="{{ route('komunitas') }}" class="font-semibold text-teal-700 hover:text-orange-600">Gabung komunitas</a>
+                Ingat kata sandimu? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk</a>
             </p>
         </div>
     </section>

@@ -4,6 +4,7 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\MemberAuthController;
+use App\Http\Controllers\MemberPasswordController;
 use App\Http\Controllers\ProgramPageController;
 use Illuminate\Support\Facades\Route;
 
@@ -39,6 +40,15 @@ Route::get('/masuk', [MemberAuthController::class, 'showLogin'])->name('member.l
 Route::post('/masuk', [MemberAuthController::class, 'login'])->middleware('throttle:10,1')->name('member.login.store');
 Route::post('/keluar', [MemberAuthController::class, 'logout'])->name('member.logout');
 Route::get('/akun', [MemberAreaController::class, 'index'])->middleware('auth')->name('member.area');
+
+/*
+ | Member password reset. The GET reset route MUST be named password.reset —
+ | Laravel's reset notification builds its URL from that name.
+ */
+Route::get('/lupa-password', [MemberPasswordController::class, 'requestForm'])->name('member.password.request');
+Route::post('/lupa-password', [MemberPasswordController::class, 'sendLink'])->middleware('throttle:6,1')->name('member.password.email');
+Route::get('/reset-password/{token}', [MemberPasswordController::class, 'resetForm'])->name('password.reset');
+Route::post('/reset-password', [MemberPasswordController::class, 'update'])->middleware('throttle:6,1')->name('member.password.update');
 
 /*
  | Admin panel (Vue SPA). A single Blade entrypoint boots the SPA; Vue Router
