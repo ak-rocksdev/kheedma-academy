@@ -56,10 +56,17 @@ Consequences:
 
 **Program**
 - `slug` (unique, stable — batch changes never change the URL), `name`, `tagline`,
-  `description`, `status` (`draft` / `active` / `inactive`),
-  `registration_opens_at` / `registration_closes_at` (nullable window; overrides status
-  display when set), `selection_mode` (`selective` | `instant`).
+  `description`, `status` (`draft` / `active` / `inactive` — catalog visibility),
+  `selection_mode` (`selective` | `instant`).
 - Relations: hasMany Cohort (Angkatan), hasMany Application.
+- **Model correction (2026-07-07, post-Phase-1):** the registration window originally
+  sat on Program; it belongs to the *intake*, so it lives on the **Angkatan**
+  (`registration_opens_at` / `registration_closes_at` on cohorts). “Program is open” is
+  DERIVED: status `active` AND at least one Angkatan whose window is open. This replaces
+  the previously planned `cohorts.accepting_enrollments` flag entirely — the open window
+  IS the intake marker, so the invalid state “door open but no batch accepting” cannot
+  be represented. Consequence: an Angkatan must exist before registration can open, and
+  the public landing can show “Kelas dimulai {start_date}” from the open Angkatan.
 - Inactive/closed program: its slug URL stays alive, showing “Pendaftaran ditutup” + a
   community join invitation (old shared links keep harvesting leads).
 
@@ -93,8 +100,11 @@ Consequences:
 - `cohorts.program_id` — FK; an Angkatan belongs to a program. Migration note: the dev
   DB already holds Angkatan rows, so the migration adds the column nullable and the
   phase plan backfills existing rows to the first Program before tightening validation.
-- `cohorts.accepting_enrollments` (boolean) — marks which batch an `instant`-mode
-  registration auto-enrolls into; also useful as an explicit intake flag for selective mode.
+- `cohorts.registration_opens_at` / `registration_closes_at` (nullable timestamps) — the
+  intake window, moved here from `programs` (see the Program model correction above).
+  The Angkatan whose window is currently open is the intake target: `instant`-mode
+  registrations auto-enroll into it, and selective-mode placements default to it. (The
+  earlier `accepting_enrollments` boolean is superseded by this window.)
 - **Person merge (v1 Tahap E) scope grows**: when built, the merge must also repoint
   `community_memberships` and `orders` (alongside applications/enrollments) to the
   surviving Person.
@@ -107,7 +117,7 @@ v1. What’s new is *who pulls the trigger*:
 - **Selective program**: admin reviews the application (pre-filter task verdict) →
   accepts → one-click “Masukkan ke Angkatan” creates the Enrollment + first StatusEvent.
 - **Instant program**: registration (and payment, when the program is paid) creates the
-  Enrollment automatically into the program’s `accepting_enrollments` Angkatan.
+  Enrollment automatically into the program’s Angkatan whose registration window is open.
 - **Removal** (“keluarkan”) in both modes = a new StatusEvent (`dropped` + reason),
   never a delete. All drop-off metrics derive from this log.
 
@@ -162,8 +172,8 @@ phase:
 | Enroll accepted applicant into Angkatan / record status events | `enrollments.manage` |
 
 Existing screens gain program awareness: applications list gets a program column +
-filter; the Angkatan screen gains its program parent and the `accepting_enrollments`
-toggle. Permission seeding follows the Tahap C pattern (seeder + cache flush; admin gets
+filter; the Angkatan screen gains its program parent and the registration-window
+fields. Permission seeding follows the Tahap C pattern (seeder + cache flush; admin gets
 all, mentor read-only where sensible).
 
 ## 8. Build phases
@@ -174,7 +184,7 @@ Each phase is its own spec → plan → implementation cycle (Tahap C workflow).
 |---|---|---|
 | **1. Program catalog + funnel** | Program entity/CRUD/permissions, `/program/{slug}`, `/daftar` chooser, `/daftar/{slug}` with `applications.program_id`, closed-program page | Door 1 |
 | **2. Community + accounts** | CommunityMembership, participant account creation, member login + minimal area, `/komunitas` | Door 2 — launched together with Phase 1 as the new `/daftar` |
-| **3. Enrollment engine** | Enrollment + StatusEvent UI (one-click placement, status recording, keluarkan-with-reason), `accepting_enrollments`, auto-enroll trigger for instant mode | Runs the first class |
+| **3. Enrollment engine** | Enrollment + StatusEvent UI (one-click placement, status recording, keluarkan-with-reason), auto-enroll trigger for instant mode (targets the open-window Angkatan) | Runs the first class |
 | **4. Digital products** | Product, Order (manual flow), proof upload, admin confirmation, in-browser PDF reader | Monetization |
 | **5. Announcements hub** | Announcement CRUD + member feed | Retention |
 
