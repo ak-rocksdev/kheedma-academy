@@ -37,6 +37,7 @@ class StoreApplicationRequest extends FormRequest
                 'required', 'email:rfc', 'max:160',
                 Rule::unique('users', 'email')->ignore(Auth::id()),
                 Rule::unique('people', 'email')
+                    ->ignore($person?->id)
                     ->where(fn ($q) => $q->where('phone', '!=', $this->input('phone')))
                     ->whereNull('deleted_at'),
             ],

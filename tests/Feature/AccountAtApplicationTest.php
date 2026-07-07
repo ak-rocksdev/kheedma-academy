@@ -116,6 +116,29 @@ class AccountAtApplicationTest extends TestCase
         $this->assertSame('Budi Santoso Baru', $user->fresh()->name);
     }
 
+    public function test_authenticated_participant_can_change_phone_keeping_email(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        $user = Auth::user();
+
+        $second = $this->openProgram();
+
+        $this->actingAs($user)
+            ->post("/program/{$second->slug}/daftar", [
+                'name' => 'Budi Santoso',
+                'phone' => '081299998888',
+                'email' => 'budi@example.test',
+                'province_code' => '32',
+                'city_code' => '3273',
+                'referral_source' => 'teman',
+            ])
+            ->assertRedirect(route('daftar.thankyou'));
+
+        $this->assertSame('+6281299998888', Person::sole()->phone);
+        $this->assertSame(2, Application::count());
+    }
+
     public function test_authenticated_participant_sees_pending_notice_instead_of_form(): void
     {
         $program = $this->openProgram();
