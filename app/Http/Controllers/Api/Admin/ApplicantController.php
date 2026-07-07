@@ -19,7 +19,11 @@ class ApplicantController extends Controller
         ]);
 
         $applications = Application::query()
-            ->with(['person:id,name,phone,email,city_code', 'person.city:code,name', 'program:id,name'])
+            ->with([
+                'person' => fn ($q) => $q->select('id', 'name', 'phone', 'email', 'city_code')->withCount('applications'),
+                'person.city:code,name',
+                'program:id,name',
+            ])
             ->when($request->filled('status'), fn ($q) => $q->where('status', $request->string('status')))
             ->when($request->filled('program'), fn ($q) => $q->where('program_id', $request->integer('program')))
             ->when($request->filled('q'), function ($q) use ($request) {
@@ -74,6 +78,8 @@ class ApplicantController extends Controller
                 'phone' => $a->person->phone,
                 'email' => $a->person->email,
                 'city' => $a->person->city?->name,
+                // Loaded on index; the update path reloads without the count (null there).
+                'applications_count' => $a->person->applications_count ?? null,
             ],
         ];
     }

@@ -104,4 +104,39 @@ class PublicApplyTest extends TestCase
 
         $this->assertSame(0, Application::count());
     }
+
+    public function test_duplicate_pending_submission_does_not_create_a_second_application(): void
+    {
+        $program = $this->openProgram();
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload());
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+            ->assertRedirect(route('daftar.thankyou'));
+
+        $this->assertSame(1, Application::count());
+    }
+
+    public function test_rejected_applicant_can_reapply(): void
+    {
+        $program = $this->openProgram();
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload());
+        Application::sole()->update(['status' => 'rejected']);
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+            ->assertRedirect(route('daftar.thankyou'));
+
+        $this->assertSame(2, Application::count());
+    }
+
+    public function test_pending_application_elsewhere_does_not_block_another_program(): void
+    {
+        $first = $this->openProgram();
+        $second = $this->openProgram();
+
+        $this->post("/program/{$first->slug}/daftar", $this->validPayload());
+        $this->post("/program/{$second->slug}/daftar", $this->validPayload());
+
+        $this->assertSame(2, Application::count());
+    }
 }

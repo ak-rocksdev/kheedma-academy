@@ -79,4 +79,22 @@ function initRegionSelects() {
     }
 }
 
+/**
+ * Double-submit guard: once a marked form submits, lock the button so an
+ * impatient double click cannot POST twice.
+ */
+function initSubmitOnce() {
+    document.querySelectorAll('form[data-submit-once]').forEach((form) => {
+        form.addEventListener('submit', () => {
+            const button = form.querySelector('button[type="submit"]');
+            if (button && !button.disabled) {
+                button.disabled = true;
+                button.classList.add('opacity-60', 'cursor-not-allowed');
+                button.textContent = 'Mengirim…';
+            }
+        });
+    });
+}
+
 initRegionSelects();
+initSubmitOnce();
