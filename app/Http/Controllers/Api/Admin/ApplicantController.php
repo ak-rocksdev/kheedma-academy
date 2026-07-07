@@ -42,15 +42,11 @@ class ApplicantController extends Controller
         return response()->json($applications);
     }
 
-    /** Record the intake decision / pre-filter task result on an application. */
+    /** Record the intake decision on an application. */
     public function update(Request $request, Application $application): JsonResponse
     {
         $data = $request->validate([
             'status' => ['sometimes', 'in:pending,accepted,rejected'],
-            'prefilter_submitted' => ['sometimes', 'boolean'],
-            'prefilter_link' => ['sometimes', 'nullable', 'url', 'max:255'],
-            'prefilter_verdict' => ['sometimes', 'nullable', 'in:pending,approved,rejected'],
-            'prefilter_note' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ]);
 
         if (array_key_exists('status', $data)) {
@@ -67,8 +63,6 @@ class ApplicantController extends Controller
         return [
             'id' => $a->id,
             'status' => $a->status,
-            'prefilter_submitted' => (bool) $a->prefilter_submitted,
-            'prefilter_verdict' => $a->prefilter_verdict,
             'created_at' => $a->created_at?->toIso8601String(),
             'program' => $a->program?->name,
             'referral_source' => $a->referral_source,

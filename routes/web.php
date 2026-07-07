@@ -22,7 +22,7 @@ Route::controller(ApplicationController::class)->group(function () {
     Route::get('/daftar/terima-kasih', 'thankYou')->name('daftar.thankyou');
     Route::get('/daftar/cities/{province}', 'cities')->where('province', '[0-9]{2}')->name('daftar.cities');
     Route::get('/program/{program:slug}/daftar', 'create')->name('program.apply');
-    Route::post('/program/{program:slug}/daftar', 'store')->middleware('throttle:10,1')->name('program.apply.store');
+    Route::post('/program/{program:slug}/daftar', 'store')->middleware(['throttle:10,1', 'precognitive'])->name('program.apply.store');
 });
 
 Route::get('/daftar', [ProgramPageController::class, 'chooser'])->name('daftar');
@@ -32,7 +32,7 @@ Route::get('/program/{program:slug}', [ProgramPageController::class, 'show'])->n
  | Community door — join creates a participant account and signs in.
  */
 Route::get('/komunitas', [CommunityController::class, 'show'])->name('komunitas');
-Route::post('/komunitas', [CommunityController::class, 'join'])->middleware('throttle:10,1')->name('komunitas.join');
+Route::post('/komunitas', [CommunityController::class, 'join'])->middleware(['throttle:10,1', 'precognitive'])->name('komunitas.join');
 
 /*
  | Member area (participants). Staff are redirected to /admin.

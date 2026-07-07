@@ -50,7 +50,11 @@ class AccountAtApplicationTest extends TestCase
             'password' => 'rahasia-kuat',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'gender' => 'male',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ];
     }
 
@@ -107,7 +111,11 @@ class AccountAtApplicationTest extends TestCase
                 'email' => 'budi@example.test',
                 'province_code' => '32',
                 'city_code' => '3273',
+                'birth_date' => '2000-01-15',
+                'gender' => 'male',
+                'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
+                'followed_socials' => 1,
             ])
             ->assertRedirect(route('daftar.thankyou'));
 
@@ -131,7 +139,11 @@ class AccountAtApplicationTest extends TestCase
                 'email' => 'budi@example.test',
                 'province_code' => '32',
                 'city_code' => '3273',
+                'birth_date' => '2000-01-15',
+                'gender' => 'male',
+                'motivation' => 'Ingin serius belajar affiliate.',
                 'referral_source' => 'teman',
+                'followed_socials' => 1,
             ])
             ->assertRedirect(route('daftar.thankyou'));
 
@@ -161,7 +173,11 @@ class AccountAtApplicationTest extends TestCase
             'email' => 'budi@example.test',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'gender' => 'male',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ])->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(1, Application::count());
@@ -184,7 +200,11 @@ class AccountAtApplicationTest extends TestCase
             'email' => 'budi@example.test',
             'province_code' => '32',
             'city_code' => '3273',
+            'birth_date' => '2000-01-15',
+            'gender' => 'male',
+            'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
+            'followed_socials' => 1,
         ])->assertRedirect(route('daftar.thankyou'));
 
         $this->assertSame(1, Application::count());
@@ -257,6 +277,20 @@ class AccountAtApplicationTest extends TestCase
             ->assertSee('Ubah data dulu')
             ->assertDontSee('Buat kata sandi')
             ->assertDontSee('Sudah punya akun Kheedma');
+    }
+
+    public function test_incomplete_profile_skips_the_confirmation_card(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->guestPayload());
+        Person::sole()->update(['birth_date' => null, 'gender' => null, 'followed_socials' => null]); // legacy profile, pre-intake fields
+        $second = $this->openProgram();
+
+        $this->get("/program/{$second->slug}/daftar")
+            ->assertOk()
+            ->assertDontSee('Konfirmasi datamu')
+            ->assertSee('Kirim Pendaftaran')
+            ->assertSee('Masuk sebagai');
     }
 
     public function test_participant_can_open_the_editable_form(): void

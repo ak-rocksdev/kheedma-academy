@@ -3,6 +3,7 @@
 
     @php
         $field = 'mt-1.5 w-full rounded-lg bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
+        $gmvLabels = ['0-50' => '0-50 Juta', '50-100' => '50-100 Juta', '100+' => 'Di atas 100 Juta'];
     @endphp
 
     <section class="relative overflow-hidden">
@@ -64,6 +65,13 @@
                     <input type="hidden" name="city_code" value="{{ $person->city_code }}">
                     <input type="hidden" name="tiktok_username" value="{{ $person->tiktok_username }}">
                     <input type="hidden" name="instagram_username" value="{{ $person->instagram_username }}">
+                    <input type="hidden" name="birth_date" value="{{ $person->birth_date?->toDateString() }}">
+                    <input type="hidden" name="gender" value="{{ $person->gender }}">
+                    <input type="hidden" name="tiktok_followers" value="{{ $person->tiktok_followers }}">
+                    <input type="hidden" name="has_started_affiliate" value="{{ $person->has_started_affiliate === null ? '' : ($person->has_started_affiliate ? '1' : '0') }}">
+                    <input type="hidden" name="affiliate_level" value="{{ $person->affiliate_level }}">
+                    <input type="hidden" name="affiliate_gmv_range" value="{{ $person->affiliate_gmv_range }}">
+                    <input type="hidden" name="followed_socials" value="{{ $person->followed_socials === null ? '' : ($person->followed_socials ? 1 : 0) }}">
 
                     <div>
                         <h2 class="text-lg font-bold text-teal-900">Konfirmasi datamu</h2>
@@ -101,7 +109,45 @@
                                 <dd class="font-medium text-teal-900">{{ $person->instagram_username }}</dd>
                             </div>
                         @endif
+                        @if ($person->birth_date)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Tanggal lahir</dt>
+                                <dd class="font-medium text-teal-900">{{ $person->birth_date->locale('id')->translatedFormat('j F Y') }} ({{ $person->age }} tahun)</dd>
+                            </div>
+                        @endif
+                        @if ($person->gender)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Jenis kelamin</dt>
+                                <dd class="font-medium text-teal-900">{{ $person->gender === 'male' ? 'Laki-laki' : 'Perempuan' }}</dd>
+                            </div>
+                        @endif
+                        @if ($person->tiktok_followers !== null)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Followers TikTok</dt>
+                                <dd class="font-medium text-teal-900">{{ number_format($person->tiktok_followers) }}</dd>
+                            </div>
+                        @endif
+                        @if ($person->has_started_affiliate !== null)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Affiliate TikTok</dt>
+                                <dd class="font-medium text-teal-900">
+                                    @if ($person->has_started_affiliate)
+                                        Sudah &middot; Level {{ $person->affiliate_level }} &middot; {{ $gmvLabels[$person->affiliate_gmv_range] ?? $person->affiliate_gmv_range }}
+                                    @else
+                                        Belum mulai
+                                    @endif
+                                </dd>
+                            </div>
+                        @endif
                     </dl>
+
+                    <div>
+                        <label for="motivation" class="block text-sm font-medium text-teal-800">Kenapa kamu ingin ikut program ini?</label>
+                        <textarea id="motivation" name="motivation" rows="3"
+                                  class="{{ $field }} @error('motivation') border border-red-400 @else border border-teal-900/15 @enderror"
+                                  placeholder="Ceritakan alasanmu…">{{ old('motivation') }}</textarea>
+                        @error('motivation') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
 
                     <div>
                         <label for="referral_source" class="block text-sm font-medium text-teal-800">Tahu program ini dari mana?</label>
@@ -137,7 +183,7 @@
                     </div>
                 </form>
             @else
-            <form method="POST" data-submit-once action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <form method="POST" data-submit-once data-live-validate data-validate-url="{{ url()->current() }}" action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
                 {{-- Honeypot: hidden from humans (inline style so it never depends on CSS build), tempting to bots --}}
@@ -152,7 +198,7 @@
                     <input id="name" name="name" type="text" value="{{ old('name', $person?->name) }}" autocomplete="name"
                            class="{{ $field }} @error('name') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="Nama sesuai identitas">
-                    @error('name') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('name') <p data-server-error-for="name" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -160,7 +206,7 @@
                     <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone', $person?->phone) }}" autocomplete="tel"
                            class="{{ $field }} @error('phone') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="0812xxxxxxx">
-                    @error('phone') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('phone') <p data-server-error-for="phone" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -168,7 +214,31 @@
                     <input id="email" name="email" type="email" value="{{ old('email', $person?->email) }}" autocomplete="email"
                            class="{{ $field }} @error('email') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="kamu@email.com">
-                    @error('email') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('email') <p data-server-error-for="email" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                <div>
+                    <label for="birth_date" class="block text-sm font-medium text-teal-800">Tanggal lahir</label>
+                    <input id="birth_date" name="birth_date" type="date" max="{{ now()->subDay()->toDateString() }}"
+                           value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
+                           class="{{ $field }} @error('birth_date') border border-red-400 @else border border-teal-900/15 @enderror">
+                    @error('birth_date') <p data-server-error-for="birth_date" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                </div>
+
+                @php $genderOld = old('gender', $person?->gender); @endphp
+                <div>
+                    <span class="block text-sm font-medium text-teal-800">Jenis kelamin</span>
+                    <div class="mt-1.5 flex gap-3">
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="male" class="sr-only" @checked($genderOld === 'male')>
+                            Laki-laki
+                        </label>
+                        <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                            <input type="radio" name="gender" value="female" class="sr-only" @checked($genderOld === 'female')>
+                            Perempuan
+                        </label>
+                    </div>
+                    @error('gender') <p data-server-error-for="gender" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @guest
@@ -178,7 +248,7 @@
                                class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
                                placeholder="••••••••">
                         <p class="mt-1.5 text-xs text-teal-800/50">Akunmu dibuat otomatis untuk memantau status pendaftaran dan mengubah datamu nanti.</p>
-                        @error('password') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest
 
@@ -195,7 +265,7 @@
                                 <option value="{{ $province->code }}" @selected(old('province_code', $person?->province_code) === $province->code)>{{ $province->name }}</option>
                             @endforeach
                         </select>
-                        @error('province_code') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('province_code') <p data-server-error-for="province_code" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -205,23 +275,90 @@
                                 class="@error('city_code') has-error @enderror">
                             <option value="">Pilih provinsi dulu…</option>
                         </select>
-                        @error('city_code') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('city_code') <p data-server-error-for="city_code" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div>
-                        <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional)</span></label>
+                        <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional, tanpa @)</span></label>
                         <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username', $person?->tiktok_username) }}"
-                               class="{{ $field }} border border-teal-900/15" placeholder="@username">
-                        @error('tiktok_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                               class="{{ $field }} border border-teal-900/15" placeholder="username">
+                        @error('tiktok_username') <p data-server-error-for="tiktok_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
                         <label for="instagram_username" class="block text-sm font-medium text-teal-800">Akun Instagram <span class="text-teal-800/50">(opsional)</span></label>
                         <input id="instagram_username" name="instagram_username" type="text" value="{{ old('instagram_username', $person?->instagram_username) }}"
                                class="{{ $field }} border border-teal-900/15" placeholder="@username">
-                        @error('instagram_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('instagram_username') <p data-server-error-for="instagram_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
+                </div>
+
+                @php
+                    $hasStartedAffiliateOld = old(
+                        'has_started_affiliate',
+                        $person?->has_started_affiliate === null ? null : ($person->has_started_affiliate ? '1' : '0')
+                    );
+                @endphp
+                <div data-tiktok-dependents class="hidden space-y-6">
+                    <div>
+                        <label for="tiktok_followers" class="block text-sm font-medium text-teal-800">Jumlah followers TikTok</label>
+                        <input id="tiktok_followers" name="tiktok_followers" type="number" min="0"
+                               value="{{ old('tiktok_followers', $person?->tiktok_followers) }}"
+                               class="{{ $field }} @error('tiktok_followers') border border-red-400 @else border border-teal-900/15 @enderror">
+                        @error('tiktok_followers') <p data-server-error-for="tiktok_followers" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div>
+                        <span class="block text-sm font-medium text-teal-800">Sudah mulai affiliate TikTok?</span>
+                        <div class="mt-1.5 flex gap-3">
+                            <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                                <input type="radio" name="has_started_affiliate" value="1" class="sr-only" @checked($hasStartedAffiliateOld === '1')>
+                                Sudah
+                            </label>
+                            <label class="cursor-pointer rounded-full border border-teal-900/15 px-5 py-2 text-sm font-medium text-teal-800 transition has-[:checked]:border-teal-600 has-[:checked]:bg-teal-700 has-[:checked]:text-white">
+                                <input type="radio" name="has_started_affiliate" value="0" class="sr-only" @checked($hasStartedAffiliateOld === '0')>
+                                Belum
+                            </label>
+                        </div>
+                        @error('has_started_affiliate') <p data-server-error-for="has_started_affiliate" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div data-affiliate-dependents class="hidden space-y-6">
+                        <div>
+                            <label for="affiliate_level" class="block text-sm font-medium text-teal-800">Level affiliate</label>
+                            <select id="affiliate_level" name="affiliate_level"
+                                    class="{{ $field }} @error('affiliate_level') border border-red-400 @else border border-teal-900/15 @enderror">
+                                <option value="">Pilih level…</option>
+                                @for ($level = 0; $level <= 8; $level++)
+                                    <option value="{{ $level }}" @selected((string) old('affiliate_level', $person?->affiliate_level) === (string) $level)>{{ $level }}</option>
+                                @endfor
+                            </select>
+                            @error('affiliate_level') <p data-server-error-for="affiliate_level" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+
+                        <div>
+                            <label for="affiliate_gmv_range" class="block text-sm font-medium text-teal-800">GMV affiliate TikTok</label>
+                            <select id="affiliate_gmv_range" name="affiliate_gmv_range"
+                                    class="{{ $field }} @error('affiliate_gmv_range') border border-red-400 @else border border-teal-900/15 @enderror">
+                                <option value="">Pilih rentang…</option>
+                                @foreach ($gmvLabels as $value => $label)
+                                    <option value="{{ $value }}" @selected(old('affiliate_gmv_range', $person?->affiliate_gmv_range) === $value)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            @error('affiliate_gmv_range') <p data-server-error-for="affiliate_gmv_range" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                    </div>
+                </div>
+
+                <x-social-follow :old="old('followed_socials', isset($person) && $person?->followed_socials !== null ? ($person->followed_socials ? '1' : '0') : null)" />
+
+                <div>
+                    <label for="motivation" class="block text-sm font-medium text-teal-800">Kenapa kamu ingin ikut program ini?</label>
+                    <textarea id="motivation" name="motivation" rows="3"
+                              class="{{ $field }} @error('motivation') border border-red-400 @else border border-teal-900/15 @enderror"
+                              placeholder="Ceritakan alasanmu…">{{ old('motivation') }}</textarea>
+                    @error('motivation') <p data-server-error-for="motivation" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -240,7 +377,7 @@
                             <option value="{{ $value }}" @selected(old('referral_source') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    @error('referral_source') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('referral_source') <p data-server-error-for="referral_source" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @auth

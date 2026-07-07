@@ -18,18 +18,14 @@ class Application extends Model
         'people_id',
         'program_id',
         'referral_source',
+        'motivation',
         'status',
-        'prefilter_submitted',
-        'prefilter_link',
-        'prefilter_verdict',
-        'prefilter_note',
         'reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'prefilter_submitted' => 'boolean',
             'reviewed_at' => 'datetime',
         ];
     }

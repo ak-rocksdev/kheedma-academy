@@ -6,13 +6,6 @@ export const APPLICATION_STATUSES = [
     { value: 'rejected', label: 'Ditolak' },
 ];
 
-export const PREFILTER_VERDICTS = [
-    { value: '', label: '—' },
-    { value: 'pending', label: 'Menunggu' },
-    { value: 'approved', label: 'Lolos' },
-    { value: 'rejected', label: 'Gagal' },
-];
-
 export function statusVariant(status) {
     return { pending: 'warning', accepted: 'success', rejected: 'destructive' }[status] ?? 'secondary';
 }

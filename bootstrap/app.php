@@ -30,7 +30,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : route('member.login'));
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Precognitive requests (the funnel forms' live validation) need JSON
+        // 422/204 responses even though their routes live outside api/*.
         $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
+            fn (Request $request) => $request->is('api/*') || $request->isAttemptingPrecognition(),
         );
     })->create();

@@ -20,6 +20,7 @@
         "@vueuse/core": "^14.3.0",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "laravel-precognition": "^2.0.0",
         "lucide-vue-next": "^1.0.0",
         "pinia": "^3.0.4",
         "reka-ui": "^2.10.1",

@@ -77,6 +77,7 @@ class ApplicantProgramFilterTest extends TestCase
     {
         $program = Program::factory()->active()->create(['name' => 'Program Detail']);
         $application = $this->makeApplication($program, '+628444444444');
+        $application->update(['motivation' => 'Ingin serius belajar affiliate.']);
         Application::create([
             'people_id' => $application->people_id, 'status' => 'pending',
             'program_id' => $program->id, 'referral_source' => 'teman',
@@ -89,6 +90,7 @@ class ApplicantProgramFilterTest extends TestCase
             ->assertOk()
             ->assertJsonPath('person.applications.0.program', 'Program Detail')
             ->assertJsonPath('person.applications.0.attempt', 2)
+            ->assertJsonPath('person.applications.0.motivation', 'Ingin serius belajar affiliate.')
             ->assertJsonPath('person.applications.1.attempt', 1);
     }
 }

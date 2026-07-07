@@ -13,6 +13,7 @@ class CommunityMembership extends Model
     protected $fillable = [
         'people_id',
         'referral_source',
+        'motivation',
     ];
 
     public function person(): BelongsTo

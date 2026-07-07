@@ -40,7 +40,7 @@
                 </div>
 
                 <p class="mt-5 text-sm text-teal-800/60 sm:mt-6">
-                    <span class="font-semibold text-teal-700">Cohort 1 gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
+                    <span class="font-semibold text-teal-700">Kelas perdana gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
                 </p>
             </div>
 
@@ -139,7 +139,7 @@
                     Siap memulai dengan niat yang benar?
                 </h2>
                 <p class="mx-auto mt-4 max-w-xl text-base leading-relaxed text-sand-100/80">
-                    Cohort 1 dibuka gratis sebagai eksperimen terukur. Tunjukkan kesungguhanmu
+                    Kelas perdana dibuka gratis sebagai eksperimen terukur. Tunjukkan kesungguhanmu
                     lewat tugas pra-seleksi, dan mulai perjalananmu.
                 </p>
                 <x-cta :href="url('/daftar')" label="Daftar Sekarang" class="mt-8" />

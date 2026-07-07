@@ -3,8 +3,10 @@
 namespace App\Http\Requests;
 
 use App\Models\Application;
+use App\Models\Person;
 use App\Support\Phone;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 class CommunityJoinRequest extends FormRequest
@@ -20,21 +22,50 @@ class CommunityJoinRequest extends FormRequest
         $this->merge([
             'phone' => Phone::normalize($this->input('phone')),
         ]);
+
+        if (blank($this->input('tiktok_username'))) {
+            $this->merge(['tiktok_followers' => null, 'has_started_affiliate' => null, 'affiliate_level' => null, 'affiliate_gmv_range' => null]);
+        } elseif (! $this->boolean('has_started_affiliate')) {
+            $this->merge(['affiliate_level' => null, 'affiliate_gmv_range' => null]);
+        }
     }
 
     public function rules(): array
     {
+        $person = Auth::user()?->person;
+
         return [
             'name' => ['required', 'string', 'max:120'],
-            'phone' => ['required', 'string', 'regex:/^\+62\d{8,13}$/'],
+            'phone' => array_filter([
+                'required', 'string', 'regex:/^\+62\d{8,13}$/',
+                Auth::check()
+                    ? Rule::unique('people', 'phone')->ignore($person?->id)->whereNull('deleted_at')
+                    : function ($attribute, $value, $fail): void {
+                        // Mirrors ProvisionParticipantAccount's guard so Precognition can
+                        // surface "sudah punya akun" live, before the account is provisioned.
+                        if (Person::where('phone', $value)->whereNotNull('user_id')->whereNull('deleted_at')->exists()) {
+                            $fail('Nomor ini sudah punya akun. Silakan masuk.');
+                        }
+                    },
+            ]),
             'email' => [
                 'required', 'email:rfc', 'max:160',
-                Rule::unique('users', 'email'),
+                Rule::unique('users', 'email')->ignore(Auth::id()),
                 Rule::unique('people', 'email')
+                    ->ignore($person?->id)
                     ->where(fn ($q) => $q->where('phone', '!=', $this->input('phone')))
                     ->whereNull('deleted_at'),
             ],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => Auth::check() ? ['prohibited'] : ['required', 'string', 'min:8'],
+            'birth_date' => ['required', 'date', 'before:today', 'after:1900-01-01'],
+            'gender' => ['required', Rule::in(Person::GENDERS)],
+            'motivation' => ['required', 'string', 'max:1000'],
+            'tiktok_username' => ['nullable', 'string', 'max:64'],
+            'tiktok_followers' => ['nullable', 'required_with:tiktok_username', 'integer', 'min:0', 'max:1000000000'],
+            'has_started_affiliate' => ['nullable', 'required_with:tiktok_username', 'boolean'],
+            'affiliate_level' => ['nullable', 'required_if:has_started_affiliate,1', 'integer', 'min:0', 'max:8'],
+            'affiliate_gmv_range' => ['nullable', 'required_if:has_started_affiliate,1', Rule::in(Person::GMV_RANGES)],
+            'followed_socials' => ['required', 'boolean'],
             'referral_source' => ['required', Rule::in(Application::REFERRAL_SOURCES)],
             // Honeypot: real users never see or fill this; bots do.
             'website' => ['prohibited'],
@@ -52,6 +83,17 @@ class CommunityJoinRequest extends FormRequest
             'email.unique' => 'Email ini sudah terpakai. Gunakan email lain atau masuk jika sudah punya akun.',
             'password.required' => 'Kata sandi wajib diisi.',
             'password.min' => 'Kata sandi minimal 8 karakter.',
+            'password.prohibited' => 'Kamu sudah masuk; kata sandi tidak diperlukan.',
+            'birth_date.required' => 'Tanggal lahir wajib diisi.',
+            'birth_date.before' => 'Tanggal lahir tidak valid.',
+            'gender.required' => 'Pilih jenis kelaminmu.',
+            'gender.in' => 'Pilihan jenis kelamin tidak valid.',
+            'motivation.required' => 'Ceritakan alasanmu ingin gabung komunitas.',
+            'tiktok_followers.required_with' => 'Isi jumlah followers TikTok-mu.',
+            'has_started_affiliate.required_with' => 'Beritahu kami apakah kamu sudah memulai affiliate.',
+            'affiliate_level.required_if' => 'Pilih level affiliate-mu.',
+            'affiliate_gmv_range.required_if' => 'Pilih rentang GMV-mu.',
+            'followed_socials.required' => 'Beritahu kami apakah kamu sudah follow sosial media Kheedma.',
             'referral_source.required' => 'Beritahu kami dari mana kamu tahu komunitas ini.',
             'referral_source.in' => 'Pilihan sumber tidak valid.',
             'website.prohibited' => 'Pengiriman ditolak.',
@@ -65,6 +107,15 @@ class CommunityJoinRequest extends FormRequest
             'phone' => 'nomor HP',
             'email' => 'email',
             'password' => 'kata sandi',
+            'birth_date' => 'tanggal lahir',
+            'gender' => 'jenis kelamin',
+            'motivation' => 'motivasi',
+            'tiktok_username' => 'akun TikTok',
+            'tiktok_followers' => 'jumlah followers TikTok',
+            'has_started_affiliate' => 'status memulai affiliate',
+            'affiliate_level' => 'level affiliate',
+            'affiliate_gmv_range' => 'rentang GMV',
+            'followed_socials' => 'follow sosial media',
             'referral_source' => 'sumber informasi',
         ];
     }

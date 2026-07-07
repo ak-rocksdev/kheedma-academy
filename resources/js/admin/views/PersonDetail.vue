@@ -8,8 +8,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
-import { APPLICATION_STATUSES, PREFILTER_VERDICTS, statusVariant, statusLabel } from '@/lib/status';
+import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
+
+const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
+const GENDER_LABELS = { male: 'Laki-laki', female: 'Perempuan' };
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -46,7 +50,7 @@ async function save(app) {
     try {
         await api(`/admin/applications/${app.id}`, {
             method: 'PATCH',
-            body: { status: app.status, prefilter_verdict: app.prefilter_verdict || null },
+            body: { status: app.status },
         });
         // The in-place v-model values already reflect the saved state, so no full
         // reload is needed (avoids the spinner blink / scroll jump).
@@ -190,9 +194,6 @@ function fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
 }
-
-const selectClass =
-    'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 </script>
 
 <template>
@@ -221,6 +222,27 @@ const selectClass =
                     <div><span class="text-muted-foreground">Bergabung</span><div class="font-medium">{{ fmtDate(person.created_at) }}</div></div>
                     <div><span class="text-muted-foreground">TikTok</span><div class="font-medium">{{ person.tiktok_username || '—' }}</div></div>
                     <div><span class="text-muted-foreground">Instagram</span><div class="font-medium">{{ person.instagram_username || '—' }}</div></div>
+                    <div><span class="text-muted-foreground">Usia</span><div class="font-medium">{{ person.age !== null ? `${person.age} tahun` : '—' }}</div></div>
+                    <div><span class="text-muted-foreground">Jenis kelamin</span><div class="font-medium">{{ GENDER_LABELS[person.gender] ?? '—' }}</div></div>
+                    <div><span class="text-muted-foreground">Followers TikTok</span><div class="font-medium">{{ person.tiktok_followers ?? '—' }}</div></div>
+                    <div>
+                        <span class="text-muted-foreground">Affiliate TikTok</span>
+                        <div class="font-medium">
+                            <template v-if="person.has_started_affiliate === true">
+                                Sudah · Level {{ person.affiliate_level }} · {{ GMV_LABELS[person.affiliate_gmv_range] }}
+                            </template>
+                            <template v-else-if="person.has_started_affiliate === false">Belum mulai</template>
+                            <template v-else>—</template>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-muted-foreground">Follow sosmed</span>
+                        <div class="font-medium">
+                            <template v-if="person.followed_socials === true">Sudah</template>
+                            <template v-else-if="person.followed_socials === false">Belum</template>
+                            <template v-else>—</template>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -272,34 +294,33 @@ const selectClass =
                             <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
                         </div>
                     </div>
+                    <p v-if="app.motivation" class="mt-2 text-sm italic text-muted-foreground">"{{ app.motivation }}"</p>
                     <div class="mt-4 flex flex-wrap items-end gap-3">
-                        <label class="text-sm">
-                            <span class="text-muted-foreground">Status</span>
-                            <select v-model="app.status" :class="selectClass" class="mt-1 block">
-                                <option v-for="s in APPLICATION_STATUSES" :key="s.value" :value="s.value">{{ s.label }}</option>
-                            </select>
-                        </label>
-                        <label class="text-sm">
-                            <span class="text-muted-foreground">Verdict tugas</span>
-                            <select v-model="app.prefilter_verdict" :class="selectClass" class="mt-1 block">
-                                <option v-for="v in PREFILTER_VERDICTS" :key="v.value" :value="v.value">{{ v.label }}</option>
-                            </select>
-                        </label>
+                        <div class="text-sm">
+                            <span class="text-muted-foreground">Keputusan</span>
+                            <ToggleGroup
+                                type="single"
+                                variant="outline"
+                                class="mt-1.5"
+                                :model-value="app.status"
+                                @update:model-value="(v) => { if (v) app.status = v; }"
+                            >
+                                <ToggleGroupItem v-for="s in APPLICATION_STATUSES" :key="s.value" :value="s.value">
+                                    {{ s.label }}
+                                </ToggleGroupItem>
+                            </ToggleGroup>
+                        </div>
                         <Button size="sm" :disabled="savingId === app.id" @click="save(app)">
                             {{ savingId === app.id ? 'Menyimpan…' : 'Simpan' }}
                         </Button>
                     </div>
-                    <p v-if="app.prefilter_link" class="mt-3 text-sm">
-                        <span class="text-muted-foreground">Link tugas:</span>
-                        <a :href="app.prefilter_link" target="_blank" rel="noopener" class="text-primary underline">{{ app.prefilter_link }}</a>
-                    </p>
                 </div>
             </div>
 
             <!-- Enrollments -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
-                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah diterima di cohort.</div>
+                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
                 <div
                     v-for="e in person.enrollments"
                     :key="e.id"
