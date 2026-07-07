@@ -25,21 +25,25 @@
         </p>
 
         @if (session('has_account'))
-            <div class="mt-8">
-                <x-cta :href="route('member.area')" label="Lihat Status Pendaftaran" />
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <x-cta :href="route('member.area')" label="Kelola Status Pendaftaran" />
+                <a href="{{ url('/') }}"
+                   class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">
+                    ← Kembali ke beranda
+                </a>
+            </div>
+        @else
+            <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <a href="{{ url('/') }}"
+                   class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">
+                    ← Kembali ke beranda
+                </a>
+                <a href="{{ url('/#program') }}"
+                   class="inline-flex items-center rounded-full px-5 py-3.5 text-sm font-semibold text-teal-700 transition hover:text-orange-600">
+                    Lihat alur program
+                </a>
             </div>
         @endif
-
-        <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-            <a href="{{ url('/') }}"
-               class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">
-                ← Kembali ke beranda
-            </a>
-            <a href="{{ url('/#program') }}"
-               class="inline-flex items-center rounded-full px-5 py-3.5 text-sm font-semibold text-teal-700 transition hover:text-orange-600">
-                Lihat alur program
-            </a>
-        </div>
     </section>
 
 </x-layouts.public>

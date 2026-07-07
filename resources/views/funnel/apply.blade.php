@@ -34,6 +34,108 @@
                         <x-cta :href="route('member.area')" label="Lihat Status" />
                     </div>
                 </div>
+            @elseif ($showGate && ! $errors->any())
+                {{-- The account question comes FIRST: returning members log in and
+                     come back to a prefilled form; new people open the blank form. --}}
+                <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
+                    <h2 class="text-lg font-bold text-teal-900">Sudah punya akun Kheedma?</h2>
+                    <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
+                        Masuk dulu supaya datamu terisi otomatis dan pendaftaranmu tersambung ke akunmu.
+                    </p>
+                    <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                        <a href="{{ route('member.login', ['redirect' => url()->current()]) }}"
+                           class="inline-flex items-center justify-center rounded-full bg-teal-700 px-6 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-teal-800">
+                            Sudah, masuk ke akunku
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['baru' => 1]) }}"
+                           class="inline-flex items-center justify-center rounded-full border border-teal-900/15 bg-white px-6 py-3 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40 hover:text-orange-600">
+                            Belum, daftar baru
+                        </a>
+                    </div>
+                </div>
+            @elseif ($confirming && ! $errors->any())
+                {{-- Logged-in members confirm their stored data instead of retyping it. --}}
+                <form method="POST" data-submit-once action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                    @csrf
+                    <input type="hidden" name="name" value="{{ $person->name }}">
+                    <input type="hidden" name="phone" value="{{ $person->phone }}">
+                    <input type="hidden" name="email" value="{{ $person->email }}">
+                    <input type="hidden" name="province_code" value="{{ $person->province_code }}">
+                    <input type="hidden" name="city_code" value="{{ $person->city_code }}">
+                    <input type="hidden" name="tiktok_username" value="{{ $person->tiktok_username }}">
+                    <input type="hidden" name="instagram_username" value="{{ $person->instagram_username }}">
+
+                    <div>
+                        <h2 class="text-lg font-bold text-teal-900">Konfirmasi datamu</h2>
+                        <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
+                            Pastikan data di bawah ini benar sebelum mengirim pendaftaran.
+                        </p>
+                    </div>
+
+                    <dl class="space-y-3 rounded-2xl border border-teal-900/10 bg-white px-5 py-4 text-sm">
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-teal-800/60">Nama lengkap</dt>
+                            <dd class="font-medium text-teal-900">{{ $person->name }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-teal-800/60">Nomor HP</dt>
+                            <dd class="font-medium text-teal-900">{{ $person->phone }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-teal-800/60">Email</dt>
+                            <dd class="font-medium text-teal-900">{{ $person->email }}</dd>
+                        </div>
+                        <div class="flex justify-between gap-4">
+                            <dt class="text-teal-800/60">Domisili</dt>
+                            <dd class="font-medium text-teal-900">{{ $person->city?->name ?? '—' }}{{ $person->province ? ', '.$person->province->name : '' }}</dd>
+                        </div>
+                        @if ($person->tiktok_username)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">TikTok</dt>
+                                <dd class="font-medium text-teal-900">{{ $person->tiktok_username }}</dd>
+                            </div>
+                        @endif
+                        @if ($person->instagram_username)
+                            <div class="flex justify-between gap-4">
+                                <dt class="text-teal-800/60">Instagram</dt>
+                                <dd class="font-medium text-teal-900">{{ $person->instagram_username }}</dd>
+                            </div>
+                        @endif
+                    </dl>
+
+                    <div>
+                        <label for="referral_source" class="block text-sm font-medium text-teal-800">Tahu program ini dari mana?</label>
+                        <select id="referral_source" name="referral_source"
+                                class="{{ $field }} @error('referral_source') border border-red-400 @else border border-teal-900/15 @enderror">
+                            <option value="">Pilih salah satu…</option>
+                            @foreach ([
+                                'instagram' => 'Instagram',
+                                'tiktok' => 'TikTok',
+                                'whatsapp' => 'WhatsApp',
+                                'teman' => 'Teman atau keluarga',
+                                'google' => 'Pencarian Google',
+                                'lainnya' => 'Lainnya',
+                            ] as $value => $label)
+                                <option value="{{ $value }}" @selected(old('referral_source') === $value)>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        @error('referral_source') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="flex flex-wrap items-center gap-4 pt-2">
+                        <button type="submit"
+                                class="inline-flex items-center justify-center gap-2 rounded-full bg-orange-500 px-7 py-3.5 text-sm font-semibold text-white shadow-md transition hover:bg-orange-600 hover:shadow-lg">
+                            Data Benar, Kirim Pendaftaran
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </button>
+                        <a href="{{ request()->fullUrlWithQuery(['ubah' => 1]) }}"
+                           class="text-sm font-semibold text-teal-700 transition hover:text-orange-600">
+                            Ubah data dulu
+                        </a>
+                    </div>
+                </form>
             @else
             <form method="POST" data-submit-once action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
@@ -143,8 +245,6 @@
 
                 @auth
                     <p class="text-xs text-teal-800/60">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
-                @else
-                    <p class="text-xs text-teal-800/60">Sudah punya akun? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk dulu</a> supaya datamu terisi otomatis.</p>
                 @endauth
 
                 <div class="pt-2">

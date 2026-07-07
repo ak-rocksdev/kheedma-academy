@@ -11,10 +11,17 @@ use Illuminate\View\View;
 class MemberAuthController extends Controller
 {
     /** Member login page (public site — the admin SPA has its own). */
-    public function showLogin(): View|RedirectResponse
+    public function showLogin(Request $request): View|RedirectResponse
     {
         if (Auth::check()) {
             return $this->home(Auth::user());
+        }
+
+        // Funnel pages may ask to come back after login (?redirect=/program/x/daftar).
+        // Local paths only, so this can never become an open redirect.
+        $target = $request->query('redirect');
+        if (is_string($target) && str_starts_with($target, '/') && ! str_starts_with($target, '//') && ! str_starts_with($target, '/\\')) {
+            $request->session()->put('url.intended', $target);
         }
 
         return view('member.login');
