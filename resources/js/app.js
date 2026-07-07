@@ -145,7 +145,35 @@ function initAccountMenu() {
     });
 }
 
+/**
+ * Conditional affiliate chain on the public forms: filling in a TikTok
+ * username reveals the followers/started-affiliate questions, and answering
+ * "Sudah" to started-affiliate reveals the level/GMV questions.
+ */
+function initAffiliateChain() {
+    const tiktok = document.getElementById('tiktok_username');
+    const dependents = document.querySelector('[data-tiktok-dependents]');
+    if (!tiktok || !dependents) return;
+    const affiliateDependents = document.querySelector('[data-affiliate-dependents]');
+
+    function syncTiktok() {
+        const has = tiktok.value.trim() !== '';
+        dependents.classList.toggle('hidden', !has);
+        if (!has && affiliateDependents) affiliateDependents.classList.add('hidden');
+    }
+    function syncStarted() {
+        if (!affiliateDependents) return;
+        const started = document.querySelector('input[name="has_started_affiliate"]:checked')?.value === '1';
+        affiliateDependents.classList.toggle('hidden', !started);
+    }
+    tiktok.addEventListener('input', syncTiktok);
+    document.querySelectorAll('input[name="has_started_affiliate"]').forEach((r) => r.addEventListener('change', syncStarted));
+    syncTiktok();
+    syncStarted();
+}
+
 initRegionSelects();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();
+initAffiliateChain();
