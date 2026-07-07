@@ -1,8 +1,10 @@
 // Public site enhancements (Blade pages). Currently: searchable region
-// selects on the application form.
+// selects on the application form, and live (Precognition) validation on the
+// two funnel forms.
 
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
+import { createValidator } from 'laravel-precognition';
 
 /** Turn a native select into a searchable single-value combobox. */
 function makeSearchable(el, placeholder) {
@@ -155,21 +157,147 @@ function initAffiliateChain() {
     const dependents = document.querySelector('[data-tiktok-dependents]');
     if (!tiktok || !dependents) return;
     const affiliateDependents = document.querySelector('[data-affiliate-dependents]');
+    const form = tiktok.form;
 
     function syncTiktok() {
         const has = tiktok.value.trim() !== '';
         dependents.classList.toggle('hidden', !has);
-        if (!has && affiliateDependents) affiliateDependents.classList.add('hidden');
+        if (!has) {
+            if (affiliateDependents) affiliateDependents.classList.add('hidden');
+            // A field hidden by this chain is no longer being filled in; drop
+            // any live/stale error it was showing instead of leaving it stuck.
+            if (form) {
+                ['tiktok_followers', 'has_started_affiliate', 'affiliate_level', 'affiliate_gmv_range']
+                    .forEach((name) => clearLiveError(form, name));
+            }
+        }
     }
     function syncStarted() {
         if (!affiliateDependents) return;
         const started = document.querySelector('input[name="has_started_affiliate"]:checked')?.value === '1';
         affiliateDependents.classList.toggle('hidden', !started);
+        if (!started && form) {
+            ['affiliate_level', 'affiliate_gmv_range'].forEach((name) => clearLiveError(form, name));
+        }
     }
     tiktok.addEventListener('input', syncTiktok);
     document.querySelectorAll('input[name="has_started_affiliate"]').forEach((r) => r.addEventListener('change', syncStarted));
     syncTiktok();
     syncStarted();
+}
+
+/**
+ * Live (as-you-fill) validation for the two public funnel forms — Laravel
+ * Precognition. A form opts in with `data-live-validate`; its `@error` lines
+ * already carry the server-rendered messages, so only the live layer (this
+ * function) needs to add/replace/remove `data-live-error-for` paragraphs.
+ */
+const RADIO_GROUP_FIELDS = ['gender', 'has_started_affiliate', 'followed_socials'];
+
+/** Read a form's current values into a plain object Precognition can post. */
+function collectFormData(form) {
+    const data = {};
+    new FormData(form).forEach((value, key) => {
+        // '_token' is carried as a header by Precognition's own XSRF handling,
+        // and 'website' is the honeypot — neither belongs in validated data.
+        if (key === '_token' || key === 'website') {
+            return;
+        }
+        data[key] = value;
+    });
+    return data;
+}
+
+/** The element a field's live error line should be appended to. */
+function liveErrorContainer(form, name) {
+    const input = form.querySelector(`[name="${CSS.escape(name)}"]`);
+    if (!input) {
+        return null;
+    }
+    // Radio groups render their @error line as a sibling of the pills'
+    // wrapper div, one level above the input itself.
+    if (RADIO_GROUP_FIELDS.includes(name)) {
+        return input.closest('div')?.parentElement;
+    }
+    const container = input.closest('div');
+    // initPasswordToggles() wraps the input in its own inner div (for the
+    // show/hide button); the field's real wrapper — and its @error line — is
+    // one level further up.
+    return container?.classList.contains('password-field') ? container.parentElement : container;
+}
+
+/** Remove a field's error lines (server-rendered and live) and forget it. */
+function clearLiveError(form, name) {
+    form.querySelector(`[data-live-error-for="${CSS.escape(name)}"]`)?.remove();
+    form.querySelector(`[data-server-error-for="${CSS.escape(name)}"]`)?.remove();
+    form.precognitionValidator?.forgetError(name);
+}
+
+/** Create, update, or remove a field's live error line to match `message`. */
+function renderLiveError(form, name, message) {
+    // The live line is now the single source of truth for this field; a
+    // lingering server-rendered line (from a validation redirect) would
+    // otherwise sit there stale forever.
+    form.querySelector(`[data-server-error-for="${CSS.escape(name)}"]`)?.remove();
+
+    let line = form.querySelector(`[data-live-error-for="${CSS.escape(name)}"]`);
+    if (!message) {
+        line?.remove();
+        return;
+    }
+
+    if (!line) {
+        const container = liveErrorContainer(form, name);
+        if (!container) {
+            return;
+        }
+        line = document.createElement('p');
+        line.setAttribute('data-live-error-for', name);
+        line.className = 'mt-1.5 text-sm text-red-600';
+        container.appendChild(line);
+    }
+    line.textContent = message;
+}
+
+/** Sync every field the validator has an opinion about (valid or invalid). */
+function syncLiveErrors(form, validator) {
+    const errors = validator.errors();
+    const names = new Set([...Object.keys(errors), ...validator.valid()]);
+    names.forEach((name) => renderLiveError(form, name, errors[name]?.[0] ?? null));
+}
+
+function initLiveValidation() {
+    document.querySelectorAll('form[data-live-validate]').forEach((form) => {
+        const url = form.dataset.validateUrl || form.action;
+        const validator = createValidator((client) => client.post(url, collectFormData(form)));
+        form.precognitionValidator = validator;
+
+        validator.on('errorsChanged', () => syncLiveErrors(form, validator));
+        validator.on('validatedChanged', () => syncLiveErrors(form, validator));
+
+        const textLike = 'input[type="text"], input[type="tel"], input[type="email"], input[type="date"], input[type="number"], input[type="password"], textarea';
+        form.querySelectorAll(textLike).forEach((input) => {
+            if (input.name === 'website') {
+                return; // honeypot — never validated
+            }
+            input.addEventListener('change', () => validator.validate(input.name));
+            // Once a field is showing an error, re-validate as the user types
+            // so a fix clears it immediately instead of waiting for blur.
+            input.addEventListener('input', () => {
+                if (validator.errors()[input.name]) {
+                    validator.validate(input.name);
+                }
+            });
+        });
+
+        form.querySelectorAll('select').forEach((select) => {
+            select.addEventListener('change', () => validator.validate(select.name));
+        });
+
+        form.querySelectorAll('input[type="radio"]').forEach((radio) => {
+            radio.addEventListener('change', () => validator.validate(radio.name));
+        });
+    });
 }
 
 /**
@@ -202,3 +330,4 @@ initPasswordToggles();
 initAccountMenu();
 initAffiliateChain();
 initSocialFollow();
+initLiveValidation();

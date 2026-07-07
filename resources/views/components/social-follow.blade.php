@@ -46,5 +46,5 @@
         </label>
     </div>
     <p data-follow-nudge class="hidden mt-2 text-xs text-orange-700">Follow dulu yuk, klik tombol di atas, lalu tandai "Ya, sudah follow".</p>
-    @error('followed_socials') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+    @error('followed_socials') <p data-server-error-for="followed_socials" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
 </div>

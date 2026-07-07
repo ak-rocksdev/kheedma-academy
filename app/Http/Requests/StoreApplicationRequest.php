@@ -38,7 +38,15 @@ class StoreApplicationRequest extends FormRequest
             'name' => ['required', 'string', 'max:120'],
             'phone' => array_filter([
                 'required', 'string', 'regex:/^\+62\d{8,13}$/',
-                Auth::check() ? Rule::unique('people', 'phone')->ignore($person?->id)->whereNull('deleted_at') : null,
+                Auth::check()
+                    ? Rule::unique('people', 'phone')->ignore($person?->id)->whereNull('deleted_at')
+                    : function ($attribute, $value, $fail): void {
+                        // Mirrors ProvisionParticipantAccount's guard so Precognition can
+                        // surface "sudah punya akun" live, before the account is provisioned.
+                        if (Person::where('phone', $value)->whereNotNull('user_id')->whereNull('deleted_at')->exists()) {
+                            $fail('Nomor ini sudah punya akun. Silakan masuk.');
+                        }
+                    },
             ]),
             'email' => [
                 'required', 'email:rfc', 'max:160',

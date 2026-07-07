@@ -221,7 +221,7 @@
                     </div>
                 </form>
             @else
-            <form id="formulir" method="POST" data-submit-once action="{{ route('komunitas.join') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+            <form id="formulir" method="POST" data-submit-once data-live-validate data-validate-url="{{ url()->current() }}" action="{{ route('komunitas.join') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 
                 {{-- Honeypot: hidden from humans, tempting to bots --}}
@@ -236,7 +236,7 @@
                     <input id="name" name="name" type="text" value="{{ old('name', $person?->name) }}" autocomplete="name"
                            class="{{ $field }} @error('name') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="Nama sesuai identitas">
-                    @error('name') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('name') <p data-server-error-for="name" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -244,7 +244,7 @@
                     <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone', $person?->phone) }}" autocomplete="tel"
                            class="{{ $field }} @error('phone') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="0812xxxxxxx">
-                    @error('phone') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('phone') <p data-server-error-for="phone" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -252,7 +252,7 @@
                     <input id="email" name="email" type="email" value="{{ old('email', $person?->email) }}" autocomplete="email"
                            class="{{ $field }} @error('email') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="kamu@email.com">
-                    @error('email') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('email') <p data-server-error-for="email" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -260,7 +260,7 @@
                     <input id="birth_date" name="birth_date" type="date" max="{{ now()->subDay()->toDateString() }}"
                            value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
                            class="{{ $field }} @error('birth_date') border border-red-400 @else border border-teal-900/15 @enderror">
-                    @error('birth_date') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('birth_date') <p data-server-error-for="birth_date" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @php $genderOld = old('gender', $person?->gender); @endphp
@@ -276,7 +276,7 @@
                             Perempuan
                         </label>
                     </div>
-                    @error('gender') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('gender') <p data-server-error-for="gender" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @guest
@@ -285,7 +285,7 @@
                         <input id="password" name="password" type="password" autocomplete="new-password"
                                class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
                                placeholder="••••••••">
-                        @error('password') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest
 
@@ -293,7 +293,7 @@
                     <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional, tanpa @)</span></label>
                     <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username', $person?->tiktok_username) }}"
                            class="{{ $field }} border border-teal-900/15" placeholder="username">
-                    @error('tiktok_username') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('tiktok_username') <p data-server-error-for="tiktok_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @php
@@ -308,7 +308,7 @@
                         <input id="tiktok_followers" name="tiktok_followers" type="number" min="0"
                                value="{{ old('tiktok_followers', $person?->tiktok_followers) }}"
                                class="{{ $field }} @error('tiktok_followers') border border-red-400 @else border border-teal-900/15 @enderror">
-                        @error('tiktok_followers') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('tiktok_followers') <p data-server-error-for="tiktok_followers" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div>
@@ -323,7 +323,7 @@
                                 Belum
                             </label>
                         </div>
-                        @error('has_started_affiliate') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                        @error('has_started_affiliate') <p data-server-error-for="has_started_affiliate" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
 
                     <div data-affiliate-dependents class="hidden space-y-6">
@@ -336,7 +336,7 @@
                                     <option value="{{ $level }}" @selected((string) old('affiliate_level', $person?->affiliate_level) === (string) $level)>{{ $level }}</option>
                                 @endfor
                             </select>
-                            @error('affiliate_level') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                            @error('affiliate_level') <p data-server-error-for="affiliate_level" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
 
                         <div>
@@ -348,7 +348,7 @@
                                     <option value="{{ $value }}" @selected(old('affiliate_gmv_range', $person?->affiliate_gmv_range) === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
-                            @error('affiliate_gmv_range') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                            @error('affiliate_gmv_range') <p data-server-error-for="affiliate_gmv_range" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                         </div>
                     </div>
                 </div>
@@ -360,7 +360,7 @@
                     <textarea id="motivation" name="motivation" rows="3"
                               class="{{ $field }} @error('motivation') border border-red-400 @else border border-teal-900/15 @enderror"
                               placeholder="Ceritakan alasanmu…">{{ old('motivation') }}</textarea>
-                    @error('motivation') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('motivation') <p data-server-error-for="motivation" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
@@ -379,7 +379,7 @@
                             <option value="{{ $value }}" @selected(old('referral_source') === $value)>{{ $label }}</option>
                         @endforeach
                     </select>
-                    @error('referral_source') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
+                    @error('referral_source') <p data-server-error-for="referral_source" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 @auth
