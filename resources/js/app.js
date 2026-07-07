@@ -109,9 +109,13 @@ function initPasswordToggles() {
     document.querySelectorAll('input[type="password"]').forEach((input) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'password-field';
+        // The input's own top margin (label spacing) must move to the wrapper,
+        // otherwise the absolutely-centered toggle sits above the field.
+        wrapper.style.marginTop = getComputedStyle(input).marginTop;
         input.parentNode.insertBefore(wrapper, input);
         wrapper.appendChild(input);
         input.classList.add('password-field-input');
+        input.style.marginTop = '0';
 
         const toggle = document.createElement('button');
         toggle.type = 'button';
