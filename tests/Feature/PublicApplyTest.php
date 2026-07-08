@@ -218,4 +218,27 @@ class PublicApplyTest extends TestCase
         $this->assertNull($person->affiliate_level);
         $this->assertNull($person->affiliate_gmv_range);
     }
+
+    public function test_guest_cannot_open_affiliate_apply_form(): void
+    {
+        $program = Program::factory()->affiliate(1)->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+
+        $this->get(route('program.apply', $program))
+            ->assertRedirect(route('program.show', $program));
+    }
+
+    public function test_guest_post_to_affiliate_apply_is_rejected(): void
+    {
+        $program = Program::factory()->affiliate(1)->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+
+        // A valid payload keeps the FormRequest's own auto-validation (which
+        // runs before the controller body) out of the way, so this actually
+        // exercises the eligibility guard rather than the validator.
+        $this->post(route('program.apply.store', $program), $this->validPayload())
+            ->assertRedirect(route('program.show', $program));
+
+        $this->assertSame(0, Application::count());
+    }
 }

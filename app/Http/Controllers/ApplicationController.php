@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ProvisionParticipantAccount;
 use App\Http\Requests\StoreApplicationRequest;
 use App\Models\Program;
+use App\Support\ProgramEligibility;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -21,6 +22,10 @@ class ApplicationController extends Controller
         abort_if($program->status === 'draft', 404);
 
         if (! $program->isOpen()) {
+            return redirect()->route('program.show', $program);
+        }
+
+        if (! app(ProgramEligibility::class)->canAccess(Auth::user()?->person, $program)) {
             return redirect()->route('program.show', $program);
         }
 
@@ -78,6 +83,10 @@ class ApplicationController extends Controller
         abort_if($program->status === 'draft', 404);
 
         if (! $program->isOpen()) {
+            return redirect()->route('program.show', $program);
+        }
+
+        if (! app(ProgramEligibility::class)->canAccess(Auth::user()?->person, $program)) {
             return redirect()->route('program.show', $program);
         }
 
