@@ -77,7 +77,9 @@ class ProgramController extends Controller
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
             'type' => ['sometimes', 'required', 'in:general,affiliate_community'],
             'level' => $type === 'affiliate_community'
-                ? ['required', 'integer', 'min:1', 'max:255']
+                ? (($creating || $request->has('type'))
+                    ? ['required', 'integer', 'min:1', 'max:255']
+                    : ['sometimes', 'required', 'integer', 'min:1', 'max:255'])
                 : ['prohibited'],
             'locked_message' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'status' => $creating ? ['required', 'in:draft,active,inactive'] : ['sometimes', 'required', 'in:draft,active,inactive'],

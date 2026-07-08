@@ -303,7 +303,7 @@ function fmtDate(iso) {
                 </div>
                 <div v-if="form.type === 'affiliate_community'">
                     <label class="text-xs text-muted-foreground">Level</label>
-                    <Input v-model="form.level" type="number" min="1" placeholder="1" class="mt-1.5" />
+                    <Input v-model="form.level" type="number" min="1" max="255" placeholder="1" class="mt-1.5" />
                     <p v-if="formErrors.level" class="mt-1 text-xs text-destructive">{{ formErrors.level[0] }}</p>
                 </div>
                 <div v-if="form.type === 'affiliate_community'">

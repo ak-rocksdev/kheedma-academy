@@ -173,6 +173,17 @@ class ProgramManagementTest extends TestCase
             ->assertJsonPath('program.locked_message', 'Selesaikan Level 1 dulu.');
     }
 
+    public function test_partial_update_of_affiliate_program_does_not_require_level(): void
+    {
+        $program = Program::factory()->affiliate(2)->create();
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['locked_message' => 'Copy baru.'])
+            ->assertOk()
+            ->assertJsonPath('program.level', 2)
+            ->assertJsonPath('program.locked_message', 'Copy baru.');
+    }
+
     public function test_switching_type_to_general_clears_level(): void
     {
         $program = Program::factory()->affiliate(2)->create();
