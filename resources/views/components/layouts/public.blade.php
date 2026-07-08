@@ -131,5 +131,7 @@
         </div>
     </footer>
 
+    @include('funnel.partials.lock-modal')
+
 </body>
 </html>

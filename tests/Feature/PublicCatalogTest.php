@@ -83,4 +83,49 @@ class PublicCatalogTest extends TestCase
             ->assertSee('Kelas dimulai')
             ->assertSee('1 Agustus 2026');
     }
+
+    public function test_chooser_shows_affiliate_section_with_locked_teaser(): void
+    {
+        Program::factory()->affiliate(1)->active()->create(['name' => 'Affiliate Kelas Satu']);
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('Kheedma Affiliate Community')
+            ->assertSee('Affiliate Kelas Satu')
+            ->assertSee('Terkunci')
+            ->assertSee('data-lock-trigger', false);
+    }
+
+    public function test_chooser_hides_inactive_affiliate_classes(): void
+    {
+        Program::factory()->affiliate(1)->draft()->create(['name' => 'Affiliate Rahasia']);
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertDontSee('Affiliate Rahasia');
+    }
+
+    public function test_affiliate_landing_shows_locked_state_not_apply_cta(): void
+    {
+        $program = Program::factory()->affiliate(1)->active()->create();
+        Cohort::factory()->create([
+            'program_id' => $program->id,
+            'registration_opens_at' => now()->subDay(),
+            'registration_closes_at' => now()->addWeek(),
+        ]);
+
+        $this->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSee('Terkunci')
+            ->assertDontSee(route('program.apply', $program), false);
+    }
+
+    public function test_locked_message_falls_back_to_config_default(): void
+    {
+        Program::factory()->affiliate(1)->active()->create(['locked_message' => null]);
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee(e(config('kheedma.default_locked_message')), false);
+    }
 }

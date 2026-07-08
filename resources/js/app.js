@@ -326,6 +326,47 @@ function initSocialFollow() {
     syncFollowNudge();
 }
 
+/**
+ * Locked-class explainer. Any element with data-lock-trigger opens the shared
+ * #lock-modal, filling the message and showing guest CTAs when the visitor
+ * is not logged in (reason 'guest').
+ */
+function initLockModal() {
+    const modal = document.getElementById('lock-modal');
+    if (!modal) {
+        return;
+    }
+
+    const message = modal.querySelector('#lock-modal-message');
+    const guestActions = modal.querySelector('#lock-modal-guest-actions');
+
+    function open(trigger) {
+        message.textContent = trigger.dataset.lockMessage || '';
+        guestActions.classList.toggle('hidden', trigger.dataset.lockReason !== 'guest');
+        guestActions.classList.toggle('flex', trigger.dataset.lockReason === 'guest');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function close() {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    document.querySelectorAll('[data-lock-trigger]').forEach((trigger) => {
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            open(trigger);
+        });
+    });
+    modal.querySelectorAll('[data-lock-close]').forEach((el) => el.addEventListener('click', close));
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            close();
+        }
+    });
+}
+
 initRegionSelects();
 initSubmitOnce();
 initPasswordToggles();
@@ -333,3 +374,4 @@ initAccountMenu();
 initAffiliateChain();
 initSocialFollow();
 initLiveValidation();
+initLockModal();

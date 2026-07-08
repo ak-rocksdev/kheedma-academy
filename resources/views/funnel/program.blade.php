@@ -21,7 +21,7 @@
             @endif
 
             <div class="mt-10 text-center">
-                @if ($isOpen)
+                @if ($isOpen && ! $locked)
                     <x-cta :href="route('program.apply', $program)" label="Daftar Sekarang" />
                     <p class="mt-4 text-xs text-teal-800/50">
                         Pendaftaran sedang dibuka. Tempat terbatas.
@@ -29,6 +29,17 @@
                             Kelas dimulai {{ $openCohort->start_date->locale('id')->translatedFormat('j F Y') }}.
                         @endif
                     </p>
+                @elseif ($locked)
+                    <button
+                        type="button"
+                        data-lock-trigger
+                        data-lock-message="{{ $lockedMessage }}"
+                        data-lock-reason="{{ $lockReason }}"
+                        class="inline-flex items-center gap-2 rounded-full bg-teal-900/10 px-6 py-3 text-sm font-semibold text-teal-900/60"
+                    >
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="9" width="10" height="7" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke-linecap="round"/></svg>
+                        Terkunci
+                    </button>
                 @else
                     <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                         <h2 class="text-lg font-bold text-teal-900">Pendaftaran ditutup</h2>
