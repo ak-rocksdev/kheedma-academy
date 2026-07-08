@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Program;
+use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,11 +33,25 @@ class MemberAreaController extends Controller
 
         $person = $user->person()->with(['communityMembership', 'applications' => fn ($q) => $q->latest(), 'applications.program:id,name'])->first();
 
+        $eligibility = app(ProgramEligibility::class);
+        $affiliate = Program::query()
+            ->where('status', 'active')
+            ->where('type', 'affiliate_community')
+            ->orderBy('level')
+            ->get()
+            ->map(fn (Program $program) => [
+                'program' => $program,
+                'locked' => ! $eligibility->canAccess($person, $program),
+                'reason' => $eligibility->lockReason($person, $program),
+                'message' => $program->locked_message ?? config('kheedma.default_locked_message'),
+            ]);
+
         return view('member.akun', [
             'user' => $user,
             'person' => $person,
             'membership' => $person?->communityMembership,
             'applications' => $person?->applications ?? collect(),
+            'affiliate' => $affiliate,
         ]);
     }
 }

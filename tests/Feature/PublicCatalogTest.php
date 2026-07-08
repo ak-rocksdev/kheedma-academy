@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Cohort;
+use App\Models\Person;
 use App\Models\Program;
+use App\Models\User;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -127,5 +130,28 @@ class PublicCatalogTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee(e(config('kheedma.default_locked_message')), false);
+    }
+
+    public function test_member_area_lists_affiliate_ladder_with_lock_state(): void
+    {
+        $this->seed(RoleSeeder::class);
+
+        Program::factory()->affiliate(1)->active()->create(['name' => 'Affiliate Kelas Satu']);
+
+        $user = User::factory()->create();
+        $user->assignRole('participant');
+        Person::create([
+            'name' => 'Member Uji',
+            'phone' => '+628111111111',
+            'email' => 'member.uji@example.test',
+            'user_id' => $user->id,
+        ]);
+
+        $this->actingAs($user)
+            ->get('/akun')
+            ->assertOk()
+            ->assertSee('Program untuk Anda')
+            ->assertSee('Affiliate Kelas Satu')
+            ->assertSee('data-lock-trigger', false);
     }
 }

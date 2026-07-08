@@ -67,6 +67,40 @@
                 </div>
             @endif
 
+            @if ($affiliate->isNotEmpty())
+                <div class="mt-10">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Program untuk Anda</h2>
+                    <div class="mt-4 space-y-3">
+                        @foreach ($affiliate as $entry)
+                            @if ($entry['locked'])
+                                <button
+                                    type="button"
+                                    data-lock-trigger
+                                    data-lock-message="{{ $entry['message'] }}"
+                                    data-lock-reason="{{ $entry['reason'] }}"
+                                    class="flex w-full items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white/50 px-5 py-4 text-left opacity-75 transition hover:opacity-100"
+                                >
+                                    <div>
+                                        <p class="font-semibold text-teal-900/70">{{ $entry['program']->name }}</p>
+                                        <p class="text-xs text-teal-800/50">Level {{ $entry['program']->level }} · Terkunci</p>
+                                    </div>
+                                    <svg class="h-4 w-4 shrink-0 text-teal-700/50" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="9" width="10" height="7" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke-linecap="round"/></svg>
+                                </button>
+                            @else
+                                <a href="{{ route('program.show', $entry['program']) }}"
+                                   class="flex items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white px-5 py-4 transition hover:border-teal-600/40">
+                                    <div>
+                                        <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
+                                        <p class="text-xs text-teal-800/60">Level {{ $entry['program']->level }} · Terbuka untukmu</p>
+                                    </div>
+                                    <svg class="h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             <div class="mt-6 rounded-3xl border border-dashed border-teal-900/15 bg-white/40 p-6 text-center sm:p-8">
                 <p class="text-sm leading-relaxed text-teal-800/60">
                     Materi pilihan dan pengumuman komunitas akan tampil di sini. Nantikan ya!
