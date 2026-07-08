@@ -121,7 +121,7 @@
  | Always pair with a low opacity at the call site so foreground stays legible.
 */
 @utility supergraphic {
-    background-image: url('/images/pattern-kheedma.png');
+    background-image: url('../images/pattern-kheedma.png');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
