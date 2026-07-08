@@ -6,10 +6,11 @@
         <h2 id="lock-modal-title" class="mt-3 text-xl font-bold text-teal-900">Kelas ini belum terbuka untukmu</h2>
         <p id="lock-modal-message" class="mt-2 text-sm leading-relaxed text-teal-800/80"></p>
 
-        {{-- Guest CTAs: route into the funnel. Hidden for logged-in members. --}}
-        <div id="lock-modal-guest-actions" class="mt-6 hidden flex-col gap-2 sm:flex-row">
-            <a href="{{ route('daftar') }}" class="inline-flex flex-1 items-center justify-center rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">Lihat program yang dibuka</a>
-            <a href="{{ url('/komunitas') }}" class="inline-flex flex-1 items-center justify-center rounded-full border border-teal-900/15 px-5 py-2.5 text-sm font-semibold text-teal-900 transition hover:bg-teal-50">Gabung Komunitas</a>
+        {{-- Guest CTAs: route into the funnel. Hidden for logged-in members.
+             Stacked full-width so labels never wrap inside the narrow modal. --}}
+        <div id="lock-modal-guest-actions" class="mt-6 hidden flex-col gap-2.5">
+            <a href="{{ route('daftar') }}" class="inline-flex w-full items-center justify-center rounded-full bg-orange-500 px-5 py-3 text-sm font-semibold text-white transition hover:bg-orange-600">Lihat program yang dibuka</a>
+            <a href="{{ url('/komunitas') }}" class="inline-flex w-full items-center justify-center rounded-full border border-teal-900/15 px-5 py-3 text-sm font-semibold text-teal-900 transition hover:bg-teal-50">Gabung Komunitas</a>
         </div>
 
         <div class="mt-4 text-center">
