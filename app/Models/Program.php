@@ -19,6 +19,7 @@ class Program extends Model
         'type',
         'level',
         'locked_message',
+        'thumbnail_path',
         'status',
         'selection_mode',
     ];
