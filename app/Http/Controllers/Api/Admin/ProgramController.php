@@ -63,7 +63,9 @@ class ProgramController extends Controller
     {
         $creating = $program === null;
 
-        return $request->validate([
+        $type = $request->input('type', $program?->type ?? 'general');
+
+        $data = $request->validate([
             'name' => $creating ? ['required', 'string', 'max:255'] : ['sometimes', 'required', 'string', 'max:255'],
             'slug' => [
                 ...($creating ? ['required'] : ['sometimes', 'required']),
@@ -73,9 +75,21 @@ class ProgramController extends Controller
             ],
             'tagline' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'type' => ['sometimes', 'required', 'in:general,affiliate_community'],
+            'level' => $type === 'affiliate_community'
+                ? ['required', 'integer', 'min:1', 'max:255']
+                : ['prohibited'],
+            'locked_message' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'status' => $creating ? ['required', 'in:draft,active,inactive'] : ['sometimes', 'required', 'in:draft,active,inactive'],
             'selection_mode' => $creating ? ['required', 'in:selective,instant'] : ['sometimes', 'required', 'in:selective,instant'],
         ]);
+
+        // Switching (or defaulting) to general must clear a stale level.
+        if ($type === 'general') {
+            $data['level'] = null;
+        }
+
+        return $data;
     }
 
     /**
@@ -91,6 +105,9 @@ class ProgramController extends Controller
             'description' => $p->description,
             'status' => $p->status,
             'selection_mode' => $p->selection_mode,
+            'type' => $p->type,
+            'level' => $p->level !== null ? (int) $p->level : null,
+            'locked_message' => $p->locked_message,
             'is_open' => $p->hasAttribute('has_open_cohort') ? $p->status === 'active' && (bool) $p->has_open_cohort : $p->isOpen(),
             'cohorts_count' => (int) ($p->cohorts_count ?? 0),
             'applications_count' => (int) ($p->applications_count ?? 0),
