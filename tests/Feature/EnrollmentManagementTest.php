@@ -144,4 +144,23 @@ class EnrollmentManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('person.enrollments.0.hadir', 1);
     }
+
+    public function test_person_detail_lists_classes_with_attendance_state(): void
+    {
+        $cohort = Cohort::factory()->create(['program_id' => Program::factory()->active()->create()->id]);
+        $attendedClass = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        $missedClass = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        $person = $this->person();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        Attendance::create(['cohort_session_id' => $attendedClass->id, 'enrollment_id' => $enrollment->id]);
+
+        $res = $this->actingAs($this->admin())
+            ->getJson("/api/admin/people/{$person->id}")
+            ->assertOk();
+
+        $classes = collect($res->json('person.enrollments.0.classes'))->keyBy('id');
+        $this->assertTrue($classes->get($attendedClass->id)['attended']);
+        $this->assertNotNull($classes->get($attendedClass->id)['attended_at']);
+        $this->assertFalse($classes->get($missedClass->id)['attended']);
+    }
 }

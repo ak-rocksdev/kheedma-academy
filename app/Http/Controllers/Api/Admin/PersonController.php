@@ -67,8 +67,9 @@ class PersonController extends Controller
             'applications' => fn ($q) => $q->latest(),
             'applications.program:id,name',
             'enrollments.cohort:id,name,start_date,end_date',
+            'enrollments.cohort.sessions',
             'enrollments.latestStatusEvent',
-            'enrollments.attendances:id,enrollment_id',
+            'enrollments.attendances:id,enrollment_id,cohort_session_id,created_at',
         ]);
 
         // Oldest submission = attempt #1; the list itself stays newest-first.
@@ -104,14 +105,26 @@ class PersonController extends Controller
                     'reviewed_at' => $a->reviewed_at?->toIso8601String(),
                     'created_at' => $a->created_at?->toIso8601String(),
                 ]),
-                'enrollments' => $person->enrollments->map(fn ($e) => [
-                    'id' => $e->id,
-                    'cohort' => $e->cohort?->name,
-                    'cohort_id' => $e->cohort_id,
-                    'hadir' => $e->attendances->count(),
-                    'latest_status' => $e->latestStatusEvent?->status,
-                    'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
-                ]),
+                'enrollments' => $person->enrollments->map(function ($e) {
+                    $attendedAt = $e->attendances->keyBy('cohort_session_id');
+
+                    return [
+                        'id' => $e->id,
+                        'cohort' => $e->cohort?->name,
+                        'cohort_id' => $e->cohort_id,
+                        'hadir' => $e->attendances->count(),
+                        'latest_status' => $e->latestStatusEvent?->status,
+                        'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
+                        // Rincian per-kelas: pernah diikuti atau tidak.
+                        'classes' => ($e->cohort?->sessions ?? collect())->map(fn ($s) => [
+                            'id' => $s->id,
+                            'title' => $s->title,
+                            'scheduled_at' => $s->scheduled_at?->toIso8601String(),
+                            'attended' => $attendedAt->has($s->id),
+                            'attended_at' => $attendedAt->get($s->id)?->created_at?->toIso8601String(),
+                        ])->values(),
+                    ];
+                }),
             ],
         ]);
     }

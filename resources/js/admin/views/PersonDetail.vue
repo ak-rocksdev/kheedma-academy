@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft } from 'lucide-vue-next';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
 import { api, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +21,15 @@ const auth = useAuthStore();
 
 const person = ref(null);
 const loading = ref(true);
+
+// Rincian per-kelas pada kartu keikutsertaan (expand/collapse per enrollment).
+const expandedClasses = ref(new Set());
+
+function toggleClasses(enrollmentId) {
+    const next = new Set(expandedClasses.value);
+    next.has(enrollmentId) ? next.delete(enrollmentId) : next.add(enrollmentId);
+    expandedClasses.value = next;
+}
 const error = ref('');
 const savingId = ref(null);
 const saveError = ref('');
@@ -351,13 +360,42 @@ function fmtDate(iso) {
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
                 <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
-                <div
-                    v-for="e in person.enrollments"
-                    :key="e.id"
-                    class="flex items-center justify-between border-b border-border px-5 py-3 text-sm last:border-0"
-                >
-                    <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
-                    <span class="text-muted-foreground">Hadir {{ e.hadir }} sesi · {{ e.latest_status ? `${e.latest_status} · ${fmtDate(e.latest_status_at)}` : 'Belum ada status' }}</span>
+                <div v-for="e in person.enrollments" :key="e.id" class="border-b border-border last:border-0">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition hover:bg-accent/50"
+                        @click="toggleClasses(e.id)"
+                    >
+                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
+                        <span class="flex items-center gap-2 text-muted-foreground">
+                            Hadir {{ e.hadir }} dari {{ e.classes.length }} kelas
+                            <span v-if="e.latest_status === 'dropped'" class="text-destructive">· keluar</span>
+                            <ChevronDown class="size-4 transition-transform" :class="expandedClasses.has(e.id) ? 'rotate-180' : ''" />
+                        </span>
+                    </button>
+                    <!-- Rincian per-kelas: pernah diikuti atau tidak. -->
+                    <div v-if="expandedClasses.has(e.id)" class="border-t border-border/60 bg-accent/20 px-5 py-2">
+                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan ini belum punya kelas.</p>
+                        <div
+                            v-for="c in e.classes"
+                            :key="c.id"
+                            class="flex items-center justify-between gap-3 border-b border-border/40 py-2 text-sm last:border-0"
+                            :class="c.attended ? '' : 'opacity-60'"
+                        >
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="flex size-4 items-center justify-center rounded-full"
+                                    :class="c.attended ? 'bg-teal-600 text-white' : 'border-2 border-border'"
+                                >
+                                    <Check v-if="c.attended" class="size-3" />
+                                </span>
+                                <span class="text-foreground">{{ c.title }}</span>
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                                {{ fmtDate(c.scheduled_at) }}{{ c.attended ? ` · hadir, dicatat ${fmtDate(c.attended_at)}` : ' · tidak diikuti' }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
