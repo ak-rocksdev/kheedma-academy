@@ -1,6 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { useRouter } from 'vue-router';
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { parseDate } from '@internationalized/date';
 import { cohorts as cohortsApi, users as usersApi, programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
@@ -151,15 +152,35 @@ async function save() {
     }
 }
 
-async function remove(cohort) {
+const router = useRouter();
+const deleteTarget = ref(null);
+
+/** Baris = pintu utama ke halaman kelola Angkatan. */
+function goDetail(cohort) {
+    router.push({ name: 'cohort-detail', params: { id: cohort.id } });
+}
+
+async function confirmRemove() {
+    const cohort = deleteTarget.value;
     error.value = '';
     try {
         await cohortsApi.remove(cohort.id);
+        deleteTarget.value = null;
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
+        deleteTarget.value = null;
         error.value = e.message ?? 'Gagal menghapus angkatan.';
     }
+}
+
+/** Periode terbaca manusiawi; keduanya kosong = belum dijadwalkan. */
+function periodLabel(cohort) {
+    if (!cohort.start_date && !cohort.end_date) {
+        return null;
+    }
+
+    return `${fmtDate(cohort.start_date)} – ${fmtDate(cohort.end_date)}`;
 }
 
 function fmtDate(iso) {
@@ -199,10 +220,17 @@ function fmtDate(iso) {
                 <tbody>
                     <tr v-if="loading"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
                     <tr v-else-if="!items.length"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
-                    <tr v-for="cohort in items" :key="cohort.id" class="border-b border-border last:border-0">
+                    <tr
+                        v-for="cohort in items"
+                        :key="cohort.id"
+                        class="cursor-pointer border-b border-border transition-colors last:border-0 hover:bg-accent/50"
+                        @click="goDetail(cohort)"
+                    >
                         <td class="px-4 py-3 font-medium text-foreground">{{ cohort.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.program?.name ?? '—' }}</td>
-                        <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(cohort.start_date) }} – {{ fmtDate(cohort.end_date) }}</td>
+                        <td class="px-4 py-3" :class="periodLabel(cohort) ? 'text-muted-foreground' : 'text-muted-foreground/50 italic'">
+                            {{ periodLabel(cohort) ?? 'Belum dijadwalkan' }}
+                        </td>
                         <td class="px-4 py-3">
                             <Badge :variant="cohort.registration_open ? 'success' : 'secondary'">
                                 {{ cohort.registration_open ? 'Buka' : 'Tutup' }}
@@ -215,12 +243,16 @@ function fmtDate(iso) {
                                 {{ STATUS[cohort.status]?.label ?? cohort.status }}
                             </Badge>
                         </td>
-                        <td class="px-4 py-3 text-right">
-                            <RouterLink :to="{ name: 'cohort-detail', params: { id: cohort.id } }">
-                                <Button variant="ghost" size="sm">Kelola</Button>
-                            </RouterLink>
-                            <Button variant="ghost" size="sm" @click="openEdit(cohort)">Ubah</Button>
-                            <Button variant="ghost" size="sm" @click="remove(cohort)">Hapus</Button>
+                        <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan" @click.stop="goDetail(cohort)">
+                                <Eye class="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah Angkatan" @click.stop="openEdit(cohort)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive" title="Hapus" aria-label="Hapus Angkatan" @click.stop="deleteTarget = cohort">
+                                <Trash2 class="size-4" />
+                            </Button>
                         </td>
                     </tr>
                 </tbody>
@@ -296,6 +328,17 @@ function fmtDate(iso) {
                     <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>
                 </div>
             </form>
+        </Dialog>
+
+        <!-- Konfirmasi hapus Angkatan -->
+        <Dialog :open="deleteTarget !== null" title="Hapus Angkatan" @update:open="deleteTarget = null">
+            <p class="text-sm text-muted-foreground">
+                Hapus "{{ deleteTarget?.name }}" beserta sesi-sesinya? Angkatan yang sudah punya peserta tidak bisa dihapus.
+            </p>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" @click="confirmRemove">Hapus Angkatan</Button>
+            </div>
         </Dialog>
     </div>
 </template>
