@@ -20,6 +20,7 @@ class Cohort extends Model
         'name',
         'start_date',
         'end_date',
+        'required_attendance',
         'registration_opens_at',
         'registration_closes_at',
         'mentor_id',
@@ -49,6 +50,11 @@ class Cohort extends Model
     public function enrollments(): HasMany
     {
         return $this->hasMany(Enrollment::class);
+    }
+
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at');
     }
 
     /**

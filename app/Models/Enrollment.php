@@ -38,6 +38,11 @@ class Enrollment extends Model
         return $this->hasMany(StatusEvent::class);
     }
 
+    public function attendances(): HasMany
+    {
+        return $this->hasMany(Attendance::class);
+    }
+
     /** The most recent transition — convenient for showing current state. */
     public function latestStatusEvent(): HasOne
     {
