@@ -211,7 +211,7 @@ function fmtDate(iso) {
 </script>
 
 <template>
-    <div class="mx-auto max-w-6xl">
+    <div>
         <div class="flex items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Program</p>

@@ -35,7 +35,7 @@ const entities = [
 </script>
 
 <template>
-    <div class="mx-auto max-w-6xl">
+    <div>
         <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Dashboard</p>
         <h1 class="mt-2 text-3xl font-bold text-foreground">Selamat datang, {{ auth.user?.name }}.</h1>
 

@@ -227,7 +227,7 @@ function fmtDate(iso) {
 </script>
 
 <template>
-    <div class="mx-auto max-w-4xl">
+    <div>
         <RouterLink :to="{ name: 'applicants' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft class="size-4" /> Kembali ke daftar
         </RouterLink>

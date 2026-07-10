@@ -204,7 +204,7 @@ watch(() => props.id, () => load());
 </script>
 
 <template>
-    <div class="mx-auto max-w-6xl">
+    <div>
         <RouterLink :to="{ name: 'cohorts' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft class="size-4" /> Semua Angkatan
         </RouterLink>
@@ -282,7 +282,7 @@ watch(() => props.id, () => load());
                 <div>
                     <div class="flex items-center justify-between gap-3">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Absensi</h2>
-                        <select :value="activeSessionId ?? ''" :class="selectClass" @change="selectSession($event.target.value)">
+                        <select v-if="sessionList.length" :value="activeSessionId ?? ''" :class="selectClass" @change="selectSession($event.target.value)">
                             <option v-for="s in sessionList" :key="s.id" :value="s.id">{{ s.title }}</option>
                         </select>
                     </div>
