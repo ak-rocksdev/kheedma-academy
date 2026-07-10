@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\ProgramThumbnailController;
+use App\Http\Controllers\Api\Admin\StatsController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -25,6 +26,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     // Staff-only operational modules (granular permissions).
     Route::prefix('admin')->group(function () {
+        Route::get('/stats', [StatsController::class, 'index']);
         Route::get('/applications', [ApplicantController::class, 'index'])->middleware('permission:applications.view');
         Route::patch('/applications/{application}', [ApplicantController::class, 'update'])->middleware('permission:applications.review');
         Route::get('/people', [PersonController::class, 'index'])->middleware('permission:people.view');
