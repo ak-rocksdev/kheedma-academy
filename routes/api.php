@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
+use App\Http\Controllers\Api\Admin\AttendanceController;
 use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\CohortSessionController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
@@ -52,6 +53,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::patch('/sessions/{session}', [CohortSessionController::class, 'update']);
             Route::delete('/sessions/{session}', [CohortSessionController::class, 'destroy']);
         });
+
+        Route::put('/sessions/{session}/attendance', [AttendanceController::class, 'update'])->middleware('permission:attendance.record');
 
         Route::middleware('permission:programs.manage')->group(function () {
             Route::get('/programs', [ProgramController::class, 'index']);
