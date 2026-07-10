@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft } from 'lucide-vue-next';
-import { api, people as peopleApi } from '@/api';
+import { api, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -54,12 +54,42 @@ async function save(app) {
         });
         // The in-place v-model values already reflect the saved state, so no full
         // reload is needed (avoids the spinner blink / scroll jump).
+        if (app.status === 'accepted') await offerEnroll(app);
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
         await load(); // reset selects to the server's truth
     } finally {
         savingId.value = null;
+    }
+}
+
+// --- Masukkan ke Angkatan (offered right after an application is accepted) --
+
+const enrollFor = ref(null); // application yang baru diterima
+const enrollCohorts = ref([]);
+const enrollError = ref('');
+
+async function offerEnroll(app) {
+    enrollFor.value = app;
+    enrollError.value = '';
+    try {
+        const res = await cohortsApi.list();
+        const enrolledCohortIds = new Set((person.value?.enrollments ?? []).map((en) => en.cohort_id));
+        enrollCohorts.value = res.data.filter((c) => c.program?.id === app.program_id && !enrolledCohortIds.has(c.id));
+    } catch (e) {
+        if (!e.sessionExpired) enrollError.value = e.message;
+    }
+}
+
+async function enrollInto(cohort) {
+    enrollError.value = '';
+    try {
+        await enrollmentsApi.create({ cohort_id: cohort.id, application_id: enrollFor.value.id });
+        enrollFor.value = null;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) enrollError.value = e.errors ? Object.values(e.errors)[0][0] : e.message;
     }
 }
 
@@ -327,9 +357,25 @@ function fmtDate(iso) {
                     class="flex items-center justify-between border-b border-border px-5 py-3 text-sm last:border-0"
                 >
                     <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
-                    <span class="text-muted-foreground">{{ e.latest_status ? `${e.latest_status} · ${fmtDate(e.latest_status_at)}` : 'Belum ada status' }}</span>
+                    <span class="text-muted-foreground">Hadir {{ e.hadir }} sesi · {{ e.latest_status ? `${e.latest_status} · ${fmtDate(e.latest_status_at)}` : 'Belum ada status' }}</span>
                 </div>
             </div>
+
+            <!-- Enroll dialog (offered right after an application is accepted) -->
+            <Dialog :open="enrollFor !== null" title="Masukkan ke Angkatan" @update:open="enrollFor = null">
+                <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih Angkatan untuk mendaftarkannya sekarang, atau tutup untuk melakukannya nanti dari halaman Angkatan.</p>
+                <div v-if="enrollError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ enrollError }}</div>
+                <p v-if="!enrollCohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada Angkatan untuk program ini.</p>
+                <div v-else class="mt-3 space-y-2">
+                    <div v-for="c in enrollCohorts" :key="c.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                        <div>
+                            <p class="font-medium text-foreground">{{ c.name }}</p>
+                            <p class="text-xs text-muted-foreground">{{ c.enrollments_count }} peserta</p>
+                        </div>
+                        <Button size="sm" variant="outline" @click="enrollInto(c)">Masukkan</Button>
+                    </div>
+                </div>
+            </Dialog>
 
             <!-- Reset password dialog (generated password is shown once) -->
             <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">

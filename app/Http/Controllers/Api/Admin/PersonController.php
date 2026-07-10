@@ -68,6 +68,7 @@ class PersonController extends Controller
             'applications.program:id,name',
             'enrollments.cohort:id,name,start_date,end_date',
             'enrollments.latestStatusEvent',
+            'enrollments.attendances:id,enrollment_id',
         ]);
 
         // Oldest submission = attempt #1; the list itself stays newest-first.
@@ -97,6 +98,7 @@ class PersonController extends Controller
                     'id' => $a->id,
                     'attempt' => $total - $index,
                     'program' => $a->program?->name,
+                    'program_id' => $a->program_id,
                     'status' => $a->status,
                     'motivation' => $a->motivation,
                     'reviewed_at' => $a->reviewed_at?->toIso8601String(),
@@ -105,6 +107,8 @@ class PersonController extends Controller
                 'enrollments' => $person->enrollments->map(fn ($e) => [
                     'id' => $e->id,
                     'cohort' => $e->cohort?->name,
+                    'cohort_id' => $e->cohort_id,
+                    'hadir' => $e->attendances->count(),
                     'latest_status' => $e->latestStatusEvent?->status,
                     'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
                 ]),

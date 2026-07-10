@@ -130,4 +130,18 @@ class EnrollmentManagementTest extends TestCase
         $mentor = User::factory()->mentor()->create();
         $this->actingAs($mentor)->postJson('/api/admin/enrollments', [])->assertForbidden();
     }
+
+    public function test_person_detail_includes_hadir_count(): void
+    {
+        $cohort = Cohort::factory()->create(['program_id' => Program::factory()->active()->create()->id]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        $person = $this->person();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/admin/people/{$person->id}")
+            ->assertOk()
+            ->assertJsonPath('person.enrollments.0.hadir', 1);
+    }
 }
