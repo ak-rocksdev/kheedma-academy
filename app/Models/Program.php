@@ -16,6 +16,10 @@ class Program extends Model
         'name',
         'tagline',
         'description',
+        'type',
+        'level',
+        'locked_message',
+        'thumbnail_path',
         'status',
         'selection_mode',
     ];
@@ -24,6 +28,11 @@ class Program extends Model
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    public function isAffiliate(): bool
+    {
+        return $this->type === 'affiliate_community';
     }
 
     public function cohorts(): HasMany

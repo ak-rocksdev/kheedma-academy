@@ -124,4 +124,74 @@ class ProgramManagementTest extends TestCase
         $this->assertTrue($rows['Terbuka']['is_open']);
         $this->assertFalse($rows['Tanpa Batch']['is_open']);
     }
+
+    public function test_affiliate_program_requires_level(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'Affiliate Tanpa Level',
+                'slug' => 'affiliate-tanpa-level',
+                'status' => 'draft',
+                'selection_mode' => 'selective',
+                'type' => 'affiliate_community',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('level');
+    }
+
+    public function test_general_program_rejects_level(): void
+    {
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'Umum Berlevel',
+                'slug' => 'umum-berlevel',
+                'status' => 'draft',
+                'selection_mode' => 'selective',
+                'type' => 'general',
+                'level' => 2,
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('level');
+    }
+
+    public function test_segmentation_fields_round_trip_through_the_api(): void
+    {
+        $res = $this->actingAs($this->admin())
+            ->postJson('/api/admin/programs', [
+                'name' => 'Affiliate Level Dua',
+                'slug' => 'affiliate-level-dua',
+                'status' => 'active',
+                'selection_mode' => 'selective',
+                'type' => 'affiliate_community',
+                'level' => 2,
+                'locked_message' => 'Selesaikan Level 1 dulu.',
+            ])
+            ->assertCreated();
+
+        $res->assertJsonPath('program.type', 'affiliate_community')
+            ->assertJsonPath('program.level', 2)
+            ->assertJsonPath('program.locked_message', 'Selesaikan Level 1 dulu.');
+    }
+
+    public function test_partial_update_of_affiliate_program_does_not_require_level(): void
+    {
+        $program = Program::factory()->affiliate(2)->create();
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['locked_message' => 'Copy baru.'])
+            ->assertOk()
+            ->assertJsonPath('program.level', 2)
+            ->assertJsonPath('program.locked_message', 'Copy baru.');
+    }
+
+    public function test_switching_type_to_general_clears_level(): void
+    {
+        $program = Program::factory()->affiliate(2)->create();
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['type' => 'general'])
+            ->assertOk()
+            ->assertJsonPath('program.type', 'general')
+            ->assertJsonPath('program.level', null);
+    }
 }

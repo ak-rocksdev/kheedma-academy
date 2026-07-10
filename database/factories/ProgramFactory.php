@@ -20,6 +20,7 @@ class ProgramFactory extends Factory
             'name' => $name,
             'tagline' => fake()->sentence(6),
             'description' => fake()->paragraph(),
+            'type' => 'general',
             'status' => 'draft',
             'selection_mode' => 'selective',
         ];
@@ -38,5 +39,10 @@ class ProgramFactory extends Factory
     public function draft(): static
     {
         return $this->state(fn () => ['status' => 'draft']);
+    }
+
+    public function affiliate(int $level = 1): static
+    {
+        return $this->state(fn () => ['type' => 'affiliate_community', 'level' => $level]);
     }
 }
