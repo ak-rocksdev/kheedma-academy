@@ -78,9 +78,9 @@ async function logout() {
                 </div>
             </header>
 
-            <!-- Single shared content container: every view follows this width. -->
+            <!-- Single shared content container: fluid, fills the real screen width. -->
             <main class="flex-1 overflow-y-auto">
-                <div class="mx-auto w-full max-w-6xl p-6 lg:p-8">
+                <div class="w-full p-6 lg:p-8">
                     <RouterView />
                 </div>
             </main>
