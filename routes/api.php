@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\Admin\ApplicantController;
 use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
+use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\UserController;
@@ -55,5 +56,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');
+
+        Route::middleware('permission:enrollments.manage')->group(function () {
+            Route::post('/enrollments', [EnrollmentController::class, 'store']);
+            Route::delete('/enrollments/{enrollment}', [EnrollmentController::class, 'destroy']);
+            Route::post('/enrollments/{enrollment}/drop', [EnrollmentController::class, 'drop']);
+        });
     });
 });
