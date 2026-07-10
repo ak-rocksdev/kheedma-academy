@@ -144,6 +144,9 @@ export const cohorts = {
     list() {
         return api('/admin/cohorts');
     },
+    detail(id) {
+        return api(`/admin/cohorts/${id}`);
+    },
     create(payload) {
         return api('/admin/cohorts', { method: 'POST', body: payload });
     },
@@ -152,5 +155,32 @@ export const cohorts = {
     },
     remove(id) {
         return api(`/admin/cohorts/${id}`, { method: 'DELETE' });
+    },
+};
+
+export const enrollments = {
+    create(payload) {
+        return api('/admin/enrollments', { method: 'POST', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/enrollments/${id}`, { method: 'DELETE' });
+    },
+    drop(id, note) {
+        return api(`/admin/enrollments/${id}/drop`, { method: 'POST', body: { note } });
+    },
+};
+
+export const sessions = {
+    create(cohortId, payload) {
+        return api(`/admin/cohorts/${cohortId}/sessions`, { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/sessions/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/sessions/${id}`, { method: 'DELETE' });
+    },
+    setAttendance(id, enrollmentIds) {
+        return api(`/admin/sessions/${id}/attendance`, { method: 'PUT', body: { enrollment_ids: enrollmentIds } });
     },
 };

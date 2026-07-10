@@ -56,6 +56,13 @@ const routes = [
                 meta: { permission: 'cohorts.view' },
             },
             {
+                path: 'cohorts/:id',
+                name: 'cohort-detail',
+                component: () => import('./views/CohortDetail.vue'),
+                props: true,
+                meta: { permission: 'cohorts.view' },
+            },
+            {
                 path: 'users',
                 name: 'users',
                 component: () => import('./views/Users.vue'),
