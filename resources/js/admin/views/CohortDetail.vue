@@ -102,7 +102,7 @@ async function openAdd() {
     addOpen.value = true;
     try {
         // Accepted applications of this cohort's program, not yet enrolled here.
-        const res = await api(`/admin/applications?status=accepted&program=${cohort.value.program.id}`);
+        const res = await api(`/admin/applications?status=accepted&program=${cohort.value.program.id}&per_page=200`);
         const enrolledPersonIds = new Set(roster.value.map((r) => r.person.id));
         candidates.value = res.data.filter((a) => !enrolledPersonIds.has(a.person.id));
     } catch (e) {

@@ -69,4 +69,12 @@ class DashboardStatsTest extends TestCase
     {
         $this->getJson('/api/admin/stats')->assertUnauthorized();
     }
+
+    public function test_participant_cannot_view_stats(): void
+    {
+        $participant = User::factory()->create();
+        $participant->assignRole('participant');
+
+        $this->actingAs($participant)->getJson('/api/admin/stats')->assertForbidden();
+    }
 }

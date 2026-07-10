@@ -26,7 +26,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
     // Staff-only operational modules (granular permissions).
     Route::prefix('admin')->group(function () {
-        Route::get('/stats', [StatsController::class, 'index']);
+        Route::get('/stats', [StatsController::class, 'index'])->middleware('role:admin|mentor');
         Route::get('/applications', [ApplicantController::class, 'index'])->middleware('permission:applications.view');
         Route::patch('/applications/{application}', [ApplicantController::class, 'update'])->middleware('permission:applications.review');
         Route::get('/people', [PersonController::class, 'index'])->middleware('permission:people.view');
