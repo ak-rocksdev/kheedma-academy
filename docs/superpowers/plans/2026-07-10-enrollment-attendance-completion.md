@@ -1389,7 +1389,7 @@ Extend the form object initializers with `required_attendance: ''`, `openEdit` m
 
 ```vue
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft } from 'lucide-vue-next';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
@@ -1397,8 +1397,11 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
+import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
+
+const auth = useAuthStore();
 
 const cohort = ref(null);
 const requirement = ref(0);
@@ -1422,10 +1425,11 @@ const dropTarget = ref(null);
 const dropNote = ref('');
 const dropError = ref('');
 
-// Sesi form
+// Sesi form + konfirmasi hapus (menghapus sesi ikut menghapus absensinya)
 const sessionForm = ref({ id: null, title: '', scheduled_at: '' });
 const sessionOpen = ref(false);
 const sessionError = ref('');
+const deleteSessionTarget = ref(null);
 
 const selectClass =
     'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
@@ -1558,11 +1562,13 @@ async function saveSession() {
     }
 }
 
-async function removeSession(session) {
+async function confirmRemoveSession() {
+    const session = deleteSessionTarget.value;
     error.value = '';
     try {
         await sessionsApi.remove(session.id);
         if (activeSessionId.value === session.id) activeSessionId.value = null;
+        deleteSessionTarget.value = null;
         await load();
     } catch (e) {
         if (!e.sessionExpired) error.value = e.message ?? 'Gagal menghapus sesi.';
@@ -1583,6 +1589,8 @@ function fmtDate(iso) {
 }
 
 onMounted(load);
+// Route-view instances are reused when only :id changes (house pattern, see PersonDetail).
+watch(() => props.id, () => load());
 </script>
 
 <template>
@@ -1603,7 +1611,7 @@ onMounted(load);
                         Syarat lulus: hadir {{ requirement }} dari {{ sessionList.length }} sesi · Mentor: {{ cohort.mentor?.name ?? '—' }}
                     </p>
                 </div>
-                <Button variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
+                <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
             </div>
 
             <!-- Peserta -->
@@ -1631,8 +1639,8 @@ onMounted(load);
                                 <Badge :variant="statusVariant(row.latest_status)">{{ statusLabel(row.latest_status) }}</Badge>
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <Button v-if="row.latest_status !== 'dropped'" variant="ghost" size="sm" @click="openDrop(row)">Keluarkan</Button>
-                                <Button v-if="row.hadir === 0 && (row.latest_status === 'accepted' || !row.latest_status)" variant="ghost" size="sm" @click="removeEnrollment(row)">Hapus</Button>
+                                <Button v-if="auth.can('enrollments.manage') && row.latest_status !== 'dropped'" variant="ghost" size="sm" @click="openDrop(row)">Keluarkan</Button>
+                                <Button v-if="auth.can('enrollments.manage') && row.hadir === 0 && (row.latest_status === 'accepted' || !row.latest_status)" variant="ghost" size="sm" @click="removeEnrollment(row)">Hapus</Button>
                             </td>
                         </tr>
                     </tbody>
@@ -1644,7 +1652,7 @@ onMounted(load);
                 <div>
                     <div class="flex items-center justify-between">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Sesi</h2>
-                        <Button variant="outline" size="sm" @click="openSessionForm()">Tambah Sesi</Button>
+                        <Button v-if="auth.can('cohorts.manage')" variant="outline" size="sm" @click="openSessionForm()">Tambah Sesi</Button>
                     </div>
                     <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                         <div v-if="!sessionList.length" class="px-4 py-8 text-center text-sm text-muted-foreground">Belum ada sesi. Tambahkan jadwal pertemuan Angkatan ini.</div>
@@ -1653,9 +1661,9 @@ onMounted(load);
                                 <p class="font-medium text-foreground">{{ s.title }}</p>
                                 <p class="text-xs text-muted-foreground">{{ fmtDate(s.scheduled_at) }} · {{ s.attendances_count }} hadir</p>
                             </div>
-                            <div class="shrink-0">
+                            <div v-if="auth.can('cohorts.manage')" class="shrink-0">
                                 <Button variant="ghost" size="sm" @click="openSessionForm(s)">Ubah</Button>
-                                <Button variant="ghost" size="sm" @click="removeSession(s)">Hapus</Button>
+                                <Button variant="ghost" size="sm" @click="deleteSessionTarget = s">Hapus</Button>
                             </div>
                         </div>
                     </div>
@@ -1683,13 +1691,14 @@ onMounted(load);
                                     type="checkbox"
                                     class="size-4 accent-teal-700"
                                     :checked="hadirSet.has(row.enrollment_id)"
-                                    :disabled="row.latest_status === 'dropped'"
+                                    :disabled="row.latest_status === 'dropped' || !auth.can('attendance.record')"
                                     @change="toggleHadir(row.enrollment_id)"
                                 />
                                 <span class="text-foreground">{{ row.person.name }}</span>
                                 <Badge v-if="row.latest_status === 'completed'" variant="success" class="ml-auto">Lulus</Badge>
                             </label>
-                            <div class="flex justify-end px-4 py-3">
+                            <div v-if="auth.can('attendance.record')" class="flex items-center justify-between px-4 py-3">
+                                <span class="text-xs tabular-nums text-muted-foreground">{{ hadirSet.size }} dari {{ roster.length }} hadir</span>
                                 <Button size="sm" :disabled="savingAttendance" @click="saveAttendance">
                                     {{ savingAttendance ? 'Menyimpan…' : 'Simpan Absensi' }}
                                 </Button>
@@ -1730,6 +1739,17 @@ onMounted(load);
             <div class="mt-4 flex justify-end gap-2">
                 <Button variant="outline" size="sm" @click="dropTarget = null">Batal</Button>
                 <Button variant="destructive" size="sm" :disabled="!dropNote" @click="confirmDrop">Keluarkan</Button>
+            </div>
+        </Dialog>
+
+        <!-- Konfirmasi hapus sesi (destruktif: absensinya ikut terhapus) -->
+        <Dialog :open="deleteSessionTarget !== null" title="Hapus Sesi" @update:open="deleteSessionTarget = null">
+            <p class="text-sm text-muted-foreground">
+                Menghapus "{{ deleteSessionTarget?.title }}" ikut menghapus catatan absensinya dan menghitung ulang kelulusan peserta. Lanjutkan?
+            </p>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="deleteSessionTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" @click="confirmRemoveSession">Hapus Sesi</Button>
             </div>
         </Dialog>
 
@@ -1795,7 +1815,7 @@ git commit -m "feat: cohort detail screen (roster, sessions, attendance)"
     }
 ```
 
-- [ ] **Step 2: RED**, then in `PersonController::show`: add `'enrollments.attendances:id,enrollment_id',` to the `load([...])` list, and in the enrollments map add `'hadir' => $e->attendances->count(),` and in the applications map add `'program_id' => $a->program_id,` (needed by the enroll dialog).
+- [ ] **Step 2: RED**, then in `PersonController::show`: add `'enrollments.attendances:id,enrollment_id',` to the `load([...])` list; in the enrollments map add `'hadir' => $e->attendances->count(),` AND `'cohort_id' => $e->cohort_id,` (the enroll dialog filters out cohorts the person is already in); in the applications map add `'program_id' => $a->program_id,` (needed by the enroll dialog).
 
 - [ ] **Step 3: GREEN** — `--filter=EnrollmentManagementTest`.
 
@@ -1813,7 +1833,8 @@ async function offerEnroll(app) {
     enrollError.value = '';
     try {
         const res = await cohortsApi.list();
-        enrollCohorts.value = res.data.filter((c) => c.program?.id === app.program_id);
+        const enrolledCohortIds = new Set((person.value?.enrollments ?? []).map((en) => en.cohort_id));
+        enrollCohorts.value = res.data.filter((c) => c.program?.id === app.program_id && !enrolledCohortIds.has(c.id));
     } catch (e) {
         if (!e.sessionExpired) enrollError.value = e.message;
     }
@@ -2324,7 +2345,7 @@ const entities = [
 
         <div v-if="stats" class="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
             <div v-for="tile in TILES" :key="tile.key" class="rounded-xl border border-border bg-card p-5">
-                <p class="text-3xl font-bold text-foreground">{{ stats[tile.key] }}</p>
+                <p class="text-3xl font-bold tabular-nums text-foreground">{{ stats[tile.key] }}</p>
                 <p class="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{{ tile.label }}</p>
             </div>
         </div>
@@ -2358,3 +2379,5 @@ git commit -m "feat: live operational stats on the admin dashboard"
 **Type consistency:** `AttendanceCompletion::sync/syncCohort` signatures consistent across Tasks 2/4/5; roster shape (`enrollment_id`, `person`, `hadir`, `latest_status`, `attended_session_ids`) identical between CohortController::show (Task 4) and CohortDetail.vue (Task 6); `enrollments`/`sessions` api.js groups (Task 6) match routes (Tasks 3-5); marker string `auto:attendance` everywhere; `apiUpload` + `sessionExpiredHandler` reuse api.js internals (same module scope). ✓
 
 **Karpathy check:** no speculative features (no attendance history UI, no mentor screens, no export); engine is the single completion writer; declarative attendance endpoint avoids per-checkbox requests; every task ends in a verifiable state. ✓
+
+**UI/UX review pass (vue-best-practices + frontend-design):** action buttons permission-gated with `auth.can(...)` (mentor sees attendance-only controls — matches the role's real capabilities); destructive session delete gets a consequence-explaining confirmation dialog; attendance panel shows a live "X dari Y hadir" counter; `watch(props.id)` route-reuse parity with PersonDetail; enroll dialog filters cohorts the person already joined; stat/counter numbers use `tabular-nums`. Component-split note: the vue-best-practices split triggers (3+ UI sections) technically fire for CohortDetail.vue — the single-file-view structure is a deliberate house-convention match (every admin view is single-file; ui primitives carry reuse); revisit extraction to `components/cohort/*` if the view grows beyond this plan's scope. ✓
