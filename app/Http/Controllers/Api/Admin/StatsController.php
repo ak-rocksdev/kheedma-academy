@@ -11,7 +11,7 @@ use Illuminate\Http\JsonResponse;
 
 class StatsController extends Controller
 {
-    /** Aggregate counts for the dashboard. Staff-wide: no extra permission. */
+    /** Aggregate counts for the dashboard. Staff-only (role gate on the route). */
     public function index(): JsonResponse
     {
         $enrollments = Enrollment::with('latestStatusEvent')->get();
@@ -26,9 +26,10 @@ class StatsController extends Controller
                 'active_participants' => $enrollments->filter(
                     fn (Enrollment $e) => ($e->latestStatusEvent?->status ?? 'accepted') === 'accepted'
                 )->count(),
-                'graduates' => $enrollments->filter(
-                    fn (Enrollment $e) => $e->latestStatusEvent?->status === 'completed'
-                )->count(),
+                // "Pernah hadir": orang unik dengan minimal satu kehadiran kelas.
+                'attended_participants' => Enrollment::whereHas('attendances')
+                    ->distinct()
+                    ->count('people_id'),
             ],
         ]);
     }

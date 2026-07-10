@@ -26,7 +26,6 @@ const form = ref({
     mentor_id: '',
     registration_opens_at: '',
     registration_closes_at: '',
-    required_attendance: '',
 });
 const formErrors = ref({});
 const saving = ref(false);
@@ -90,8 +89,7 @@ function openCreate() {
         mentor_id: '',
         registration_opens_at: '',
         registration_closes_at: '',
-        required_attendance: '',
-    };
+        };
     duration.value = '1';
     customDays.value = 4;
     formErrors.value = {};
@@ -107,7 +105,6 @@ function openEdit(cohort) {
         mentor_id: cohort.mentor?.id ?? '',
         registration_opens_at: cohort.registration_opens_at?.slice(0, 10) ?? '',
         registration_closes_at: cohort.registration_closes_at?.slice(0, 10) ?? '',
-        required_attendance: cohort.required_attendance ?? '',
     };
 
     // Recover the duration from the stored date pair.
@@ -134,7 +131,6 @@ async function save() {
             mentor_id: form.value.mentor_id || null,
             registration_opens_at: form.value.registration_opens_at || null,
             registration_closes_at: form.value.registration_closes_at || null,
-            required_attendance: form.value.required_attendance === '' ? null : Number(form.value.required_attendance),
         };
         if (editing.value) {
             await cohortsApi.update(editing.value.id, payload);
@@ -302,11 +298,6 @@ function fmtDate(iso) {
                     </div>
                 </div>
                 <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
-                <div>
-                    <label class="text-xs text-muted-foreground">Syarat kehadiran (jumlah sesi, kosongkan = semua sesi)</label>
-                    <Input v-model="form.required_attendance" type="number" min="1" max="255" placeholder="Semua sesi" class="mt-1.5" />
-                    <p v-if="formErrors.required_attendance" class="mt-1 text-xs text-destructive">{{ formErrors.required_attendance[0] }}</p>
-                </div>
                 <div>
                     <label class="text-xs text-muted-foreground">Program</label>
                     <select v-model="form.program_id" :class="[selectClass, 'mt-1.5']">

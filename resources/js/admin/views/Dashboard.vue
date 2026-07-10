@@ -11,7 +11,7 @@ const TILES = [
     { key: 'community_members', label: 'Member komunitas' },
     { key: 'active_cohorts', label: 'Angkatan berjalan' },
     { key: 'active_participants', label: 'Peserta aktif' },
-    { key: 'graduates', label: 'Lulusan' },
+    { key: 'attended_participants', label: 'Pernah hadir' },
 ];
 
 onMounted(async () => {

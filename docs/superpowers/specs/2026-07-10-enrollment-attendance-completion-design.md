@@ -157,3 +157,27 @@ Files stored on the `public` disk under `programs/`; served via `asset('storage/
 - Session `position` keeps ordering explicit; UI orders by `position, scheduled_at`.
 - `attendances.created_at` doubles as "when marked"; no `updated_at` needed (rows are
   insert/delete only) — mirrors the append-only spirit of `status_events`.
+
+---
+
+## Amendment (2026-07-10, later same day): completion concept removed
+
+User decision during development review (no production data yet): there is NO "lulus"
+status at this stage — the only measure is **"pernah diikuti"** (has attendance), sourced
+directly from `attendances`. Consequences, applied on branch `feat/enrollment-attendance`:
+
+- `App\Support\AttendanceCompletion` deleted; no system-authored `completed` StatusEvents
+  (existing dev sample events purged by migration `2026_07_10_400001`).
+- `cohorts.required_attendance` dropped. Sessions are presented as "kelas" — added
+  dynamically, unknown count upfront.
+- **Eligibility contract (supersedes Spec 1's)**: a Person may access affiliate level 1
+  when they have an Enrollment in any cohort of a `general` program with ≥1 attendance;
+  level N>1 likewise against level N-1. Attendance row = final fact per kelas
+  ("enroll + hadir = selesai kelas itu, data berhenti di situ").
+- Enrollment (person ↔ cohort) remains the journey spine: `accepted`/`dropped` status
+  events and drop analytics are unchanged. Dashboard "graduates" tile became
+  `attended_participants` ("Pernah hadir": unique persons with ≥1 attendance).
+- PersonDetail now exposes the per-kelas breakdown (classes with attended state and
+  recorded time) on each enrollment.
+- Deferred idea (future spec): participant-side per-kelas enroll/RSVP from the member
+  area, with operator verification.

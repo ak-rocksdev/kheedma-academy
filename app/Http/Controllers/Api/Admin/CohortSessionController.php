@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Cohort;
 use App\Models\CohortSession;
-use App\Support\AttendanceCompletion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -37,12 +36,10 @@ class CohortSessionController extends Controller
         return response()->json(['session' => $this->row($session->fresh())]);
     }
 
-    /** Deleting a session cascades its attendance, so completion must resync. */
-    public function destroy(CohortSession $session, AttendanceCompletion $completion): JsonResponse
+    /** Deleting a session cascades its attendance records with it. */
+    public function destroy(CohortSession $session): JsonResponse
     {
-        $cohort = $session->cohort;
         $session->delete();
-        $completion->syncCohort($cohort);
 
         return response()->json(null, 204);
     }

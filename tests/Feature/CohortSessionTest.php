@@ -9,7 +9,6 @@ use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
-use App\Support\AttendanceCompletion;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -61,7 +60,7 @@ class CohortSessionTest extends TestCase
         $this->actingAs($this->admin())->deleteJson("/api/admin/sessions/{$created}")->assertNoContent();
     }
 
-    public function test_cohort_detail_returns_sessions_roster_and_requirement(): void
+    public function test_cohort_detail_returns_sessions_and_roster(): void
     {
         [$cohort, $enrollment] = $this->cohortWithEnrollment();
         $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
@@ -70,40 +69,19 @@ class CohortSessionTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson("/api/admin/cohorts/{$cohort->id}")
             ->assertOk()
-            ->assertJsonPath('requirement', 1)
             ->assertJsonPath('sessions.0.id', $session->id)
             ->assertJsonPath('roster.0.hadir', 1)
             ->assertJsonPath('roster.0.attended_session_ids.0', $session->id);
     }
 
-    public function test_deleting_a_session_retracts_auto_completion(): void
+    public function test_deleting_a_session_cascades_its_attendance(): void
     {
         [$cohort, $enrollment] = $this->cohortWithEnrollment();
-        $cohort->update(['required_attendance' => null]); // all sessions
-        $s1 = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
-        Attendance::create(['cohort_session_id' => $s1->id, 'enrollment_id' => $enrollment->id]);
-        app(AttendanceCompletion::class)->sync($enrollment);
-        $this->assertSame('completed', $enrollment->fresh()->latestStatusEvent->status);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
 
-        // Add a second session: requirement (all) rises to 2; deleting it later resyncs.
-        $s2 = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
-        $this->actingAs($this->admin())->deleteJson("/api/admin/sessions/{$s2->id}")->assertNoContent();
+        $this->actingAs($this->admin())->deleteJson("/api/admin/sessions/{$session->id}")->assertNoContent();
 
-        // Still completed after delete (1/1 again) — resync ran without error.
-        $this->assertSame('completed', $enrollment->fresh()->latestStatusEvent->status);
-    }
-
-    public function test_required_attendance_round_trips_through_cohort_api(): void
-    {
-        $program = Program::factory()->active()->create();
-
-        $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', [
-                'name' => 'Angkatan 9',
-                'program_id' => $program->id,
-                'required_attendance' => 5,
-            ])
-            ->assertCreated()
-            ->assertJsonPath('cohort.required_attendance', 5);
+        $this->assertSame(0, Attendance::count());
     }
 }

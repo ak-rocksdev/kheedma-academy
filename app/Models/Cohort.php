@@ -20,7 +20,6 @@ class Cohort extends Model
         'name',
         'start_date',
         'end_date',
-        'required_attendance',
         'registration_opens_at',
         'registration_closes_at',
         'mentor_id',

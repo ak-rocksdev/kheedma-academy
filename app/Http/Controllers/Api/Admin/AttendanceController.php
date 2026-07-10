@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\CohortSession;
 use App\Models\Enrollment;
-use App\Support\AttendanceCompletion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -15,10 +14,10 @@ class AttendanceController extends Controller
 {
     /**
      * Declarative attendance for one session: the payload is the full "hadir"
-     * set; the server inserts/deletes the diff and resyncs auto-completion for
-     * every enrollment whose state changed.
+     * set; the server inserts/deletes the diff. Attendance is the final fact
+     * ("pernah diikuti") — there is no derived completion status.
      */
-    public function update(Request $request, CohortSession $session, AttendanceCompletion $completion): JsonResponse
+    public function update(Request $request, CohortSession $session): JsonResponse
     {
         $data = $request->validate([
             'enrollment_ids' => ['present', 'array'],
@@ -47,17 +46,8 @@ class AttendanceController extends Controller
             $session->attendances()->whereIn('enrollment_id', $toRemove)->delete();
         }
 
-        $affected = $toAdd->merge($toRemove);
-        Enrollment::with('cohort')->findMany($affected)->each(fn (Enrollment $e) => $completion->sync($e));
-
-        $completions = Enrollment::with('latestStatusEvent')
-            ->where('cohort_id', $session->cohort_id)
-            ->get()
-            ->mapWithKeys(fn (Enrollment $e) => [$e->id => $e->latestStatusEvent?->status]);
-
         return response()->json([
             'attended' => $session->attendances()->pluck('enrollment_id'),
-            'roster_completions' => $completions,
         ]);
     }
 }

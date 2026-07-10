@@ -30,7 +30,6 @@ class AttendanceRecordingTest extends TestCase
     {
         $cohort = Cohort::factory()->create([
             'program_id' => Program::factory()->active()->create()->id,
-            'required_attendance' => 1,
         ]);
         $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
 
@@ -59,13 +58,12 @@ class AttendanceRecordingTest extends TestCase
         $this->assertSame(2, Attendance::count());
         $this->assertSame($admin->id, Attendance::first()->marked_by);
 
-        // Correct: only A hadir. B's row removed, B's auto-completion retracted.
+        // Correct: only A hadir. B's row removed.
         $this->actingAs($admin)
             ->putJson("/api/admin/sessions/{$session->id}/attendance", ['enrollment_ids' => [$a->id]])
             ->assertOk();
         $this->assertSame(1, Attendance::count());
-        $this->assertSame('completed', $a->fresh()->latestStatusEvent->status);
-        $this->assertNull($b->fresh()->latestStatusEvent);
+        $this->assertSame([$a->id], $session->attendances()->pluck('enrollment_id')->all());
     }
 
     public function test_enrollments_must_belong_to_the_sessions_cohort(): void

@@ -14,7 +14,6 @@ const props = defineProps({ id: { type: [String, Number], required: true } });
 const auth = useAuthStore();
 
 const cohort = ref(null);
-const requirement = ref(0);
 const sessionList = ref([]);
 const roster = ref([]);
 const loading = ref(true);
@@ -46,7 +45,6 @@ async function load() {
     try {
         const res = await cohortsApi.detail(props.id);
         cohort.value = res.cohort;
-        requirement.value = res.requirement;
         sessionList.value = res.sessions;
         roster.value = res.roster;
     } catch (e) {
@@ -68,7 +66,7 @@ function canToggle(row) {
 /**
  * Toggle hadir untuk satu sel (peserta x sesi). Optimistic: UI berubah dulu,
  * lalu set hadir penuh sesi itu dikirim; gagal = dikembalikan. Respons server
- * membawa status terkini tiap enrollment, jadi badge "Lulus" menyala seketika.
+ * adalah fakta final ("pernah diikuti") — tidak ada status turunan apa pun.
  */
 async function toggleAttendance(row, session) {
     const key = `${row.enrollment_id}:${session.id}`;
@@ -93,13 +91,7 @@ async function toggleAttendance(row, session) {
         const hadirIds = roster.value
             .filter((r) => r.attended_session_ids.includes(session.id))
             .map((r) => r.enrollment_id);
-        const res = await sessionsApi.setAttendance(session.id, hadirIds);
-
-        // Auto-completion langsung terlihat: status tiap baris diperbarui.
-        for (const r of roster.value) {
-            const status = res.roster_completions[r.enrollment_id];
-            if (status !== undefined) r.latest_status = status;
-        }
+        await sessionsApi.setAttendance(session.id, hadirIds);
     } catch (e) {
         apply(wasHadir); // revert
         if (!e.sessionExpired) error.value = e.message ?? 'Gagal menyimpan absensi.';
@@ -205,11 +197,11 @@ async function confirmRemoveSession() {
 }
 
 function statusVariant(status) {
-    return { accepted: 'warning', completed: 'success', dropped: 'destructive' }[status] ?? 'secondary';
+    return { accepted: 'success', dropped: 'destructive' }[status] ?? 'secondary';
 }
 
 function statusLabel(status) {
-    return { accepted: 'Aktif', completed: 'Lulus', dropped: 'Keluar' }[status] ?? (status ?? 'Belum ada status');
+    return { accepted: 'Aktif', dropped: 'Keluar' }[status] ?? (status ?? 'Belum ada status');
 }
 
 function fmtDate(iso) {
@@ -242,7 +234,7 @@ watch(() => props.id, () => load());
                     <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan' }}</p>
                     <h1 class="mt-2 text-2xl font-bold text-foreground">{{ cohort.name }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        Syarat lulus: hadir {{ requirement }} dari {{ sessionList.length }} sesi · Mentor: {{ cohort.mentor?.name ?? '—' }}
+                        {{ sessionList.length }} kelas · Mentor: {{ cohort.mentor?.name ?? '—' }}
                     </p>
                 </div>
                 <div class="flex items-center gap-2">
@@ -313,7 +305,7 @@ watch(() => props.id, () => load());
                                         <Check v-if="isHadir(row, s)" class="size-3.5" />
                                     </span>
                                 </td>
-                                <td class="px-3 py-3 text-center tabular-nums text-muted-foreground">{{ row.hadir }}/{{ requirement }}</td>
+                                <td class="px-3 py-3 text-center tabular-nums text-muted-foreground">{{ row.hadir }}/{{ sessionList.length }}</td>
                                 <td class="px-3 py-3">
                                     <Badge :variant="statusVariant(row.latest_status)">{{ statusLabel(row.latest_status) }}</Badge>
                                 </td>

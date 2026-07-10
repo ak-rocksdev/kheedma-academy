@@ -31,7 +31,6 @@ class CohortController extends Controller
         $cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments');
 
         $sessions = $cohort->sessions()->withCount('attendances')->get();
-        $requirement = $cohort->required_attendance ?? $sessions->count();
 
         $roster = $cohort->enrollments()
             ->with(['person:id,name,phone', 'latestStatusEvent', 'attendances:id,enrollment_id,cohort_session_id'])
@@ -47,7 +46,6 @@ class CohortController extends Controller
 
         return response()->json([
             'cohort' => $this->row($cohort),
-            'requirement' => (int) $requirement,
             'sessions' => $sessions->map(fn ($s) => [
                 'id' => $s->id,
                 'title' => $s->title,
@@ -108,7 +106,6 @@ class CohortController extends Controller
             ],
             'start_date' => ['nullable', 'date'],
             'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
-            'required_attendance' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:255'],
             'mentor_id' => [
                 'nullable',
                 function (string $attribute, $value, $fail): void {
@@ -140,7 +137,7 @@ class CohortController extends Controller
     }
 
     /**
-     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,required_attendance:?int,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool}
+     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool}
      */
     private function row(Cohort $c): array
     {
@@ -150,7 +147,6 @@ class CohortController extends Controller
             'program' => $c->program ? ['id' => $c->program->id, 'name' => $c->program->name] : null,
             'start_date' => $c->start_date?->toDateString(),
             'end_date' => $c->end_date?->toDateString(),
-            'required_attendance' => $c->required_attendance !== null ? (int) $c->required_attendance : null,
             'status' => $c->status,
             'mentor' => $c->mentor ? ['id' => $c->mentor->id, 'name' => $c->mentor->name] : null,
             'enrollments_count' => (int) ($c->enrollments_count ?? 0),
