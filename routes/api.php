@@ -8,6 +8,7 @@ use App\Http\Controllers\Api\Admin\CommunityMemberController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
+use App\Http\Controllers\Api\Admin\ProgramThumbnailController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -61,6 +62,8 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::post('/programs', [ProgramController::class, 'store']);
             Route::patch('/programs/{program:id}', [ProgramController::class, 'update']);
             Route::delete('/programs/{program:id}', [ProgramController::class, 'destroy']);
+            Route::post('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'store']);
+            Route::delete('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'destroy']);
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');

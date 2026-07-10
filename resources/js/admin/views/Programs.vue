@@ -26,6 +26,7 @@ const form = ref({
 });
 const formErrors = ref({});
 const saving = ref(false);
+const thumbError = ref('');
 
 const STATUS = {
     draft: { label: 'Draf', variant: 'secondary' },
@@ -86,6 +87,7 @@ function openCreate() {
         locked_message: '',
     };
     formErrors.value = {};
+    thumbError.value = '';
     dialogOpen.value = true;
 }
 
@@ -103,6 +105,7 @@ function openEdit(program) {
         locked_message: program.locked_message ?? '',
     };
     formErrors.value = {};
+    thumbError.value = '';
     dialogOpen.value = true;
 }
 
@@ -175,6 +178,32 @@ async function remove(program) {
     }
 }
 
+async function uploadThumbnail(event) {
+    const file = event.target.files?.[0];
+    if (!file || !editing.value) return;
+    thumbError.value = '';
+    try {
+        const res = await programsApi.uploadThumbnail(editing.value.id, file);
+        editing.value.thumbnail_url = res.program.thumbnail_url;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) thumbError.value = e.errors?.thumbnail?.[0] ?? e.message;
+    } finally {
+        event.target.value = '';
+    }
+}
+
+async function removeThumbnail() {
+    thumbError.value = '';
+    try {
+        await programsApi.removeThumbnail(editing.value.id);
+        editing.value.thumbnail_url = null;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) thumbError.value = e.message;
+    }
+}
+
 function fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -212,7 +241,12 @@ function fmtDate(iso) {
                     <tr v-if="loading"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
                     <tr v-else-if="!items.length"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada program.</td></tr>
                     <tr v-for="program in items" :key="program.id" class="border-b border-border last:border-0">
-                        <td class="px-4 py-3 font-medium text-foreground">{{ program.name }}</td>
+                        <td class="px-4 py-3 font-medium text-foreground">
+                            <div class="flex items-center gap-2">
+                                <img v-if="program.thumbnail_url" :src="program.thumbnail_url" alt="" class="h-8 w-14 rounded object-cover" />
+                                {{ program.name }}
+                            </div>
+                        </td>
                         <td class="px-4 py-3 text-muted-foreground"><code class="text-xs">/program/{{ program.slug }}</code></td>
                         <td class="px-4 py-3">
                             <Badge :variant="STATUS[program.status]?.variant ?? 'secondary'">
@@ -314,6 +348,18 @@ function fmtDate(iso) {
                         placeholder="Kosongkan untuk memakai pesan default."
                         class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     ></textarea>
+                </div>
+                <div v-if="editing">
+                    <label class="text-xs text-muted-foreground">Thumbnail kelas</label>
+                    <div class="mt-1.5 flex items-center gap-3">
+                        <img v-if="editing.thumbnail_url" :src="editing.thumbnail_url" alt="" class="h-14 w-24 rounded-lg object-cover" />
+                        <div v-else class="flex h-14 w-24 items-center justify-center rounded-lg border border-dashed border-input text-[0.6rem] uppercase tracking-wide text-muted-foreground">Otomatis</div>
+                        <input ref="thumbInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadThumbnail" />
+                        <Button type="button" variant="outline" size="sm" @click="$refs.thumbInput.click()">{{ editing.thumbnail_url ? 'Ganti' : 'Unggah' }}</Button>
+                        <Button v-if="editing.thumbnail_url" type="button" variant="ghost" size="sm" @click="removeThumbnail">Hapus</Button>
+                    </div>
+                    <p class="mt-1 text-xs text-muted-foreground">JPEG/PNG/WebP, maks 2 MB. Kosong = cover otomatis bermotif brand.</p>
+                    <p v-if="thumbError" class="mt-1 text-xs text-destructive">{{ thumbError }}</p>
                 </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <Button type="button" variant="outline" size="sm" @click="dialogOpen = false">Batal</Button>

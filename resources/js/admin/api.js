@@ -72,6 +72,30 @@ export async function api(path, { method = 'GET', body = null } = {}) {
     return data;
 }
 
+/** Multipart POST variant of api() — browser sets the Content-Type boundary. */
+export async function apiUpload(path, formData) {
+    if (!getCookie('XSRF-TOKEN')) {
+        await csrf();
+    }
+    const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+    const xsrf = getCookie('XSRF-TOKEN');
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+
+    const res = await fetch(`/api${path}`, { method: 'POST', credentials: 'include', headers, body: formData });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        const err = new Error((data && data.message) || `Request failed (${res.status})`);
+        err.status = res.status;
+        err.errors = (data && data.errors) || {};
+        if (res.status === 401 && sessionExpiredHandler) {
+            err.sessionExpired = true;
+            sessionExpiredHandler();
+        }
+        throw err;
+    }
+    return data;
+}
+
 export const auth = {
     async login(payload) {
         await csrf();
@@ -113,6 +137,14 @@ export const programs = {
     },
     remove(id) {
         return api(`/admin/programs/${id}`, { method: 'DELETE' });
+    },
+    uploadThumbnail(id, file) {
+        const body = new FormData();
+        body.append('thumbnail', file);
+        return apiUpload(`/admin/programs/${id}/thumbnail`, body);
+    },
+    removeThumbnail(id) {
+        return api(`/admin/programs/${id}/thumbnail`, { method: 'DELETE' });
     },
 };
 
