@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ImagePlus } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -178,10 +179,15 @@ async function remove(program) {
     }
 }
 
-async function uploadThumbnail(event) {
-    const file = event.target.files?.[0];
-    if (!file || !editing.value) return;
+// Thumbnail: satu handler untuk klik-unggah dan drag-and-drop.
+const thumbInput = ref(null);
+const uploadingThumb = ref(false);
+const previewOpen = ref(false);
+
+async function handleThumbFile(file) {
+    if (!file || !editing.value || uploadingThumb.value) return;
     thumbError.value = '';
+    uploadingThumb.value = true;
     try {
         const res = await programsApi.uploadThumbnail(editing.value.id, file);
         editing.value.thumbnail_url = res.program.thumbnail_url;
@@ -189,12 +195,22 @@ async function uploadThumbnail(event) {
     } catch (e) {
         if (!e.sessionExpired) thumbError.value = e.errors?.thumbnail?.[0] ?? e.message;
     } finally {
-        event.target.value = '';
+        uploadingThumb.value = false;
     }
+}
+
+function onThumbInputChange(event) {
+    handleThumbFile(event.target.files?.[0]);
+    event.target.value = '';
+}
+
+function onThumbDrop(event) {
+    handleThumbFile(event.dataTransfer?.files?.[0]);
 }
 
 async function removeThumbnail() {
     thumbError.value = '';
+    previewOpen.value = false;
     try {
         await programsApi.removeThumbnail(editing.value.id);
         editing.value.thumbnail_url = null;
@@ -203,6 +219,27 @@ async function removeThumbnail() {
         if (!e.sessionExpired) thumbError.value = e.message;
     }
 }
+
+// Lightbox pratinjau: Escape menutup; ikut tertutup saat dialognya ditutup.
+function onPreviewKey(e) {
+    if (e.key === 'Escape') {
+        previewOpen.value = false;
+    }
+}
+
+watch(previewOpen, (open) => {
+    if (open) {
+        document.addEventListener('keydown', onPreviewKey);
+    } else {
+        document.removeEventListener('keydown', onPreviewKey);
+    }
+});
+
+watch(dialogOpen, (open) => {
+    if (!open) previewOpen.value = false;
+});
+
+onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
 
 function fmtDate(iso) {
     if (!iso) return '—';
@@ -274,6 +311,42 @@ function fmtDate(iso) {
 
         <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Program' : 'Tambah Program'">
             <form class="flex flex-col gap-4" @submit.prevent="save">
+                <!-- Thumbnail: banner 16:9 (rasio yang sama dengan kartu publik = pratinjau jujur). -->
+                <div v-if="editing">
+                    <div v-if="editing.thumbnail_url" class="group relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+                        <img
+                            :src="editing.thumbnail_url"
+                            alt="Thumbnail kelas"
+                            class="h-full w-full cursor-zoom-in object-cover"
+                            @click="previewOpen = true"
+                        />
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                            <span class="text-xs font-medium text-white/90">Klik gambar untuk memperbesar</span>
+                            <div class="pointer-events-auto flex gap-2">
+                                <Button type="button" variant="secondary" size="sm" :disabled="uploadingThumb" @click="thumbInput?.click()">
+                                    {{ uploadingThumb ? 'Mengunggah…' : 'Ganti' }}
+                                </Button>
+                                <Button type="button" variant="destructive" size="sm" @click="removeThumbnail">Hapus</Button>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        v-else
+                        type="button"
+                        :disabled="uploadingThumb"
+                        class="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input text-muted-foreground transition hover:border-teal-600/50 hover:bg-accent/40 hover:text-foreground"
+                        @click="thumbInput?.click()"
+                        @dragover.prevent
+                        @drop.prevent="onThumbDrop"
+                    >
+                        <ImagePlus class="size-6" />
+                        <span class="text-sm font-medium">{{ uploadingThumb ? 'Mengunggah…' : 'Klik atau seret gambar ke sini' }}</span>
+                        <span class="text-xs">JPEG/PNG/WebP, maks 2 MB · rasio 16:9 dianjurkan</span>
+                    </button>
+                    <input ref="thumbInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onThumbInputChange" />
+                    <p class="mt-1.5 text-xs text-muted-foreground">Kosong = kelas memakai cover otomatis bermotif brand.</p>
+                    <p v-if="thumbError" class="mt-1 text-xs text-destructive">{{ thumbError }}</p>
+                </div>
                 <div>
                     <Input v-model="form.name" placeholder="Nama program" @input="onNameInput" />
                     <p class="mt-1.5 text-xs text-muted-foreground">
@@ -349,23 +422,26 @@ function fmtDate(iso) {
                         class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     ></textarea>
                 </div>
-                <div v-if="editing">
-                    <label class="text-xs text-muted-foreground">Thumbnail kelas</label>
-                    <div class="mt-1.5 flex items-center gap-3">
-                        <img v-if="editing.thumbnail_url" :src="editing.thumbnail_url" alt="" class="h-14 w-24 rounded-lg object-cover" />
-                        <div v-else class="flex h-14 w-24 items-center justify-center rounded-lg border border-dashed border-input text-[0.6rem] uppercase tracking-wide text-muted-foreground">Otomatis</div>
-                        <input ref="thumbInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="uploadThumbnail" />
-                        <Button type="button" variant="outline" size="sm" @click="$refs.thumbInput.click()">{{ editing.thumbnail_url ? 'Ganti' : 'Unggah' }}</Button>
-                        <Button v-if="editing.thumbnail_url" type="button" variant="ghost" size="sm" @click="removeThumbnail">Hapus</Button>
-                    </div>
-                    <p class="mt-1 text-xs text-muted-foreground">JPEG/PNG/WebP, maks 2 MB. Kosong = cover otomatis bermotif brand.</p>
-                    <p v-if="thumbError" class="mt-1 text-xs text-destructive">{{ thumbError }}</p>
-                </div>
                 <div class="flex justify-end gap-2 pt-2">
                     <Button type="button" variant="outline" size="sm" @click="dialogOpen = false">Batal</Button>
                     <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>
                 </div>
             </form>
         </Dialog>
+
+        <!-- Lightbox pratinjau thumbnail: klik area mana pun atau Escape untuk menutup. -->
+        <Teleport to="body">
+            <div
+                v-if="previewOpen && editing?.thumbnail_url"
+                class="fixed inset-0 z-[70] flex cursor-zoom-out items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
+                @click="previewOpen = false"
+            >
+                <img
+                    :src="editing.thumbnail_url"
+                    alt="Pratinjau thumbnail"
+                    class="max-h-[85vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
+                />
+            </div>
+        </Teleport>
     </div>
 </template>
