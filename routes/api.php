@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
 use App\Http\Controllers\Api\Admin\CohortController;
+use App\Http\Controllers\Api\Admin\CohortSessionController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\PersonController;
@@ -42,10 +43,14 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         });
 
         Route::get('/cohorts', [CohortController::class, 'index'])->middleware('permission:cohorts.view');
+        Route::get('/cohorts/{cohort}', [CohortController::class, 'show'])->middleware('permission:cohorts.view');
         Route::middleware('permission:cohorts.manage')->group(function () {
             Route::post('/cohorts', [CohortController::class, 'store']);
             Route::patch('/cohorts/{cohort}', [CohortController::class, 'update']);
             Route::delete('/cohorts/{cohort}', [CohortController::class, 'destroy']);
+            Route::post('/cohorts/{cohort}/sessions', [CohortSessionController::class, 'store']);
+            Route::patch('/sessions/{session}', [CohortSessionController::class, 'update']);
+            Route::delete('/sessions/{session}', [CohortSessionController::class, 'destroy']);
         });
 
         Route::middleware('permission:programs.manage')->group(function () {
