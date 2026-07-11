@@ -19,7 +19,6 @@ class PermissionSeeder extends Seeder
             'applications.view',
             'applications.review',
             'people.view',
-            'people.merge',
             'cohorts.view',
             'cohorts.manage',
             'enrollments.manage',

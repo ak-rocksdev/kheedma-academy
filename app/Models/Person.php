@@ -99,18 +99,6 @@ class Person extends Model
         return $this->belongsTo(User::class);
     }
 
-    /** The surviving Person this (soft-deleted) duplicate was merged into. */
-    public function mergedInto(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'merged_into_id');
-    }
-
-    /** Tombstoned duplicates that were merged into this Person. */
-    public function mergedFrom(): HasMany
-    {
-        return $this->hasMany(self::class, 'merged_into_id')->withTrashed();
-    }
-
     public function province(): BelongsTo
     {
         return $this->belongsTo(Provinsi::class, 'province_code', 'code');

@@ -154,81 +154,6 @@ async function submitReset() {
     }
 }
 
-// --- Gabungkan (merge a duplicate into this person) --------------------------
-
-const mergeDialogOpen = ref(false);
-const mergeQuery = ref('');
-const mergeResults = ref([]);
-const mergeSearching = ref(false);
-const mergeTarget = ref(null); // the chosen duplicate
-const mergePreview = ref(null); // { can_merge, conflicts, moves }
-const mergeError = ref('');
-const merging = ref(false);
-const mergeSuccess = ref('');
-
-let mergeDebounce;
-
-function openMergeDialog() {
-    mergeQuery.value = '';
-    mergeResults.value = [];
-    mergeTarget.value = null;
-    mergePreview.value = null;
-    mergeError.value = '';
-    mergeDialogOpen.value = true;
-}
-
-watch(mergeQuery, () => {
-    clearTimeout(mergeDebounce);
-    if (!mergeQuery.value) {
-        mergeResults.value = [];
-        return;
-    }
-    mergeDebounce = setTimeout(searchDuplicates, 300);
-});
-
-async function searchDuplicates() {
-    mergeSearching.value = true;
-    mergeError.value = '';
-    try {
-        const res = await peopleApi.list(`?q=${encodeURIComponent(mergeQuery.value)}`);
-        mergeResults.value = res.data.filter((p) => p.id !== person.value.id);
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeError.value = e.message ?? 'Gagal mencari.';
-    } finally {
-        mergeSearching.value = false;
-    }
-}
-
-async function pickDuplicate(candidate) {
-    mergeTarget.value = candidate;
-    mergePreview.value = null;
-    mergeError.value = '';
-    try {
-        mergePreview.value = await peopleApi.mergePreview(person.value.id, candidate.id);
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeTarget.value = null;
-        mergeError.value = e.message ?? 'Gagal memuat pratinjau.';
-    }
-}
-
-async function confirmMerge() {
-    merging.value = true;
-    mergeError.value = '';
-    try {
-        await peopleApi.merge(person.value.id, mergeTarget.value.id);
-        mergeDialogOpen.value = false;
-        mergeSuccess.value = `Data "${mergeTarget.value.name}" digabungkan ke profil ini.`;
-        await load();
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeError.value = (e.errors?.merge ?? [e.message ?? 'Gagal menggabungkan.']).join(' ');
-    } finally {
-        merging.value = false;
-    }
-}
-
 function fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -244,16 +169,9 @@ function fmtDate(iso) {
         <div v-if="loading" class="mt-10 text-center text-muted-foreground">Memuat…</div>
 
         <template v-else-if="person">
-            <div v-if="mergeSuccess" class="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-700">
-                {{ mergeSuccess }}
-            </div>
-
             <!-- Profile -->
             <div class="mt-4 rounded-xl border border-border bg-card p-6">
-                <div class="flex items-start justify-between gap-3">
-                    <h1 class="text-2xl font-bold text-foreground">{{ person.name }}</h1>
-                    <Button v-if="auth.can('people.merge')" variant="outline" size="sm" @click="openMergeDialog">Gabungkan duplikat</Button>
-                </div>
+                <h1 class="text-2xl font-bold text-foreground">{{ person.name }}</h1>
                 <div class="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
                     <div><span class="text-muted-foreground">Nomor HP</span><div class="font-medium">{{ person.phone }}</div></div>
                     <div><span class="text-muted-foreground">Email</span><div class="font-medium">{{ person.email }}</div></div>
@@ -437,69 +355,6 @@ function fmtDate(iso) {
                 </form>
             </Dialog>
 
-            <!-- Merge dialog: this person is the survivor; search the duplicate -->
-            <Dialog v-model:open="mergeDialogOpen" title="Gabungkan Duplikat">
-                <div class="space-y-3">
-                    <p class="text-sm text-muted-foreground">
-                        Riwayat orang duplikat dipindahkan ke <span class="font-medium text-foreground">{{ person.name }}</span>,
-                        lalu data duplikat diarsipkan. Nomor HP dan email duplikat menjadi bebas dipakai lagi.
-                    </p>
-                    <div v-if="mergeError" class="rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                        {{ mergeError }}
-                    </div>
-
-                    <template v-if="!mergeTarget">
-                        <Input v-model="mergeQuery" placeholder="Cari duplikat: nama, HP, atau email…" />
-                        <div v-if="mergeSearching" class="text-sm text-muted-foreground">Mencari…</div>
-                        <div v-else-if="mergeQuery && !mergeResults.length" class="text-sm text-muted-foreground">Tidak ditemukan.</div>
-                        <div v-else-if="mergeResults.length" class="max-h-56 space-y-1 overflow-y-auto">
-                            <button
-                                v-for="candidate in mergeResults"
-                                :key="candidate.id"
-                                type="button"
-                                class="flex w-full items-center justify-between rounded-md border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent/50"
-                                @click="pickDuplicate(candidate)"
-                            >
-                                <span class="font-medium text-foreground">{{ candidate.name }}</span>
-                                <span class="text-xs text-muted-foreground">{{ candidate.phone }}</span>
-                            </button>
-                        </div>
-                    </template>
-
-                    <template v-else>
-                        <div class="rounded-md border border-border bg-background px-3 py-2 text-sm">
-                            <span class="text-muted-foreground">Duplikat:</span>
-                            <span class="ml-1 font-medium text-foreground">{{ mergeTarget.name }}</span>
-                            <span class="ml-1 text-xs text-muted-foreground">{{ mergeTarget.phone }}</span>
-                        </div>
-
-                        <div v-if="!mergePreview" class="text-sm text-muted-foreground">Memuat pratinjau…</div>
-                        <template v-else>
-                            <ul v-if="mergePreview.can_merge" class="space-y-1 text-sm text-foreground">
-                                <li>{{ mergePreview.moves.applications }} pendaftaran dipindahkan</li>
-                                <li>{{ mergePreview.moves.enrollments }} keikutsertaan dipindahkan</li>
-                                <li v-if="mergePreview.moves.membership">Keanggotaan komunitas dipindahkan</li>
-                                <li v-if="mergePreview.moves.account">Akun login dipindahkan</li>
-                            </ul>
-                            <ul v-else class="space-y-1 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                                <li v-for="(conflict, i) in mergePreview.conflicts" :key="i">{{ conflict }}</li>
-                            </ul>
-                        </template>
-
-                        <div class="flex justify-end gap-2 pt-2">
-                            <Button type="button" variant="outline" size="sm" @click="mergeTarget = null; mergePreview = null">Ganti duplikat</Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                :disabled="!mergePreview || !mergePreview.can_merge || merging"
-                                @click="confirmMerge"
-                            >
-                                {{ merging ? 'Menggabungkan…' : 'Gabungkan' }}
-                            </Button>
-                        </div>
-                    </template>
-                </div>
-            </Dialog>
         </template>
 
         <div v-else class="mt-16 text-center text-muted-foreground">{{ error || 'Data tidak ditemukan.' }}</div>

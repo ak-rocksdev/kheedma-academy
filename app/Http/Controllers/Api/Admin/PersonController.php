@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Actions\MergePeople;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PersonController extends Controller
@@ -174,43 +172,6 @@ class PersonController extends Controller
             'account' => $this->accountBlock($person->fresh('user')),
             'generated_password' => $generated,
         ]);
-    }
-
-    /** Dry-run of a merge: what would move, or what blocks it. */
-    public function mergePreview(Request $request, MergePeople $mergePeople): JsonResponse
-    {
-        [$survivor, $duplicate] = $this->mergePair($request);
-
-        return response()->json($mergePeople->preview($survivor, $duplicate));
-    }
-
-    /** Absorb a duplicate Person into the survivor (tombstones the duplicate). */
-    public function merge(Request $request, MergePeople $mergePeople): JsonResponse
-    {
-        [$survivor, $duplicate] = $this->mergePair($request);
-
-        return response()->json([
-            'merged' => true,
-            'moves' => $mergePeople->merge($survivor, $duplicate),
-        ]);
-    }
-
-    /**
-     * Validate and resolve the survivor/duplicate pair. Mirrors the public
-     * forms' soft-delete-aware exists checks — a tombstone can't merge again.
-     *
-     * @return array{0: Person, 1: Person}
-     */
-    private function mergePair(Request $request): array
-    {
-        $livePerson = Rule::exists('people', 'id')->whereNull('deleted_at');
-
-        $data = $request->validate([
-            'survivor_id' => ['required', 'integer', $livePerson],
-            'duplicate_id' => ['required', 'integer', 'different:survivor_id', $livePerson],
-        ]);
-
-        return [Person::findOrFail($data['survivor_id']), Person::findOrFail($data['duplicate_id'])];
     }
 
     /**
