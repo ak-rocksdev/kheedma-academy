@@ -1,7 +1,10 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
+import { Eye } from 'lucide-vue-next';
 import { people } from '@/api';
+
+const router = useRouter();
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -103,7 +106,8 @@ const selectClass =
                     <tr
                         v-for="item in items"
                         :key="item.id"
-                        class="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="router.push({ name: 'person', params: { id: item.id } })"
                     >
                         <td class="px-4 py-3 font-medium text-foreground">{{ item.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">
@@ -122,8 +126,10 @@ const selectClass =
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(item.created_at) }}</td>
                         <td class="px-4 py-3 text-right">
-                            <RouterLink :to="{ name: 'person', params: { id: item.id } }">
-                                <Button variant="ghost" size="sm">Lihat</Button>
+                            <RouterLink :to="{ name: 'person', params: { id: item.id } }" @click.stop>
+                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail orang">
+                                    <Eye class="size-4" />
+                                </Button>
                             </RouterLink>
                         </td>
                     </tr>

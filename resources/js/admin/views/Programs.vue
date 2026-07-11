@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
-import { ImagePlus } from 'lucide-vue-next';
+import { ImagePlus, Pencil, Trash2 } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -168,13 +168,18 @@ async function save() {
     }
 }
 
-async function remove(program) {
+const deleteTarget = ref(null);
+
+async function confirmRemove() {
+    const program = deleteTarget.value;
     error.value = '';
     try {
         await programsApi.remove(program.id);
+        deleteTarget.value = null;
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
+        deleteTarget.value = null;
         error.value = e.message ?? 'Gagal menghapus program.';
     }
 }
@@ -277,7 +282,12 @@ function fmtDate(iso) {
                 <tbody>
                     <tr v-if="loading"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
                     <tr v-else-if="!items.length"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada program.</td></tr>
-                    <tr v-for="program in items" :key="program.id" class="border-b border-border last:border-0">
+                    <tr
+                        v-for="program in items"
+                        :key="program.id"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="openEdit(program)"
+                    >
                         <td class="px-4 py-3 font-medium text-foreground">
                             <div class="flex items-center gap-2">
                                 <img v-if="program.thumbnail_url" :src="program.thumbnail_url" alt="" class="h-8 w-14 rounded object-cover" />
@@ -301,8 +311,12 @@ function fmtDate(iso) {
                         <td class="px-4 py-3 text-muted-foreground">{{ program.cohorts_count }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ program.applications_count }}</td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <Button variant="ghost" size="sm" @click="openEdit(program)">Ubah</Button>
-                            <Button variant="ghost" size="sm" @click="remove(program)">Hapus</Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah program" @click.stop="openEdit(program)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive" title="Hapus" aria-label="Hapus program" @click.stop="deleteTarget = program">
+                                <Trash2 class="size-4" />
+                            </Button>
                         </td>
                     </tr>
                 </tbody>
@@ -427,6 +441,17 @@ function fmtDate(iso) {
                     <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>
                 </div>
             </form>
+        </Dialog>
+
+        <!-- Konfirmasi hapus program -->
+        <Dialog :open="deleteTarget !== null" title="Hapus Program" @update:open="deleteTarget = null">
+            <p class="text-sm text-muted-foreground">
+                Hapus "{{ deleteTarget?.name }}" dari katalog? Program dengan angkatan atau pendaftar tidak bisa dihapus.
+            </p>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" @click="confirmRemove">Hapus Program</Button>
+            </div>
         </Dialog>
 
         <!-- Lightbox pratinjau thumbnail: klik area mana pun atau Escape untuk menutup. -->

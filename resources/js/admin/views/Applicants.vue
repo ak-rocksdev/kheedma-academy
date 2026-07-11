@@ -1,12 +1,14 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
+import { Eye } from 'lucide-vue-next';
 import { api, programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
 
+const router = useRouter();
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const q = ref('');
@@ -114,7 +116,8 @@ const selectClass =
                     <tr
                         v-for="item in items"
                         :key="item.id"
-                        class="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="router.push({ name: 'person', params: { id: item.person.id } })"
                     >
                         <td class="px-4 py-3 font-medium text-foreground">
                             {{ item.person.name }}
@@ -131,8 +134,10 @@ const selectClass =
                         <td class="px-4 py-3"><Badge :variant="statusVariant(item.status)">{{ statusLabel(item.status) }}</Badge></td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(item.created_at) }}</td>
                         <td class="px-4 py-3 text-right">
-                            <RouterLink :to="{ name: 'person', params: { id: item.person.id } }">
-                                <Button variant="ghost" size="sm">Lihat</Button>
+                            <RouterLink :to="{ name: 'person', params: { id: item.person.id } }" @click.stop>
+                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail pelamar">
+                                    <Eye class="size-4" />
+                                </Button>
                             </RouterLink>
                         </td>
                     </tr>

@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { Pencil, Power } from 'lucide-vue-next';
 import { users as usersApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -120,7 +121,12 @@ async function toggleActive(user) {
                 <tbody>
                     <tr v-if="loading"><td colspan="5" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
                     <tr v-else-if="!items.length"><td colspan="5" class="px-4 py-10 text-center text-muted-foreground">Belum ada akun.</td></tr>
-                    <tr v-for="user in items" :key="user.id" class="border-b border-border last:border-0">
+                    <tr
+                        v-for="user in items"
+                        :key="user.id"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="openEdit(user)"
+                    >
                         <td class="px-4 py-3 font-medium text-foreground">{{ user.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">
                             <div>{{ user.email }}</div>
@@ -133,9 +139,19 @@ async function toggleActive(user) {
                             </Badge>
                         </td>
                         <td class="px-4 py-3 text-right">
-                            <Button variant="ghost" size="sm" @click="openEdit(user)">Ubah</Button>
-                            <Button variant="ghost" size="sm" @click="toggleActive(user)">
-                                {{ user.is_active ? 'Nonaktifkan' : 'Aktifkan' }}
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah akun" @click.stop="openEdit(user)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-8 w-8"
+                                :class="user.is_active ? 'text-destructive hover:text-destructive' : 'text-teal-700 hover:text-teal-700'"
+                                :title="user.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                                :aria-label="user.is_active ? 'Nonaktifkan akun' : 'Aktifkan akun'"
+                                @click.stop="toggleActive(user)"
+                            >
+                                <Power class="size-4" />
                             </Button>
                         </td>
                     </tr>
