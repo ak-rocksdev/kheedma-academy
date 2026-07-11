@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { RouterLink, useRouter } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import { Eye } from 'lucide-vue-next';
 import { people } from '@/api';
 
@@ -9,17 +9,20 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+// Values are API contract (English, codebase convention); labels are UI copy.
 const SEGMENTS = [
-    { value: 'pendaftar', label: 'Pendaftar' },
-    { value: 'komunitas', label: 'Anggota komunitas' },
-    { value: 'peserta', label: 'Peserta program' },
-    { value: 'berakun', label: 'Punya akun' },
+    { value: 'needs-review', label: 'Perlu review' },
+    { value: 'applicants', label: 'Pendaftar' },
+    { value: 'community', label: 'Anggota komunitas' },
+    { value: 'participants', label: 'Peserta program' },
+    { value: 'with-account', label: 'Punya akun' },
 ];
 
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const q = ref('');
-const segment = ref('');
+const route = useRoute();
+const segment = ref(typeof route.query.segment === 'string' ? route.query.segment : '');
 const loading = ref(false);
 const error = ref('');
 
@@ -117,10 +120,12 @@ const selectClass =
                         <td class="px-4 py-3 text-muted-foreground">{{ item.city ?? '—' }}</td>
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1.5">
-                                <Badge v-if="item.applications_count" variant="secondary">{{ item.applications_count }}× daftar</Badge>
-                                <Badge v-if="item.enrollments_count" variant="secondary">{{ item.enrollments_count }} angkatan</Badge>
+                                <Badge v-if="item.applications_count" :variant="item.pending_applications_count ? 'warning' : 'secondary'">
+                                    Melamar {{ item.applications_count }}×<template v-if="item.pending_applications_count"> · menunggu</template>
+                                </Badge>
+                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan</Badge>
                                 <Badge v-if="item.is_community_member" variant="secondary">Komunitas</Badge>
-                                <Badge v-if="item.has_account" variant="success">Akun</Badge>
+                                <Badge v-if="item.has_account" variant="outline">Akun</Badge>
                                 <span v-if="!item.applications_count && !item.enrollments_count && !item.is_community_member && !item.has_account" class="text-muted-foreground">—</span>
                             </div>
                         </td>

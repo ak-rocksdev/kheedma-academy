@@ -1,5 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue';
+import { RouterLink } from 'vue-router';
 import { api } from '@/api';
 import { useAuthStore } from '@/stores/auth';
 
@@ -7,7 +8,7 @@ const auth = useAuthStore();
 const stats = ref(null);
 
 const TILES = [
-    { key: 'pending_applications', label: 'Pelamar menunggu' },
+    { key: 'pending_applications', label: 'Pelamar menunggu', to: { name: 'people', query: { segment: 'needs-review' } } },
     { key: 'community_members', label: 'Member komunitas' },
     { key: 'active_cohorts', label: 'Angkatan berjalan' },
     { key: 'active_participants', label: 'Peserta aktif' },
@@ -40,10 +41,17 @@ const entities = [
         <h1 class="mt-2 text-3xl font-bold text-foreground">Selamat datang, {{ auth.user?.name }}.</h1>
 
         <div v-if="stats" class="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <div v-for="tile in TILES" :key="tile.key" class="rounded-xl border border-border bg-card p-5">
+            <component
+                :is="tile.to ? RouterLink : 'div'"
+                v-for="tile in TILES"
+                :key="tile.key"
+                :to="tile.to"
+                class="block rounded-xl border border-border bg-card p-5"
+                :class="tile.to ? 'transition hover:border-primary/40 hover:shadow-sm' : ''"
+            >
                 <p class="text-3xl font-bold tabular-nums text-foreground">{{ stats[tile.key] }}</p>
                 <p class="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{{ tile.label }}</p>
-            </div>
+            </component>
         </div>
 
         <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

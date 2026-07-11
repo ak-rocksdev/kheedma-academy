@@ -19,18 +19,23 @@ class PersonController extends Controller
     {
         $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'segment' => ['nullable', 'in:pendaftar,komunitas,peserta,berakun'],
+            'segment' => ['nullable', 'in:applicants,community,participants,with-account,needs-review'],
         ]);
 
         $people = Person::query()
             ->with('city:code,name')
-            ->withCount(['applications', 'enrollments'])
+            ->withCount([
+                'applications',
+                'enrollments',
+                'applications as pending_applications_count' => fn ($q) => $q->where('status', 'pending'),
+            ])
             ->withExists('communityMembership')
             ->when($request->filled('segment'), fn ($q) => match ($request->string('segment')->toString()) {
-                'pendaftar' => $q->whereHas('applications'),
-                'komunitas' => $q->whereHas('communityMembership'),
-                'peserta' => $q->whereHas('enrollments'),
-                'berakun' => $q->whereNotNull('user_id'),
+                'applicants' => $q->whereHas('applications'),
+                'community' => $q->whereHas('communityMembership'),
+                'participants' => $q->whereHas('enrollments'),
+                'with-account' => $q->whereNotNull('user_id'),
+                'needs-review' => $q->whereHas('applications', fn ($a) => $a->where('status', 'pending')),
             })
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -48,6 +53,7 @@ class PersonController extends Controller
                 'email' => $p->email,
                 'city' => $p->city?->name,
                 'applications_count' => $p->applications_count,
+                'pending_applications_count' => $p->pending_applications_count,
                 'enrollments_count' => $p->enrollments_count,
                 'is_community_member' => (bool) $p->community_membership_exists,
                 'has_account' => $p->user_id !== null,

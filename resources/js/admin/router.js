@@ -21,19 +21,19 @@ const routes = [
                 component: () => import('./views/Dashboard.vue'),
             },
             {
-                path: 'pelamar',
-                name: 'applicants',
-                component: () => import('./views/Applicants.vue'),
-            },
-            {
-                path: 'pelamar/:id',
+                // English paths are the codebase convention; the old Indonesian
+                // paths stay alive as aliases so bookmarks keep working.
+                path: 'people/:id',
                 name: 'person',
+                alias: 'pelamar/:id',
                 component: () => import('./views/PersonDetail.vue'),
                 props: true,
+                meta: { permission: 'people.view' },
             },
             {
-                path: 'orang',
+                path: 'people',
                 name: 'people',
+                alias: 'orang',
                 component: () => import('./views/People.vue'),
                 meta: { permission: 'people.view' },
             },

@@ -10,12 +10,11 @@ const route = useRoute();
 const auth = useAuthStore();
 
 // `match` is the path prefix that keeps an item highlighted, so detail pages
-// (e.g. /pelamar/5) still light up their section. Dashboard matches exactly.
+// (e.g. /people/5) still light up their section. Dashboard matches exactly.
 const nav = computed(() =>
     [
         { to: { name: 'dashboard' }, match: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
-        { to: { name: 'applicants' }, match: '/pelamar', label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
-        { to: { name: 'people' }, match: '/orang', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
+        { to: { name: 'people' }, match: '/people', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
         { to: { name: 'programs' }, match: '/programs', label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
         { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
