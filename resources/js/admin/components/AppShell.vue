@@ -77,10 +77,12 @@ async function logout() {
                 </div>
             </header>
 
-            <!-- Single shared content container: fluid, fills the real screen width. -->
+            <!-- Single shared content container: fluid, fills the real screen width.
+                 The key remounts the active view after a session renewal so its
+                 data loads fresh instead of showing the failed empty state. -->
             <main class="flex-1 overflow-y-auto">
                 <div class="w-full p-6 lg:p-8">
-                    <RouterView />
+                    <RouterView :key="auth.viewEpoch" />
                 </div>
             </main>
         </div>

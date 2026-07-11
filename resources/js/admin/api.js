@@ -58,10 +58,10 @@ export async function api(path, { method = 'GET', body = null } = {}) {
         err.status = res.status;
         err.errors = (data && data.errors) || {};
 
-        // A dead session answers 401 everywhere except the login endpoint
-        // itself. Flag the error (so callers can stay quiet) and open the
-        // global re-login dialog instead of hard-redirecting.
-        if (res.status === 401 && path !== '/login' && sessionExpiredHandler) {
+        // A dead session answers 401 on reads and can answer 419 (stale CSRF)
+        // on writes. Both open the global re-login dialog instead of leaving
+        // the user with a dead page; callers stay quiet via the flag.
+        if ((res.status === 401 || res.status === 419) && path !== '/login' && sessionExpiredHandler) {
             err.sessionExpired = true;
             sessionExpiredHandler();
         }
@@ -87,7 +87,7 @@ export async function apiUpload(path, formData) {
         const err = new Error((data && data.message) || `Request failed (${res.status})`);
         err.status = res.status;
         err.errors = (data && data.errors) || {};
-        if (res.status === 401 && sessionExpiredHandler) {
+        if ((res.status === 401 || res.status === 419) && sessionExpiredHandler) {
             err.sessionExpired = true;
             sessionExpiredHandler();
         }
