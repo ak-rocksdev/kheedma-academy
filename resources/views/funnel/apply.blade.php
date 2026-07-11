@@ -25,11 +25,13 @@
                 </div>
             @endif
 
-            @if ($pendingApplication)
+            @if (in_array($applicationState, ['pending', 'accepted', 'enrolled'], true))
                 <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-lg font-bold text-teal-900">Kamu sudah mendaftar program ini.</h2>
+                    <h2 class="text-lg font-bold text-teal-900">
+                        {{ ['pending' => 'Kamu sudah mendaftar program ini.', 'accepted' => 'Kamu sudah diterima di program ini.', 'enrolled' => 'Kamu peserta program ini.'][$applicationState] }}
+                    </h2>
                     <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
-                        Pendaftaranmu sedang kami tinjau. Pantau statusnya di halaman akunmu.
+                        {{ ['pending' => 'Pendaftaranmu sedang kami tinjau. Pantau statusnya di halaman akunmu.', 'accepted' => 'Selamat! Tim kami akan menghubungimu. Lihat detailnya di halaman akunmu.', 'enrolled' => 'Kamu sudah tergabung di Angkatan program ini. Lihat perjalananmu di halaman akunmu.'][$applicationState] }}
                     </p>
                     <div class="mt-5">
                         <x-cta :href="route('member.area')" label="Lihat Status" />
@@ -183,6 +185,11 @@
                     </div>
                 </form>
             @else
+            @if ($applicationState === 'rejected')
+                <p class="mt-8 rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-center text-sm text-orange-800">
+                    Pendaftaranmu sebelumnya belum lolos. Kamu boleh mencoba lagi, semangat!
+                </p>
+            @endif
             <form method="POST" data-submit-once data-live-validate data-validate-url="{{ url()->current() }}" action="{{ route('program.apply.store', $program) }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                 @csrf
 

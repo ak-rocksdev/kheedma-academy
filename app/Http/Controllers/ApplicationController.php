@@ -39,11 +39,10 @@ class ApplicationController extends Controller
             abort_unless($user->person, 403);
         }
 
-        // The notice covers pending AND accepted: neither should re-apply.
+        // One active application per program: pending, accepted, and enrolled
+        // all park the visitor on a status card instead of the form.
         $person = $user?->person;
-        $pendingApplication = $person
-            ? $person->applications()->where('program_id', $program->id)->whereIn('status', ['pending', 'accepted'])->exists()
-            : false;
+        $applicationState = $person?->applicationStateFor($program) ?? 'none';
 
         // Guests answer "sudah punya akun?" FIRST; the form only appears after
         // they choose "belum" (?baru=1) or when they return from a validation
@@ -58,7 +57,7 @@ class ApplicationController extends Controller
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('funnel.apply', compact('program', 'provinces', 'person', 'pendingApplication', 'showGate', 'confirming'));
+        return view('funnel.apply', compact('program', 'provinces', 'person', 'applicationState', 'showGate', 'confirming'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */
@@ -146,21 +145,22 @@ class ApplicationController extends Controller
             $request->session()->regenerate();
         }
 
-        // Silent backstop: no new application while one is pending OR already
-        // accepted for this program. Only a rejected attempt reopens the door.
-        $alreadyPending = $person->applications()
-            ->where('program_id', $program->id)
-            ->whereIn('status', ['pending', 'accepted'])
-            ->exists();
-
-        if (! $alreadyPending) {
-            $person->applications()->create([
-                'status' => 'pending',
-                'program_id' => $program->id,
-                'referral_source' => $data['referral_source'],
-                'motivation' => $data['motivation'],
-            ]);
+        // One ACTIVE application per program: pending/accepted/enrolled block a
+        // new attempt; only a rejected one reopens the door (a recorded retry
+        // is a feature, not redundancy). Honest response: back to the landing
+        // page with a notice — never a fake thank-you.
+        if (in_array($person->applicationStateFor($program), ['pending', 'accepted', 'enrolled'], true)) {
+            return redirect()
+                ->route('program.show', $program)
+                ->with('application_notice', 'Kamu sudah terdaftar di program ini.');
         }
+
+        $person->applications()->create([
+            'status' => 'pending',
+            'program_id' => $program->id,
+            'referral_source' => $data['referral_source'],
+            'motivation' => $data['motivation'],
+        ]);
 
         return redirect()
             ->route('daftar.thankyou')
