@@ -21,8 +21,25 @@
             @endif
 
             <div class="mt-10 text-center">
-                @if ($isOpen && ! $locked)
+                @if (session('application_notice'))
+                    <div class="mx-auto mb-6 max-w-md rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                        {{ session('application_notice') }}
+                    </div>
+                @endif
+
+                @if ($statePill)
+                    <span class="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold {{ $statePill['class'] }}">
+                        <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        {{ $statePill['label'] }}
+                    </span>
+                    <div class="mt-4">
+                        <a href="{{ route('member.area') }}" class="text-sm font-medium text-teal-700 underline-offset-4 hover:underline">Lihat Status di Akunmu</a>
+                    </div>
+                @elseif ($isOpen && ! $locked)
                     <x-cta :href="route('program.apply', $program)" label="Daftar Sekarang" />
+                    @if ($applicationState === 'rejected')
+                        <p class="mt-4 text-xs text-orange-700">Pendaftaranmu sebelumnya belum lolos. Kamu boleh mencoba lagi.</p>
+                    @endif
                     <p class="mt-4 text-xs text-teal-800/50">
                         Pendaftaran sedang dibuka. Tempat terbatas.
                         @if ($openCohort?->start_date)

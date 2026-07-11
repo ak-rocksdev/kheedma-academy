@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Application;
 use App\Models\Cohort;
 use App\Models\Person;
 use App\Models\Program;
@@ -153,5 +154,58 @@ class PublicCatalogTest extends TestCase
             ->assertSee('Program untuk Anda')
             ->assertSee('Affiliate Kelas Satu')
             ->assertSee('data-lock-trigger', false);
+    }
+
+    /** Member login dengan lamaran pending pada program yang diberikan. */
+    private function memberWithPendingApplication(Program $program): User
+    {
+        $this->seed(RoleSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('participant');
+        $person = Person::create([
+            'name' => 'Member Uji',
+            'phone' => '+628999000111',
+            'email' => 'member.uji@example.test',
+        ]);
+        $person->user()->associate($user); // user_id is guarded by design
+        $person->save();
+        Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'status' => 'pending']);
+
+        return $user;
+    }
+
+    public function test_landing_shows_review_pill_instead_of_apply_cta_for_pending_member(): void
+    {
+        $program = $this->openProgram();
+        $user = $this->memberWithPendingApplication($program);
+
+        $this->actingAs($user)
+            ->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSee('sedang direview')
+            ->assertDontSee(route('program.apply', $program), false);
+    }
+
+    public function test_chooser_marks_applied_program_for_pending_member(): void
+    {
+        $program = $this->openProgram();
+        $program->update(['name' => 'Program Dilamar']);
+        $user = $this->memberWithPendingApplication($program);
+
+        $this->actingAs($user)
+            ->get('/daftar')
+            ->assertOk()
+            ->assertSee('menunggu review');
+    }
+
+    public function test_landing_shows_flash_notice_after_blocked_duplicate(): void
+    {
+        $program = $this->openProgram();
+
+        $this->withSession(['_flash' => ['old' => [], 'new' => []], 'application_notice' => 'Kamu sudah terdaftar di program ini.'])
+            ->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSee('Kamu sudah terdaftar di program ini.');
     }
 }
