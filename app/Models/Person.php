@@ -64,6 +64,29 @@ class Person extends Model
         return $this->hasMany(Enrollment::class, 'people_id');
     }
 
+    /**
+     * Relation state to a program: enrolled|accepted|pending|rejected|none.
+     * Drives the anti-duplicate funnel UX — enrolled outranks any application
+     * status; otherwise the LATEST application for that program decides.
+     */
+    public function applicationStateFor(Program $program): string
+    {
+        $isEnrolled = $this->enrollments()
+            ->whereHas('cohort', fn ($q) => $q->where('program_id', $program->id))
+            ->exists();
+
+        if ($isEnrolled) {
+            return 'enrolled';
+        }
+
+        $latest = $this->applications()
+            ->where('program_id', $program->id)
+            ->latest()
+            ->first();
+
+        return $latest?->status ?? 'none';
+    }
+
     /** Community membership (the unselective second funnel door), if joined. */
     public function communityMembership(): HasOne
     {
