@@ -25,13 +25,11 @@
                 </div>
             @endif
 
-            @if (in_array($applicationState, ['pending', 'accepted', 'enrolled'], true))
+            @if ($stateNotice)
                 <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-lg font-bold text-teal-900">
-                        {{ ['pending' => 'Kamu sudah mendaftar program ini.', 'accepted' => 'Kamu sudah diterima di program ini.', 'enrolled' => 'Kamu peserta program ini.'][$applicationState] }}
-                    </h2>
+                    <h2 class="text-lg font-bold text-teal-900">{{ $stateNotice['title'] }}</h2>
                     <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
-                        {{ ['pending' => 'Pendaftaranmu sedang kami tinjau. Pantau statusnya di halaman akunmu.', 'accepted' => 'Selamat! Tim kami akan menghubungimu. Lihat detailnya di halaman akunmu.', 'enrolled' => 'Kamu sudah tergabung di Angkatan program ini. Lihat perjalananmu di halaman akunmu.'][$applicationState] }}
+                        {{ $stateNotice['body'] }}
                     </p>
                     <div class="mt-5">
                         <x-cta :href="route('member.area')" label="Lihat Status" />

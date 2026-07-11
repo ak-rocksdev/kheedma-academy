@@ -40,9 +40,25 @@ class ApplicationController extends Controller
         }
 
         // One active application per program: pending, accepted, and enrolled
-        // all park the visitor on a status card instead of the form.
+        // all park the visitor on a status card instead of the form. The copy
+        // per state lives here so the template stays declarative.
         $person = $user?->person;
         $applicationState = $person?->applicationStateFor($program) ?? 'none';
+        $stateNotice = match ($applicationState) {
+            'pending' => [
+                'title' => 'Kamu sudah mendaftar program ini.',
+                'body' => 'Pendaftaranmu sedang kami tinjau. Pantau statusnya di halaman akunmu.',
+            ],
+            'accepted' => [
+                'title' => 'Kamu sudah diterima di program ini.',
+                'body' => 'Selamat! Tim kami akan menghubungimu. Lihat detailnya di halaman akunmu.',
+            ],
+            'enrolled' => [
+                'title' => 'Kamu peserta program ini.',
+                'body' => 'Kamu sudah tergabung di Angkatan program ini. Lihat perjalananmu di halaman akunmu.',
+            ],
+            default => null,
+        };
 
         // Guests answer "sudah punya akun?" FIRST; the form only appears after
         // they choose "belum" (?baru=1) or when they return from a validation
@@ -57,7 +73,7 @@ class ApplicationController extends Controller
 
         $provinces = Provinsi::orderBy('name')->get(['code', 'name']);
 
-        return view('funnel.apply', compact('program', 'provinces', 'person', 'applicationState', 'showGate', 'confirming'));
+        return view('funnel.apply', compact('program', 'provinces', 'person', 'applicationState', 'stateNotice', 'showGate', 'confirming'));
     }
 
     /** JSON list of cities for a province — feeds the dependent dropdown. */
