@@ -19,9 +19,10 @@ class PermissionSeeder extends Seeder
             'applications.view',
             'applications.review',
             'people.view',
-            'people.merge',
             'cohorts.view',
             'cohorts.manage',
+            'enrollments.manage',
+            'attendance.record',
             'users.manage',
             'programs.manage',
             'community.view',
@@ -37,6 +38,7 @@ class PermissionSeeder extends Seeder
             'applications.view',
             'people.view',
             'cohorts.view',
+            'attendance.record',
         ]);
         Role::findOrCreate('participant', 'web')->syncPermissions([]);
 

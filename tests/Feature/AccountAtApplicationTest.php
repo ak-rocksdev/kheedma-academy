@@ -178,7 +178,7 @@ class AccountAtApplicationTest extends TestCase
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
             'followed_socials' => 1,
-        ])->assertRedirect(route('daftar.thankyou'));
+        ])->assertRedirect(route('program.show', $program));
 
         $this->assertSame(1, Application::count());
     }
@@ -191,7 +191,7 @@ class AccountAtApplicationTest extends TestCase
 
         $this->get("/program/{$program->slug}/daftar")
             ->assertOk()
-            ->assertSee('sudah mendaftar')
+            ->assertSee('sudah diterima')
             ->assertDontSee('Kirim Pendaftaran');
 
         $this->post("/program/{$program->slug}/daftar", [
@@ -205,7 +205,7 @@ class AccountAtApplicationTest extends TestCase
             'motivation' => 'Ingin serius belajar affiliate.',
             'referral_source' => 'instagram',
             'followed_socials' => 1,
-        ])->assertRedirect(route('daftar.thankyou'));
+        ])->assertRedirect(route('program.show', $program));
 
         $this->assertSame(1, Application::count());
     }

@@ -7,12 +7,11 @@ use App\Models\Program;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
- * Single source of truth for who may access a program (spec 2026-07-08).
+ * Single source of truth for who may access a program (spec 2026-07-08,
+ * amended 2026-07-10: no "lulus" status — the measure is attendance).
  *
- * Completion contract: a Person has completed a program when they have an
- * Enrollment in any Cohort of that program carrying a StatusEvent with
- * status 'completed'. Spec 2 (enrollment + attendance) writes that data;
- * this service only reads it.
+ * Contract: a Person has taken a program when they have an Enrollment in any
+ * Cohort of that program with at least one attendance ("pernah diikuti").
  */
 class ProgramEligibility
 {
@@ -35,21 +34,21 @@ class ProgramEligibility
         $level = $program->level ?? 1;
 
         if ($level <= 1) {
-            return $this->hasCompleted($person, fn (Builder $q) => $q->where('type', 'general'))
+            return $this->hasAttended($person, fn (Builder $q) => $q->where('type', 'general'))
                 ? null
                 : 'needs_general';
         }
 
-        return $this->hasCompleted($person, fn (Builder $q) => $q->where('type', 'affiliate_community')->where('level', $level - 1))
+        return $this->hasAttended($person, fn (Builder $q) => $q->where('type', 'affiliate_community')->where('level', $level - 1))
             ? null
             : 'needs_previous_level';
     }
 
     /** @param  callable(Builder): Builder  $programScope */
-    private function hasCompleted(Person $person, callable $programScope): bool
+    private function hasAttended(Person $person, callable $programScope): bool
     {
         return $person->enrollments()
-            ->whereHas('statusEvents', fn (Builder $q) => $q->where('status', 'completed'))
+            ->whereHas('attendances')
             ->whereHas('cohort.program', $programScope)
             ->exists();
     }

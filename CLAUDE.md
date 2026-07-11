@@ -161,3 +161,17 @@ This project has domain-specific skills available in `**/skills/**`. You MUST ac
 - To filter on a particular test name: `php artisan test --compact --filter=testName` (recommended after making a change to a related file).
 
 </laravel-boost-guidelines>
+
+<project-conventions>
+# Kheedma Academy Project Conventions
+
+## Language (agreed 2026-07-11)
+
+- **Code is 100% English**: identifiers, DB tables/columns, route names & paths
+  (including admin SPA URL paths), API parameter values (e.g. segment keys),
+  comments, commit messages.
+- **UI copy is 100% Indonesian**: labels, headings, buttons, validation and
+  error messages, empty states. Warm register ("kamu"), no em-dashes.
+- Public marketing URLs stay Indonesian (`/daftar`, `/komunitas`) — they are
+  brand-facing. Legacy Indonesian admin paths live on only as router aliases.
+</project-conventions>

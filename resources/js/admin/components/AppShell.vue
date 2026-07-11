@@ -10,12 +10,11 @@ const route = useRoute();
 const auth = useAuthStore();
 
 // `match` is the path prefix that keeps an item highlighted, so detail pages
-// (e.g. /pelamar/5) still light up their section. Dashboard matches exactly.
+// (e.g. /people/5) still light up their section. Dashboard matches exactly.
 const nav = computed(() =>
     [
         { to: { name: 'dashboard' }, match: '/', label: 'Dashboard', icon: LayoutDashboard, show: true },
-        { to: { name: 'applicants' }, match: '/pelamar', label: 'Pelamar', icon: Users, show: auth.can('applications.view') },
-        { to: { name: 'people' }, match: '/orang', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
+        { to: { name: 'people' }, match: '/people', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
         { to: { name: 'programs' }, match: '/programs', label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
         { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
@@ -38,13 +37,14 @@ async function logout() {
 </script>
 
 <template>
-    <div class="flex min-h-screen bg-background text-foreground">
+    <!-- h-screen + internal scroll on <main>: sidebar and topbar stay put. -->
+    <div class="flex h-screen overflow-hidden bg-background text-foreground">
         <!-- Sidebar -->
         <aside class="hidden w-60 shrink-0 flex-col border-r border-border bg-card md:flex">
-            <div class="flex h-16 items-center border-b border-border px-5">
+            <div class="flex h-16 shrink-0 items-center border-b border-border px-5">
                 <img :src="'/images/kheedma-academy-horizontal.png'" width="1408" height="492" alt="Kheedma Academy" class="h-7 w-auto" />
             </div>
-            <nav class="flex-1 space-y-1 p-3">
+            <nav class="flex-1 space-y-1 overflow-y-auto p-3">
                 <RouterLink
                     v-for="item in nav"
                     :key="item.label"
@@ -77,8 +77,11 @@ async function logout() {
                 </div>
             </header>
 
-            <main class="flex-1 overflow-y-auto p-6 lg:p-8">
-                <RouterView />
+            <!-- Single shared content container: fluid, fills the real screen width. -->
+            <main class="flex-1 overflow-y-auto">
+                <div class="w-full p-6 lg:p-8">
+                    <RouterView />
+                </div>
             </main>
         </div>
     </div>

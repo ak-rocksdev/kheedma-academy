@@ -1,5 +1,6 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue';
+import { ImagePlus, Pencil, Trash2 } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ const form = ref({
 });
 const formErrors = ref({});
 const saving = ref(false);
+const thumbError = ref('');
 
 const STATUS = {
     draft: { label: 'Draf', variant: 'secondary' },
@@ -86,6 +88,7 @@ function openCreate() {
         locked_message: '',
     };
     formErrors.value = {};
+    thumbError.value = '';
     dialogOpen.value = true;
 }
 
@@ -103,6 +106,7 @@ function openEdit(program) {
         locked_message: program.locked_message ?? '',
     };
     formErrors.value = {};
+    thumbError.value = '';
     dialogOpen.value = true;
 }
 
@@ -164,16 +168,83 @@ async function save() {
     }
 }
 
-async function remove(program) {
+const deleteTarget = ref(null);
+
+async function confirmRemove() {
+    const program = deleteTarget.value;
     error.value = '';
     try {
         await programsApi.remove(program.id);
+        deleteTarget.value = null;
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
+        deleteTarget.value = null;
         error.value = e.message ?? 'Gagal menghapus program.';
     }
 }
+
+// Thumbnail: satu handler untuk klik-unggah dan drag-and-drop.
+const thumbInput = ref(null);
+const uploadingThumb = ref(false);
+const previewOpen = ref(false);
+
+async function handleThumbFile(file) {
+    if (!file || !editing.value || uploadingThumb.value) return;
+    thumbError.value = '';
+    uploadingThumb.value = true;
+    try {
+        const res = await programsApi.uploadThumbnail(editing.value.id, file);
+        editing.value.thumbnail_url = res.program.thumbnail_url;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) thumbError.value = e.errors?.thumbnail?.[0] ?? e.message;
+    } finally {
+        uploadingThumb.value = false;
+    }
+}
+
+function onThumbInputChange(event) {
+    handleThumbFile(event.target.files?.[0]);
+    event.target.value = '';
+}
+
+function onThumbDrop(event) {
+    handleThumbFile(event.dataTransfer?.files?.[0]);
+}
+
+async function removeThumbnail() {
+    thumbError.value = '';
+    previewOpen.value = false;
+    try {
+        await programsApi.removeThumbnail(editing.value.id);
+        editing.value.thumbnail_url = null;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) thumbError.value = e.message;
+    }
+}
+
+// Lightbox pratinjau: Escape menutup; ikut tertutup saat dialognya ditutup.
+function onPreviewKey(e) {
+    if (e.key === 'Escape') {
+        previewOpen.value = false;
+    }
+}
+
+watch(previewOpen, (open) => {
+    if (open) {
+        document.addEventListener('keydown', onPreviewKey);
+    } else {
+        document.removeEventListener('keydown', onPreviewKey);
+    }
+});
+
+watch(dialogOpen, (open) => {
+    if (!open) previewOpen.value = false;
+});
+
+onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
 
 function fmtDate(iso) {
     if (!iso) return '—';
@@ -182,7 +253,7 @@ function fmtDate(iso) {
 </script>
 
 <template>
-    <div class="mx-auto max-w-6xl">
+    <div>
         <div class="flex items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Program</p>
@@ -211,8 +282,18 @@ function fmtDate(iso) {
                 <tbody>
                     <tr v-if="loading"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
                     <tr v-else-if="!items.length"><td colspan="7" class="px-4 py-10 text-center text-muted-foreground">Belum ada program.</td></tr>
-                    <tr v-for="program in items" :key="program.id" class="border-b border-border last:border-0">
-                        <td class="px-4 py-3 font-medium text-foreground">{{ program.name }}</td>
+                    <tr
+                        v-for="program in items"
+                        :key="program.id"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="openEdit(program)"
+                    >
+                        <td class="px-4 py-3 font-medium text-foreground">
+                            <div class="flex items-center gap-2">
+                                <img v-if="program.thumbnail_url" :src="program.thumbnail_url" alt="" class="h-8 w-14 rounded object-cover" />
+                                {{ program.name }}
+                            </div>
+                        </td>
                         <td class="px-4 py-3 text-muted-foreground"><code class="text-xs">/program/{{ program.slug }}</code></td>
                         <td class="px-4 py-3">
                             <Badge :variant="STATUS[program.status]?.variant ?? 'secondary'">
@@ -230,8 +311,12 @@ function fmtDate(iso) {
                         <td class="px-4 py-3 text-muted-foreground">{{ program.cohorts_count }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ program.applications_count }}</td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <Button variant="ghost" size="sm" @click="openEdit(program)">Ubah</Button>
-                            <Button variant="ghost" size="sm" @click="remove(program)">Hapus</Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah program" @click.stop="openEdit(program)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive" title="Hapus" aria-label="Hapus program" @click.stop="deleteTarget = program">
+                                <Trash2 class="size-4" />
+                            </Button>
                         </td>
                     </tr>
                 </tbody>
@@ -240,6 +325,42 @@ function fmtDate(iso) {
 
         <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Program' : 'Tambah Program'">
             <form class="flex flex-col gap-4" @submit.prevent="save">
+                <!-- Thumbnail: banner 16:9 (rasio yang sama dengan kartu publik = pratinjau jujur). -->
+                <div v-if="editing">
+                    <div v-if="editing.thumbnail_url" class="group relative aspect-video w-full overflow-hidden rounded-xl border border-border bg-muted">
+                        <img
+                            :src="editing.thumbnail_url"
+                            alt="Thumbnail kelas"
+                            class="h-full w-full cursor-zoom-in object-cover"
+                            @click="previewOpen = true"
+                        />
+                        <div class="pointer-events-none absolute inset-x-0 bottom-0 flex items-center justify-between gap-2 bg-gradient-to-t from-black/60 to-transparent p-3 opacity-0 transition group-hover:opacity-100">
+                            <span class="text-xs font-medium text-white/90">Klik gambar untuk memperbesar</span>
+                            <div class="pointer-events-auto flex gap-2">
+                                <Button type="button" variant="secondary" size="sm" :disabled="uploadingThumb" @click="thumbInput?.click()">
+                                    {{ uploadingThumb ? 'Mengunggah…' : 'Ganti' }}
+                                </Button>
+                                <Button type="button" variant="destructive" size="sm" @click="removeThumbnail">Hapus</Button>
+                            </div>
+                        </div>
+                    </div>
+                    <button
+                        v-else
+                        type="button"
+                        :disabled="uploadingThumb"
+                        class="flex aspect-video w-full flex-col items-center justify-center gap-1.5 rounded-xl border-2 border-dashed border-input text-muted-foreground transition hover:border-teal-600/50 hover:bg-accent/40 hover:text-foreground"
+                        @click="thumbInput?.click()"
+                        @dragover.prevent
+                        @drop.prevent="onThumbDrop"
+                    >
+                        <ImagePlus class="size-6" />
+                        <span class="text-sm font-medium">{{ uploadingThumb ? 'Mengunggah…' : 'Klik atau seret gambar ke sini' }}</span>
+                        <span class="text-xs">JPEG/PNG/WebP, maks 2 MB · rasio 16:9 dianjurkan</span>
+                    </button>
+                    <input ref="thumbInput" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" @change="onThumbInputChange" />
+                    <p class="mt-1.5 text-xs text-muted-foreground">Kosong = kelas memakai cover otomatis bermotif brand.</p>
+                    <p v-if="thumbError" class="mt-1 text-xs text-destructive">{{ thumbError }}</p>
+                </div>
                 <div>
                     <Input v-model="form.name" placeholder="Nama program" @input="onNameInput" />
                     <p class="mt-1.5 text-xs text-muted-foreground">
@@ -321,5 +442,31 @@ function fmtDate(iso) {
                 </div>
             </form>
         </Dialog>
+
+        <!-- Konfirmasi hapus program -->
+        <Dialog :open="deleteTarget !== null" title="Hapus Program" @update:open="deleteTarget = null">
+            <p class="text-sm text-muted-foreground">
+                Hapus "{{ deleteTarget?.name }}" dari katalog? Program dengan angkatan atau pendaftar tidak bisa dihapus.
+            </p>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" @click="confirmRemove">Hapus Program</Button>
+            </div>
+        </Dialog>
+
+        <!-- Lightbox pratinjau thumbnail: klik area mana pun atau Escape untuk menutup. -->
+        <Teleport to="body">
+            <div
+                v-if="previewOpen && editing?.thumbnail_url"
+                class="fixed inset-0 z-[70] flex cursor-zoom-out items-center justify-center bg-black/80 p-6 backdrop-blur-sm"
+                @click="previewOpen = false"
+            >
+                <img
+                    :src="editing.thumbnail_url"
+                    alt="Pratinjau thumbnail"
+                    class="max-h-[85vh] max-w-[92vw] rounded-lg object-contain shadow-2xl"
+                />
+            </div>
+        </Teleport>
     </div>
 </template>

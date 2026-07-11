@@ -1,8 +1,8 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft } from 'lucide-vue-next';
-import { api, people as peopleApi } from '@/api';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
+import { api, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -21,6 +21,15 @@ const auth = useAuthStore();
 
 const person = ref(null);
 const loading = ref(true);
+
+// Rincian per-kelas pada kartu keikutsertaan (expand/collapse per enrollment).
+const expandedClasses = ref(new Set());
+
+function toggleClasses(enrollmentId) {
+    const next = new Set(expandedClasses.value);
+    next.has(enrollmentId) ? next.delete(enrollmentId) : next.add(enrollmentId);
+    expandedClasses.value = next;
+}
 const error = ref('');
 const savingId = ref(null);
 const saveError = ref('');
@@ -54,12 +63,42 @@ async function save(app) {
         });
         // The in-place v-model values already reflect the saved state, so no full
         // reload is needed (avoids the spinner blink / scroll jump).
+        if (app.status === 'accepted') await offerEnroll(app);
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
         await load(); // reset selects to the server's truth
     } finally {
         savingId.value = null;
+    }
+}
+
+// --- Masukkan ke Angkatan (offered right after an application is accepted) --
+
+const enrollFor = ref(null); // application yang baru diterima
+const enrollCohorts = ref([]);
+const enrollError = ref('');
+
+async function offerEnroll(app) {
+    enrollFor.value = app;
+    enrollError.value = '';
+    try {
+        const res = await cohortsApi.list();
+        const enrolledCohortIds = new Set((person.value?.enrollments ?? []).map((en) => en.cohort_id));
+        enrollCohorts.value = res.data.filter((c) => c.program?.id === app.program_id && !enrolledCohortIds.has(c.id));
+    } catch (e) {
+        if (!e.sessionExpired) enrollError.value = e.message;
+    }
+}
+
+async function enrollInto(cohort) {
+    enrollError.value = '';
+    try {
+        await enrollmentsApi.create({ cohort_id: cohort.id, application_id: enrollFor.value.id });
+        enrollFor.value = null;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) enrollError.value = e.errors ? Object.values(e.errors)[0][0] : e.message;
     }
 }
 
@@ -115,81 +154,6 @@ async function submitReset() {
     }
 }
 
-// --- Gabungkan (merge a duplicate into this person) --------------------------
-
-const mergeDialogOpen = ref(false);
-const mergeQuery = ref('');
-const mergeResults = ref([]);
-const mergeSearching = ref(false);
-const mergeTarget = ref(null); // the chosen duplicate
-const mergePreview = ref(null); // { can_merge, conflicts, moves }
-const mergeError = ref('');
-const merging = ref(false);
-const mergeSuccess = ref('');
-
-let mergeDebounce;
-
-function openMergeDialog() {
-    mergeQuery.value = '';
-    mergeResults.value = [];
-    mergeTarget.value = null;
-    mergePreview.value = null;
-    mergeError.value = '';
-    mergeDialogOpen.value = true;
-}
-
-watch(mergeQuery, () => {
-    clearTimeout(mergeDebounce);
-    if (!mergeQuery.value) {
-        mergeResults.value = [];
-        return;
-    }
-    mergeDebounce = setTimeout(searchDuplicates, 300);
-});
-
-async function searchDuplicates() {
-    mergeSearching.value = true;
-    mergeError.value = '';
-    try {
-        const res = await peopleApi.list(`?q=${encodeURIComponent(mergeQuery.value)}`);
-        mergeResults.value = res.data.filter((p) => p.id !== person.value.id);
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeError.value = e.message ?? 'Gagal mencari.';
-    } finally {
-        mergeSearching.value = false;
-    }
-}
-
-async function pickDuplicate(candidate) {
-    mergeTarget.value = candidate;
-    mergePreview.value = null;
-    mergeError.value = '';
-    try {
-        mergePreview.value = await peopleApi.mergePreview(person.value.id, candidate.id);
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeTarget.value = null;
-        mergeError.value = e.message ?? 'Gagal memuat pratinjau.';
-    }
-}
-
-async function confirmMerge() {
-    merging.value = true;
-    mergeError.value = '';
-    try {
-        await peopleApi.merge(person.value.id, mergeTarget.value.id);
-        mergeDialogOpen.value = false;
-        mergeSuccess.value = `Data "${mergeTarget.value.name}" digabungkan ke profil ini.`;
-        await load();
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        mergeError.value = (e.errors?.merge ?? [e.message ?? 'Gagal menggabungkan.']).join(' ');
-    } finally {
-        merging.value = false;
-    }
-}
-
 function fmtDate(iso) {
     if (!iso) return '—';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
@@ -197,24 +161,17 @@ function fmtDate(iso) {
 </script>
 
 <template>
-    <div class="mx-auto max-w-4xl">
-        <RouterLink :to="{ name: 'applicants' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
+    <div>
+        <RouterLink :to="{ name: 'people' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
             <ArrowLeft class="size-4" /> Kembali ke daftar
         </RouterLink>
 
         <div v-if="loading" class="mt-10 text-center text-muted-foreground">Memuat…</div>
 
         <template v-else-if="person">
-            <div v-if="mergeSuccess" class="mt-4 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-700">
-                {{ mergeSuccess }}
-            </div>
-
             <!-- Profile -->
             <div class="mt-4 rounded-xl border border-border bg-card p-6">
-                <div class="flex items-start justify-between gap-3">
-                    <h1 class="text-2xl font-bold text-foreground">{{ person.name }}</h1>
-                    <Button v-if="auth.can('people.merge')" variant="outline" size="sm" @click="openMergeDialog">Gabungkan duplikat</Button>
-                </div>
+                <h1 class="text-2xl font-bold text-foreground">{{ person.name }}</h1>
                 <div class="mt-4 grid gap-x-8 gap-y-3 text-sm sm:grid-cols-2">
                     <div><span class="text-muted-foreground">Nomor HP</span><div class="font-medium">{{ person.phone }}</div></div>
                     <div><span class="text-muted-foreground">Email</span><div class="font-medium">{{ person.email }}</div></div>
@@ -321,15 +278,60 @@ function fmtDate(iso) {
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
                 <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
-                <div
-                    v-for="e in person.enrollments"
-                    :key="e.id"
-                    class="flex items-center justify-between border-b border-border px-5 py-3 text-sm last:border-0"
-                >
-                    <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
-                    <span class="text-muted-foreground">{{ e.latest_status ? `${e.latest_status} · ${fmtDate(e.latest_status_at)}` : 'Belum ada status' }}</span>
+                <div v-for="e in person.enrollments" :key="e.id" class="border-b border-border last:border-0">
+                    <button
+                        type="button"
+                        class="flex w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition hover:bg-accent/50"
+                        @click="toggleClasses(e.id)"
+                    >
+                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
+                        <span class="flex items-center gap-2 text-muted-foreground">
+                            Hadir {{ e.hadir }} dari {{ e.classes.length }} kelas
+                            <span v-if="e.latest_status === 'dropped'" class="text-destructive">· keluar</span>
+                            <ChevronDown class="size-4 transition-transform" :class="expandedClasses.has(e.id) ? 'rotate-180' : ''" />
+                        </span>
+                    </button>
+                    <!-- Rincian per-kelas: pernah diikuti atau tidak. -->
+                    <div v-if="expandedClasses.has(e.id)" class="border-t border-border/60 bg-accent/20 px-5 py-2">
+                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan ini belum punya kelas.</p>
+                        <div
+                            v-for="c in e.classes"
+                            :key="c.id"
+                            class="flex items-center justify-between gap-3 border-b border-border/40 py-2 text-sm last:border-0"
+                            :class="c.attended ? '' : 'opacity-60'"
+                        >
+                            <span class="flex items-center gap-2">
+                                <span
+                                    class="flex size-4 items-center justify-center rounded-full"
+                                    :class="c.attended ? 'bg-teal-600 text-white' : 'border-2 border-border'"
+                                >
+                                    <Check v-if="c.attended" class="size-3" />
+                                </span>
+                                <span class="text-foreground">{{ c.title }}</span>
+                            </span>
+                            <span class="text-xs text-muted-foreground">
+                                {{ fmtDate(c.scheduled_at) }}{{ c.attended ? ` · hadir, dicatat ${fmtDate(c.attended_at)}` : ' · tidak diikuti' }}
+                            </span>
+                        </div>
+                    </div>
                 </div>
             </div>
+
+            <!-- Enroll dialog (offered right after an application is accepted) -->
+            <Dialog :open="enrollFor !== null" title="Masukkan ke Angkatan" @update:open="enrollFor = null">
+                <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih Angkatan untuk mendaftarkannya sekarang, atau tutup untuk melakukannya nanti dari halaman Angkatan.</p>
+                <div v-if="enrollError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ enrollError }}</div>
+                <p v-if="!enrollCohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada Angkatan untuk program ini.</p>
+                <div v-else class="mt-3 space-y-2">
+                    <div v-for="c in enrollCohorts" :key="c.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
+                        <div>
+                            <p class="font-medium text-foreground">{{ c.name }}</p>
+                            <p class="text-xs text-muted-foreground">{{ c.enrollments_count }} peserta</p>
+                        </div>
+                        <Button size="sm" variant="outline" @click="enrollInto(c)">Masukkan</Button>
+                    </div>
+                </div>
+            </Dialog>
 
             <!-- Reset password dialog (generated password is shown once) -->
             <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">
@@ -353,69 +355,6 @@ function fmtDate(iso) {
                 </form>
             </Dialog>
 
-            <!-- Merge dialog: this person is the survivor; search the duplicate -->
-            <Dialog v-model:open="mergeDialogOpen" title="Gabungkan Duplikat">
-                <div class="space-y-3">
-                    <p class="text-sm text-muted-foreground">
-                        Riwayat orang duplikat dipindahkan ke <span class="font-medium text-foreground">{{ person.name }}</span>,
-                        lalu data duplikat diarsipkan. Nomor HP dan email duplikat menjadi bebas dipakai lagi.
-                    </p>
-                    <div v-if="mergeError" class="rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                        {{ mergeError }}
-                    </div>
-
-                    <template v-if="!mergeTarget">
-                        <Input v-model="mergeQuery" placeholder="Cari duplikat: nama, HP, atau email…" />
-                        <div v-if="mergeSearching" class="text-sm text-muted-foreground">Mencari…</div>
-                        <div v-else-if="mergeQuery && !mergeResults.length" class="text-sm text-muted-foreground">Tidak ditemukan.</div>
-                        <div v-else-if="mergeResults.length" class="max-h-56 space-y-1 overflow-y-auto">
-                            <button
-                                v-for="candidate in mergeResults"
-                                :key="candidate.id"
-                                type="button"
-                                class="flex w-full items-center justify-between rounded-md border border-border px-3 py-2 text-left text-sm transition-colors hover:bg-accent/50"
-                                @click="pickDuplicate(candidate)"
-                            >
-                                <span class="font-medium text-foreground">{{ candidate.name }}</span>
-                                <span class="text-xs text-muted-foreground">{{ candidate.phone }}</span>
-                            </button>
-                        </div>
-                    </template>
-
-                    <template v-else>
-                        <div class="rounded-md border border-border bg-background px-3 py-2 text-sm">
-                            <span class="text-muted-foreground">Duplikat:</span>
-                            <span class="ml-1 font-medium text-foreground">{{ mergeTarget.name }}</span>
-                            <span class="ml-1 text-xs text-muted-foreground">{{ mergeTarget.phone }}</span>
-                        </div>
-
-                        <div v-if="!mergePreview" class="text-sm text-muted-foreground">Memuat pratinjau…</div>
-                        <template v-else>
-                            <ul v-if="mergePreview.can_merge" class="space-y-1 text-sm text-foreground">
-                                <li>{{ mergePreview.moves.applications }} pendaftaran dipindahkan</li>
-                                <li>{{ mergePreview.moves.enrollments }} keikutsertaan dipindahkan</li>
-                                <li v-if="mergePreview.moves.membership">Keanggotaan komunitas dipindahkan</li>
-                                <li v-if="mergePreview.moves.account">Akun login dipindahkan</li>
-                            </ul>
-                            <ul v-else class="space-y-1 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                                <li v-for="(conflict, i) in mergePreview.conflicts" :key="i">{{ conflict }}</li>
-                            </ul>
-                        </template>
-
-                        <div class="flex justify-end gap-2 pt-2">
-                            <Button type="button" variant="outline" size="sm" @click="mergeTarget = null; mergePreview = null">Ganti duplikat</Button>
-                            <Button
-                                type="button"
-                                size="sm"
-                                :disabled="!mergePreview || !mergePreview.can_merge || merging"
-                                @click="confirmMerge"
-                            >
-                                {{ merging ? 'Menggabungkan…' : 'Gabungkan' }}
-                            </Button>
-                        </div>
-                    </template>
-                </div>
-            </Dialog>
         </template>
 
         <div v-else class="mt-16 text-center text-muted-foreground">{{ error || 'Data tidak ditemukan.' }}</div>

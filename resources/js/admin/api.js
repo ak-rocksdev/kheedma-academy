@@ -72,6 +72,30 @@ export async function api(path, { method = 'GET', body = null } = {}) {
     return data;
 }
 
+/** Multipart POST variant of api() — browser sets the Content-Type boundary. */
+export async function apiUpload(path, formData) {
+    if (!getCookie('XSRF-TOKEN')) {
+        await csrf();
+    }
+    const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
+    const xsrf = getCookie('XSRF-TOKEN');
+    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
+
+    const res = await fetch(`/api${path}`, { method: 'POST', credentials: 'include', headers, body: formData });
+    const data = await res.json().catch(() => null);
+    if (!res.ok) {
+        const err = new Error((data && data.message) || `Request failed (${res.status})`);
+        err.status = res.status;
+        err.errors = (data && data.errors) || {};
+        if (res.status === 401 && sessionExpiredHandler) {
+            err.sessionExpired = true;
+            sessionExpiredHandler();
+        }
+        throw err;
+    }
+    return data;
+}
+
 export const auth = {
     async login(payload) {
         await csrf();
@@ -114,20 +138,19 @@ export const programs = {
     remove(id) {
         return api(`/admin/programs/${id}`, { method: 'DELETE' });
     },
+    uploadThumbnail(id, file) {
+        const body = new FormData();
+        body.append('thumbnail', file);
+        return apiUpload(`/admin/programs/${id}/thumbnail`, body);
+    },
+    removeThumbnail(id) {
+        return api(`/admin/programs/${id}/thumbnail`, { method: 'DELETE' });
+    },
 };
 
 export const people = {
     list(query = '') {
         return api(`/admin/people${query}`);
-    },
-    mergePreview(survivorId, duplicateId) {
-        return api(`/admin/people/merge-preview?survivor_id=${survivorId}&duplicate_id=${duplicateId}`);
-    },
-    merge(survivorId, duplicateId) {
-        return api('/admin/people/merge', {
-            method: 'POST',
-            body: { survivor_id: survivorId, duplicate_id: duplicateId },
-        });
     },
     updateAccount(personId, payload) {
         return api(`/admin/people/${personId}/account`, { method: 'PATCH', body: payload });
@@ -144,6 +167,9 @@ export const cohorts = {
     list() {
         return api('/admin/cohorts');
     },
+    detail(id) {
+        return api(`/admin/cohorts/${id}`);
+    },
     create(payload) {
         return api('/admin/cohorts', { method: 'POST', body: payload });
     },
@@ -152,5 +178,32 @@ export const cohorts = {
     },
     remove(id) {
         return api(`/admin/cohorts/${id}`, { method: 'DELETE' });
+    },
+};
+
+export const enrollments = {
+    create(payload) {
+        return api('/admin/enrollments', { method: 'POST', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/enrollments/${id}`, { method: 'DELETE' });
+    },
+    drop(id, note) {
+        return api(`/admin/enrollments/${id}/drop`, { method: 'POST', body: { note } });
+    },
+};
+
+export const sessions = {
+    create(cohortId, payload) {
+        return api(`/admin/cohorts/${cohortId}/sessions`, { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/sessions/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/sessions/${id}`, { method: 'DELETE' });
+    },
+    setAttendance(id, enrollmentIds) {
+        return api(`/admin/sessions/${id}/attendance`, { method: 'PUT', body: { enrollment_ids: enrollmentIds } });
     },
 };

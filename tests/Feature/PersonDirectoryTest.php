@@ -71,49 +71,49 @@ class PersonDirectoryTest extends TestCase
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Ahmad Fauzi');
     }
 
-    public function test_segment_pendaftar_returns_only_people_with_applications(): void
+    public function test_segment_applicants_returns_only_people_with_applications(): void
     {
         $applicant = $this->person('Ahmad Fauzi', '+628111111100');
         Application::create(['people_id' => $applicant->id]);
         $this->person('Budi Santoso', '+628222222200');
 
         $this->actingAs($this->admin())
-            ->getJson('/api/admin/people?segment=pendaftar')
+            ->getJson('/api/admin/people?segment=applicants')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $applicant->id)
             ->assertJsonPath('data.0.applications_count', 1);
     }
 
-    public function test_segment_komunitas_returns_only_community_members(): void
+    public function test_segment_community_returns_only_community_members(): void
     {
         $member = $this->person('Ahmad Fauzi', '+628111111100');
         CommunityMembership::create(['people_id' => $member->id]);
         $this->person('Budi Santoso', '+628222222200');
 
         $this->actingAs($this->admin())
-            ->getJson('/api/admin/people?segment=komunitas')
+            ->getJson('/api/admin/people?segment=community')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $member->id)
             ->assertJsonPath('data.0.is_community_member', true);
     }
 
-    public function test_segment_peserta_returns_only_enrolled_people(): void
+    public function test_segment_participants_returns_only_enrolled_people(): void
     {
         $enrolled = $this->person('Ahmad Fauzi', '+628111111100');
         Enrollment::create(['people_id' => $enrolled->id, 'cohort_id' => Cohort::factory()->create()->id]);
         $this->person('Budi Santoso', '+628222222200');
 
         $this->actingAs($this->admin())
-            ->getJson('/api/admin/people?segment=peserta')
+            ->getJson('/api/admin/people?segment=participants')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $enrolled->id)
             ->assertJsonPath('data.0.enrollments_count', 1);
     }
 
-    public function test_segment_berakun_returns_only_people_with_accounts(): void
+    public function test_segment_with_account_returns_only_people_with_accounts(): void
     {
         $withAccount = $this->person('Ahmad Fauzi', '+628111111100');
         $user = User::factory()->create();
@@ -123,7 +123,7 @@ class PersonDirectoryTest extends TestCase
         $this->person('Budi Santoso', '+628222222200');
 
         $this->actingAs($this->admin())
-            ->getJson('/api/admin/people?segment=berakun')
+            ->getJson('/api/admin/people?segment=with-account')
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $withAccount->id)
@@ -164,5 +164,21 @@ class PersonDirectoryTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson('/api/admin/people?segment=bogus')
             ->assertStatus(422);
+    }
+
+    public function test_segment_needs_review_returns_only_people_with_pending_applications(): void
+    {
+        $pendingPerson = $this->person('Ahmad Fauzi', '+628111111100');
+        Application::create(['people_id' => $pendingPerson->id, 'status' => 'pending']);
+
+        $decidedPerson = $this->person('Budi Santoso', '+628222222200');
+        Application::create(['people_id' => $decidedPerson->id, 'status' => 'accepted']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/people?segment=needs-review')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $pendingPerson->id)
+            ->assertJsonPath('data.0.pending_applications_count', 1);
     }
 }

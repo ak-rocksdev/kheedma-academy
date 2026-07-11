@@ -25,6 +25,38 @@ class CohortController extends Controller
         return response()->json(['data' => $cohorts]);
     }
 
+    /** Detail for the roster/sessions/attendance screen. */
+    public function show(Cohort $cohort): JsonResponse
+    {
+        $cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments');
+
+        $sessions = $cohort->sessions()->withCount('attendances')->get();
+
+        $roster = $cohort->enrollments()
+            ->with(['person:id,name,phone', 'latestStatusEvent', 'attendances:id,enrollment_id,cohort_session_id'])
+            ->get()
+            ->map(fn ($e) => [
+                'enrollment_id' => $e->id,
+                'person' => ['id' => $e->person->id, 'name' => $e->person->name, 'phone' => $e->person->phone],
+                'hadir' => $e->attendances->count(),
+                'latest_status' => $e->latestStatusEvent?->status,
+                'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
+                'attended_session_ids' => $e->attendances->pluck('cohort_session_id')->values(),
+            ]);
+
+        return response()->json([
+            'cohort' => $this->row($cohort),
+            'sessions' => $sessions->map(fn ($s) => [
+                'id' => $s->id,
+                'title' => $s->title,
+                'scheduled_at' => $s->scheduled_at?->toIso8601String(),
+                'position' => (int) $s->position,
+                'attendances_count' => (int) $s->attendances_count,
+            ]),
+            'roster' => $roster,
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         $cohort = Cohort::create($this->validated($request));

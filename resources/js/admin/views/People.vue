@@ -1,22 +1,28 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
+import { Eye } from 'lucide-vue-next';
 import { people } from '@/api';
+
+const router = useRouter();
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
+// Values are API contract (English, codebase convention); labels are UI copy.
 const SEGMENTS = [
-    { value: 'pendaftar', label: 'Pendaftar' },
-    { value: 'komunitas', label: 'Anggota komunitas' },
-    { value: 'peserta', label: 'Peserta program' },
-    { value: 'berakun', label: 'Punya akun' },
+    { value: 'needs-review', label: 'Perlu review' },
+    { value: 'applicants', label: 'Pendaftar' },
+    { value: 'community', label: 'Anggota komunitas' },
+    { value: 'participants', label: 'Peserta program' },
+    { value: 'with-account', label: 'Punya akun' },
 ];
 
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
 const q = ref('');
-const segment = ref('');
+const route = useRoute();
+const segment = ref(typeof route.query.segment === 'string' ? route.query.segment : '');
 const loading = ref(false);
 const error = ref('');
 
@@ -58,7 +64,7 @@ const selectClass =
 </script>
 
 <template>
-    <div class="mx-auto max-w-6xl">
+    <div>
         <div class="flex items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Orang</p>
@@ -103,7 +109,8 @@ const selectClass =
                     <tr
                         v-for="item in items"
                         :key="item.id"
-                        class="border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
+                        @click="router.push({ name: 'person', params: { id: item.id } })"
                     >
                         <td class="px-4 py-3 font-medium text-foreground">{{ item.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">
@@ -113,17 +120,21 @@ const selectClass =
                         <td class="px-4 py-3 text-muted-foreground">{{ item.city ?? '—' }}</td>
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1.5">
-                                <Badge v-if="item.applications_count" variant="secondary">{{ item.applications_count }}× daftar</Badge>
-                                <Badge v-if="item.enrollments_count" variant="secondary">{{ item.enrollments_count }} angkatan</Badge>
+                                <Badge v-if="item.applications_count" :variant="item.pending_applications_count ? 'warning' : 'secondary'">
+                                    Melamar {{ item.applications_count }}×<template v-if="item.pending_applications_count"> · menunggu</template>
+                                </Badge>
+                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan</Badge>
                                 <Badge v-if="item.is_community_member" variant="secondary">Komunitas</Badge>
-                                <Badge v-if="item.has_account" variant="success">Akun</Badge>
+                                <Badge v-if="item.has_account" variant="outline">Akun</Badge>
                                 <span v-if="!item.applications_count && !item.enrollments_count && !item.is_community_member && !item.has_account" class="text-muted-foreground">—</span>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(item.created_at) }}</td>
                         <td class="px-4 py-3 text-right">
-                            <RouterLink :to="{ name: 'person', params: { id: item.id } }">
-                                <Button variant="ghost" size="sm">Lihat</Button>
+                            <RouterLink :to="{ name: 'person', params: { id: item.id } }" @click.stop>
+                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail orang">
+                                    <Eye class="size-4" />
+                                </Button>
                             </RouterLink>
                         </td>
                     </tr>

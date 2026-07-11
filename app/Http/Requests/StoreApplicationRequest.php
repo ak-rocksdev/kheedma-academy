@@ -42,10 +42,23 @@ class StoreApplicationRequest extends FormRequest
                     ? Rule::unique('people', 'phone')->ignore($person?->id)->whereNull('deleted_at')
                     : function ($attribute, $value, $fail): void {
                         // Mirrors ProvisionParticipantAccount's guard so Precognition can
-                        // surface "sudah punya akun" live, before the account is provisioned.
-                        if (Person::where('phone', $value)->whereNotNull('user_id')->whereNull('deleted_at')->exists()) {
-                            $fail('Nomor ini sudah punya akun. Silakan masuk.');
+                        // surface it live, before the account is provisioned. Program-aware:
+                        // an active application/enrollment on THIS program gets a sharper message.
+                        $owner = Person::where('phone', $value)->whereNotNull('user_id')->whereNull('deleted_at')->first();
+
+                        if ($owner === null) {
+                            return;
                         }
+
+                        $program = $this->route('program');
+
+                        if ($program && in_array($owner->applicationStateFor($program), ['pending', 'accepted', 'enrolled'], true)) {
+                            $fail('Nomor ini sudah terdaftar di program ini. Masuk untuk melihat status.');
+
+                            return;
+                        }
+
+                        $fail('Nomor ini sudah punya akun. Silakan masuk.');
                     },
             ]),
             'email' => [

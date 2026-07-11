@@ -2,14 +2,12 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
-use App\Actions\MergePeople;
 use App\Http\Controllers\Controller;
 use App\Models\Person;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PersonController extends Controller
@@ -19,18 +17,23 @@ class PersonController extends Controller
     {
         $request->validate([
             'q' => ['nullable', 'string', 'max:100'],
-            'segment' => ['nullable', 'in:pendaftar,komunitas,peserta,berakun'],
+            'segment' => ['nullable', 'in:applicants,community,participants,with-account,needs-review'],
         ]);
 
         $people = Person::query()
             ->with('city:code,name')
-            ->withCount(['applications', 'enrollments'])
+            ->withCount([
+                'applications',
+                'enrollments',
+                'applications as pending_applications_count' => fn ($q) => $q->where('status', 'pending'),
+            ])
             ->withExists('communityMembership')
             ->when($request->filled('segment'), fn ($q) => match ($request->string('segment')->toString()) {
-                'pendaftar' => $q->whereHas('applications'),
-                'komunitas' => $q->whereHas('communityMembership'),
-                'peserta' => $q->whereHas('enrollments'),
-                'berakun' => $q->whereNotNull('user_id'),
+                'applicants' => $q->whereHas('applications'),
+                'community' => $q->whereHas('communityMembership'),
+                'participants' => $q->whereHas('enrollments'),
+                'with-account' => $q->whereNotNull('user_id'),
+                'needs-review' => $q->whereHas('applications', fn ($a) => $a->where('status', 'pending')),
             })
             ->when($request->filled('q'), function ($q) use ($request) {
                 $term = '%'.$request->string('q').'%';
@@ -48,6 +51,7 @@ class PersonController extends Controller
                 'email' => $p->email,
                 'city' => $p->city?->name,
                 'applications_count' => $p->applications_count,
+                'pending_applications_count' => $p->pending_applications_count,
                 'enrollments_count' => $p->enrollments_count,
                 'is_community_member' => (bool) $p->community_membership_exists,
                 'has_account' => $p->user_id !== null,
@@ -67,7 +71,9 @@ class PersonController extends Controller
             'applications' => fn ($q) => $q->latest(),
             'applications.program:id,name',
             'enrollments.cohort:id,name,start_date,end_date',
+            'enrollments.cohort.sessions',
             'enrollments.latestStatusEvent',
+            'enrollments.attendances:id,enrollment_id,cohort_session_id,created_at',
         ]);
 
         // Oldest submission = attempt #1; the list itself stays newest-first.
@@ -97,17 +103,32 @@ class PersonController extends Controller
                     'id' => $a->id,
                     'attempt' => $total - $index,
                     'program' => $a->program?->name,
+                    'program_id' => $a->program_id,
                     'status' => $a->status,
                     'motivation' => $a->motivation,
                     'reviewed_at' => $a->reviewed_at?->toIso8601String(),
                     'created_at' => $a->created_at?->toIso8601String(),
                 ]),
-                'enrollments' => $person->enrollments->map(fn ($e) => [
-                    'id' => $e->id,
-                    'cohort' => $e->cohort?->name,
-                    'latest_status' => $e->latestStatusEvent?->status,
-                    'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
-                ]),
+                'enrollments' => $person->enrollments->map(function ($e) {
+                    $attendedAt = $e->attendances->keyBy('cohort_session_id');
+
+                    return [
+                        'id' => $e->id,
+                        'cohort' => $e->cohort?->name,
+                        'cohort_id' => $e->cohort_id,
+                        'hadir' => $e->attendances->count(),
+                        'latest_status' => $e->latestStatusEvent?->status,
+                        'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
+                        // Rincian per-kelas: pernah diikuti atau tidak.
+                        'classes' => ($e->cohort?->sessions ?? collect())->map(fn ($s) => [
+                            'id' => $s->id,
+                            'title' => $s->title,
+                            'scheduled_at' => $s->scheduled_at?->toIso8601String(),
+                            'attended' => $attendedAt->has($s->id),
+                            'attended_at' => $attendedAt->get($s->id)?->created_at?->toIso8601String(),
+                        ])->values(),
+                    ];
+                }),
             ],
         ]);
     }
@@ -151,43 +172,6 @@ class PersonController extends Controller
             'account' => $this->accountBlock($person->fresh('user')),
             'generated_password' => $generated,
         ]);
-    }
-
-    /** Dry-run of a merge: what would move, or what blocks it. */
-    public function mergePreview(Request $request, MergePeople $mergePeople): JsonResponse
-    {
-        [$survivor, $duplicate] = $this->mergePair($request);
-
-        return response()->json($mergePeople->preview($survivor, $duplicate));
-    }
-
-    /** Absorb a duplicate Person into the survivor (tombstones the duplicate). */
-    public function merge(Request $request, MergePeople $mergePeople): JsonResponse
-    {
-        [$survivor, $duplicate] = $this->mergePair($request);
-
-        return response()->json([
-            'merged' => true,
-            'moves' => $mergePeople->merge($survivor, $duplicate),
-        ]);
-    }
-
-    /**
-     * Validate and resolve the survivor/duplicate pair. Mirrors the public
-     * forms' soft-delete-aware exists checks — a tombstone can't merge again.
-     *
-     * @return array{0: Person, 1: Person}
-     */
-    private function mergePair(Request $request): array
-    {
-        $livePerson = Rule::exists('people', 'id')->whereNull('deleted_at');
-
-        $data = $request->validate([
-            'survivor_id' => ['required', 'integer', $livePerson],
-            'duplicate_id' => ['required', 'integer', 'different:survivor_id', $livePerson],
-        ]);
-
-        return [Person::findOrFail($data['survivor_id']), Person::findOrFail($data['duplicate_id'])];
     }
 
     /**

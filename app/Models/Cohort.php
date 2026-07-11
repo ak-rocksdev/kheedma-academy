@@ -51,6 +51,11 @@ class Cohort extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    public function sessions(): HasMany
+    {
+        return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at');
+    }
+
     /**
      * Intake open: opens_at set-and-past (or null WITH closes_at set) is not
      * enough — a window only opens when at least one bound is set and now sits

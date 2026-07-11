@@ -22,7 +22,10 @@ class PermissionSeederTest extends TestCase
 
         $this->assertTrue($admin->hasPermissionTo('users.manage'));
         $this->assertTrue($admin->hasPermissionTo('cohorts.manage'));
+        $this->assertTrue($admin->hasPermissionTo('enrollments.manage'));
         $this->assertTrue($mentor->hasPermissionTo('applications.view'));
+        $this->assertTrue($mentor->hasPermissionTo('attendance.record'));
         $this->assertFalse($mentor->hasPermissionTo('users.manage'));
+        $this->assertFalse($mentor->hasPermissionTo('enrollments.manage'));
     }
 }

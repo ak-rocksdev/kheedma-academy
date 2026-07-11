@@ -2,13 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attendance;
 use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use App\Support\ProgramEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class ProgramEligibilityTest extends TestCase
@@ -41,18 +42,18 @@ class ProgramEligibilityTest extends TestCase
         ]);
     }
 
-    private function completeProgram(Person $person, Program $program): void
+    /** "Pernah diikuti": enrollment + satu kehadiran di kelas program itu. */
+    private function attendProgram(Person $person, Program $program): void
     {
         $cohort = Cohort::factory()->create(['program_id' => $program->id]);
         $enrollment = Enrollment::create([
             'people_id' => $person->id,
             'cohort_id' => $cohort->id,
         ]);
-        DB::table('status_events')->insert([
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create([
+            'cohort_session_id' => $session->id,
             'enrollment_id' => $enrollment->id,
-            'status' => 'completed',
-            'occurred_at' => now(),
-            'created_at' => now(),
         ]);
     }
 
@@ -75,7 +76,7 @@ class ProgramEligibilityTest extends TestCase
         $this->assertSame('guest', $eligibility->lockReason(null, $level1));
     }
 
-    public function test_member_without_completion_needs_general(): void
+    public function test_member_without_attendance_needs_general(): void
     {
         $eligibility = app(ProgramEligibility::class);
         $level1 = Program::factory()->affiliate(1)->active()->create();
@@ -85,7 +86,7 @@ class ProgramEligibilityTest extends TestCase
         $this->assertSame('needs_general', $eligibility->lockReason($person, $level1));
     }
 
-    public function test_completed_general_unlocks_level_1_but_not_level_2(): void
+    public function test_attending_general_unlocks_level_1_but_not_level_2(): void
     {
         $eligibility = app(ProgramEligibility::class);
         $general = Program::factory()->active()->create();
@@ -93,7 +94,7 @@ class ProgramEligibilityTest extends TestCase
         $level2 = Program::factory()->affiliate(2)->active()->create();
 
         $person = $this->makePerson();
-        $this->completeProgram($person, $general);
+        $this->attendProgram($person, $general);
 
         $this->assertTrue($eligibility->canAccess($person, $level1));
         $this->assertNull($eligibility->lockReason($person, $level1));
@@ -101,26 +102,26 @@ class ProgramEligibilityTest extends TestCase
         $this->assertSame('needs_previous_level', $eligibility->lockReason($person, $level2));
     }
 
-    public function test_completed_level_1_unlocks_level_2(): void
+    public function test_attending_level_1_unlocks_level_2(): void
     {
         $eligibility = app(ProgramEligibility::class);
         $level1 = Program::factory()->affiliate(1)->active()->create();
         $level2 = Program::factory()->affiliate(2)->active()->create();
 
         $person = $this->makePerson();
-        $this->completeProgram($person, $level1);
+        $this->attendProgram($person, $level1);
 
         $this->assertTrue($eligibility->canAccess($person, $level2));
     }
 
-    public function test_incomplete_enrollment_does_not_count(): void
+    public function test_enrollment_without_attendance_does_not_count(): void
     {
         $eligibility = app(ProgramEligibility::class);
         $general = Program::factory()->active()->create();
         $level1 = Program::factory()->affiliate(1)->active()->create();
 
         $person = $this->makePerson();
-        // Enrollment exists but no 'completed' status event.
+        // Enrollment ada tapi belum pernah hadir di kelas mana pun.
         $cohort = Cohort::factory()->create(['program_id' => $general->id]);
         Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
 

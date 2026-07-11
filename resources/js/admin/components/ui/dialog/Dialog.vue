@@ -23,7 +23,7 @@ onUnmounted(() => document.removeEventListener('keydown', onKey));
     <Teleport to="body">
         <div v-if="open" class="fixed inset-0 z-50 flex items-center justify-center p-4">
             <div class="absolute inset-0 bg-black/50" @click="open = false"></div>
-            <div class="relative z-10 w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-xl">
+            <div class="relative z-10 max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl">
                 <h2 v-if="title" class="text-lg font-bold text-foreground">{{ title }}</h2>
                 <div class="mt-4">
                     <slot />

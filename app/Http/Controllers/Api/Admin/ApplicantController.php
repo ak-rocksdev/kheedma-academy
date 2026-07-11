@@ -16,6 +16,7 @@ class ApplicantController extends Controller
             'q' => ['nullable', 'string', 'max:100'],
             'status' => ['nullable', 'in:pending,accepted,rejected'],
             'program' => ['nullable', 'integer', 'exists:programs,id'],
+            'per_page' => ['nullable', 'integer', 'min:1', 'max:200'],
         ]);
 
         $applications = Application::query()
@@ -35,7 +36,7 @@ class ApplicantController extends Controller
                 });
             })
             ->latest()
-            ->paginate(15)
+            ->paginate($request->integer('per_page') ?: 15)
             ->withQueryString()
             ->through(fn (Application $a) => $this->row($a));
 

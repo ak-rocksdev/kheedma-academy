@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -110,6 +111,7 @@ class ProgramController extends Controller
             'type' => $p->type,
             'level' => $p->level !== null ? (int) $p->level : null,
             'locked_message' => $p->locked_message,
+            'thumbnail_url' => $p->thumbnail_path ? Storage::disk('public')->url($p->thumbnail_path) : null,
             'is_open' => $p->hasAttribute('has_open_cohort') ? $p->status === 'active' && (bool) $p->has_open_cohort : $p->isOpen(),
             'cohorts_count' => (int) ($p->cohorts_count ?? 0),
             'applications_count' => (int) ($p->applications_count ?? 0),

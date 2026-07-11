@@ -93,4 +93,23 @@ class ApplicantProgramFilterTest extends TestCase
             ->assertJsonPath('person.applications.0.motivation', 'Ingin serius belajar affiliate.')
             ->assertJsonPath('person.applications.1.attempt', 1);
     }
+
+    public function test_per_page_can_raise_the_page_size_beyond_the_default(): void
+    {
+        $program = Program::factory()->active()->create();
+        foreach (range(1, 20) as $i) {
+            $this->makeApplication($program, "+62890000{$i}");
+        }
+
+        $admin = User::factory()->admin()->create();
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/applications?per_page=50')
+            ->assertOk()
+            ->assertJsonCount(20, 'data');
+
+        $this->actingAs($admin)
+            ->getJson('/api/admin/applications?per_page=201')
+            ->assertStatus(422);
+    }
 }

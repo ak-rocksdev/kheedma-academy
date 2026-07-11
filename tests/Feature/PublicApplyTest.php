@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\Cohort;
+use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use Database\Seeders\PermissionSeeder;
@@ -131,9 +132,60 @@ class PublicApplyTest extends TestCase
         $this->post("/program/{$program->slug}/daftar", $this->validPayload());
         // The client is now the logged-in participant created by the first post.
         $this->post("/program/{$program->slug}/daftar", $this->authenticatedPayload())
-            ->assertRedirect(route('daftar.thankyou'));
+            ->assertRedirect(route('program.show', $program))
+            ->assertSessionHas('application_notice');
 
         $this->assertSame(1, Application::count());
+    }
+
+    public function test_accepted_application_blocks_reapply_with_honest_notice(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload());
+        Application::query()->update(['status' => 'accepted']);
+
+        $this->post("/program/{$program->slug}/daftar", $this->authenticatedPayload())
+            ->assertRedirect(route('program.show', $program))
+            ->assertSessionHas('application_notice');
+
+        $this->assertSame(1, Application::count());
+    }
+
+    public function test_enrolled_person_cannot_reapply_even_after_rejection(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload());
+        $application = Application::first();
+        $application->update(['status' => 'rejected']);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        Enrollment::create(['people_id' => $application->people_id, 'cohort_id' => $cohort->id]);
+
+        $this->post("/program/{$program->slug}/daftar", $this->authenticatedPayload())
+            ->assertRedirect(route('program.show', $program))
+            ->assertSessionHas('application_notice');
+
+        $this->assertSame(1, Application::count());
+    }
+
+    public function test_guest_phone_with_active_application_gets_program_aware_message(): void
+    {
+        $program = $this->openProgram();
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload());
+        auth()->logout();
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+            ->assertSessionHasErrors(['phone' => 'Nomor ini sudah terdaftar di program ini. Masuk untuk melihat status.']);
+    }
+
+    public function test_guest_phone_with_account_elsewhere_keeps_generic_message(): void
+    {
+        $first = $this->openProgram();
+        $other = $this->openProgram();
+        $this->post("/program/{$first->slug}/daftar", $this->validPayload());
+        auth()->logout();
+
+        $this->post("/program/{$other->slug}/daftar", $this->validPayload())
+            ->assertSessionHasErrors(['phone' => 'Nomor ini sudah punya akun. Silakan masuk.']);
     }
 
     public function test_rejected_applicant_can_reapply(): void
