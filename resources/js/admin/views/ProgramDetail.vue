@@ -1,16 +1,16 @@
 <script setup>
-import { ref, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { ArrowLeft, Check, ExternalLink, Eye, Pencil, X } from 'lucide-vue-next';
 import { programs as programsApi, applications as applicationsApi } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
 import { statusVariant, statusLabel } from '@/lib/status';
 import ProgramFormDialog from '@/components/ProgramFormDialog.vue';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
-import EnrollToCohortDialog from '@/components/EnrollToCohortDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -90,19 +90,46 @@ function periodLabel(cohort) {
     return `${fmtDate(cohort.start_date)} – ${fmtDate(cohort.end_date)}`;
 }
 
-// --- Pendaftar: aksi cepat Terima/Tolak --------------------------------------
+// --- Pendaftar: dikelompokkan per angkatan terpilih ---------------------------
+
+// Chip angkatan yang aktif; null = belum memilih (empty state).
+const selectedCohortId = ref(null);
+
+/** Angkatan efektif: penempatan nyata menang atas target lamaran. */
+function effectiveCohortId(app) {
+    return app.enrollment?.cohort_id ?? app.cohort_id ?? null;
+}
+
+// Lamaran legacy tanpa angkatan butuh chip khusus agar tetap terjangkau.
+const hasUnlinked = computed(() => applications.value.some((app) => effectiveCohortId(app) === null));
+
+const filteredApplications = computed(() => {
+    if (selectedCohortId.value === null) return [];
+    if (selectedCohortId.value === 'none') {
+        return applications.value.filter((app) => effectiveCohortId(app) === null);
+    }
+    return applications.value.filter((app) => effectiveCohortId(app) === Number(selectedCohortId.value));
+});
+
+// --- Aksi cepat Terima/Tolak ---------------------------------------------------
 
 const reviewingId = ref(null);
 const reviewError = ref('');
-const enrollTarget = ref(null); // {id, program_id} untuk dialog enroll
+const reviewSuccess = ref('');
 const rejectTarget = ref(null); // application yang akan ditolak (dialog konfirmasi)
+const rejectNote = ref('');
 
 async function accept(app) {
     reviewingId.value = app.id;
     reviewError.value = '';
+    reviewSuccess.value = '';
     try {
-        await applicationsApi.review(app.id, 'accepted');
-        enrollTarget.value = { id: app.id, program_id: program.value.id };
+        const res = await applicationsApi.review(app.id, 'accepted');
+        const name = app.person?.name ?? 'Pendaftar';
+        reviewSuccess.value = res.application.enrollment
+            ? `${name} diterima dan ditempatkan di ${res.application.enrollment.cohort_name}.`
+            : `${name} diterima. Tempatkan ke angkatan lewat halaman profilnya.`;
+        await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         reviewError.value = e.message ?? 'Gagal menyimpan keputusan.';
@@ -111,18 +138,19 @@ async function accept(app) {
     }
 }
 
-// Both outcomes reload: the status changed even when placement is skipped.
-async function onEnrollClosed() {
-    enrollTarget.value = null;
-    await load();
+function openReject(app) {
+    rejectNote.value = '';
+    rejectTarget.value = app;
 }
 
 async function confirmReject() {
     const app = rejectTarget.value;
     reviewError.value = '';
+    reviewSuccess.value = '';
     try {
-        await applicationsApi.review(app.id, 'rejected');
+        await applicationsApi.review(app.id, 'rejected', { review_note: rejectNote.value || null });
         rejectTarget.value = null;
+        reviewSuccess.value = `Pendaftaran ${app.person?.name ?? 'pendaftar'} ditolak.`;
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
@@ -278,26 +306,44 @@ function fmtDate(iso) {
                 </table>
             </div>
 
-            <!-- Pendaftar -->
+            <!-- Pendaftar: daftar per angkatan, dipilih lewat chip -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Pendaftar</h2>
+            <div v-if="cohorts.length || hasUnlinked" class="mt-3">
+                <ToggleGroup
+                    type="single"
+                    variant="outline"
+                    :model-value="selectedCohortId"
+                    @update:model-value="(v) => (selectedCohortId = v || null)"
+                >
+                    <ToggleGroupItem v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">
+                        {{ cohort.name }}
+                    </ToggleGroupItem>
+                    <ToggleGroupItem v-if="hasUnlinked" value="none">Tanpa angkatan</ToggleGroupItem>
+                </ToggleGroup>
+            </div>
             <div v-if="reviewError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
                 {{ reviewError }}
             </div>
-            <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+            <div v-if="reviewSuccess" class="mt-3 rounded-lg border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-700">
+                {{ reviewSuccess }}
+            </div>
+            <div v-if="selectedCohortId === null" class="mt-3 rounded-xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
+                {{ cohorts.length || hasUnlinked ? 'Pilih Angkatan untuk melihat pendaftarnya.' : 'Belum ada angkatan maupun pendaftar.' }}
+            </div>
+            <div v-else class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                             <th class="px-4 py-3 font-semibold">Nama</th>
                             <th class="px-4 py-3 font-semibold">Tanggal</th>
                             <th class="px-4 py-3 font-semibold">Status</th>
-                            <th class="px-4 py-3 font-semibold">Angkatan</th>
                             <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="!applications.length"><td colspan="5" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar.</td></tr>
+                        <tr v-if="!filteredApplications.length"><td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar di angkatan ini.</td></tr>
                         <tr
-                            v-for="app in applications"
+                            v-for="app in filteredApplications"
                             :key="app.id"
                             class="border-b border-border transition-colors last:border-0"
                             :class="app.person ? 'cursor-pointer hover:bg-accent/50' : ''"
@@ -314,7 +360,6 @@ function fmtDate(iso) {
                             <td class="px-4 py-3">
                                 <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
                             </td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ app.enrollment?.cohort_name ?? '—' }}</td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
                                 <template v-if="app.status === 'pending' && auth.can('applications.review')">
                                     <Button
@@ -331,7 +376,7 @@ function fmtDate(iso) {
                                         size="sm"
                                         class="ml-1.5 text-destructive hover:text-destructive"
                                         :disabled="reviewingId === app.id"
-                                        @click.stop="rejectTarget = app"
+                                        @click.stop="openReject(app)"
                                     >
                                         <X class="size-3.5" /> Tolak
                                     </Button>
@@ -352,13 +397,20 @@ function fmtDate(iso) {
                 @saved="load"
             />
 
-            <EnrollToCohortDialog :application="enrollTarget" @close="onEnrollClosed" @enrolled="onEnrollClosed" />
-
-            <!-- Konfirmasi tolak pendaftaran -->
+            <!-- Konfirmasi tolak pendaftaran (alasan opsional, tercatat di riwayat) -->
             <Dialog :open="rejectTarget !== null" title="Tolak Pendaftaran" @update:open="rejectTarget = null">
                 <p class="text-sm text-muted-foreground">
                     Tolak pendaftaran {{ rejectTarget?.person?.name ?? 'pendaftar ini' }}? Dia masih boleh mendaftar lagi di lain waktu.
                 </p>
+                <div class="mt-3">
+                    <label class="text-xs text-muted-foreground">Alasan (opsional)</label>
+                    <textarea
+                        v-model="rejectNote"
+                        rows="3"
+                        placeholder="Contoh: belum sesuai kriteria angkatan ini."
+                        class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    ></textarea>
+                </div>
                 <div class="mt-4 flex justify-end gap-2">
                     <Button variant="outline" size="sm" @click="rejectTarget = null">Batal</Button>
                     <Button variant="destructive" size="sm" @click="confirmReject">Tolak Pendaftaran</Button>
