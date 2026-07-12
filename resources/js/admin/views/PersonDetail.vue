@@ -2,7 +2,7 @@
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
-import { api, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
+import { api, applications as applicationsApi, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -57,10 +57,7 @@ async function save(app) {
     savingId.value = app.id;
     saveError.value = '';
     try {
-        await api(`/admin/applications/${app.id}`, {
-            method: 'PATCH',
-            body: { status: app.status },
-        });
+        await applicationsApi.review(app.id, app.status);
         // The in-place v-model values already reflect the saved state, so no full
         // reload is needed (avoids the spinner blink / scroll jump).
         if (app.status === 'accepted') await offerEnroll(app);
