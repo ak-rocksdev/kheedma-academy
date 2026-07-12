@@ -266,47 +266,56 @@ function fmtDate(iso) {
             <div v-if="reviewSuccess" class="mt-3 rounded-lg border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-700">
                 {{ reviewSuccess }}
             </div>
-            <div class="mt-3 space-y-3">
-                <div v-if="!person.applications.length" class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-                    Belum pernah mendaftar program.
-                </div>
-                <div v-for="app in person.applications" :key="app.id" class="rounded-xl border border-border bg-card p-5">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0 text-sm">
-                            <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
-                            <span v-if="app.cohort" class="text-muted-foreground"> · {{ app.cohort }}</span>
-                            <span class="text-muted-foreground"> · Daftar {{ fmtDate(app.created_at) }}</span>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-2">
-                            <Badge v-if="person.applications.length > 1" variant="secondary">Pendaftaran ke-{{ app.attempt }}</Badge>
-                            <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
-                        </div>
-                    </div>
-                    <p v-if="app.motivation" class="mt-2 text-sm italic text-muted-foreground">"{{ app.motivation }}"</p>
-                    <p v-if="app.status === 'rejected' && app.review_note" class="mt-2 text-sm text-muted-foreground">
-                        Catatan penolakan: {{ app.review_note }}
-                    </p>
-                    <div v-if="auth.can('applications.review')" class="mt-4 text-sm">
-                        <span class="text-muted-foreground">Keputusan</span>
-                        <div class="mt-1.5 flex items-center gap-2">
-                            <ToggleGroup
-                                type="single"
-                                variant="outline"
-                                :model-value="app.status === 'pending' ? '' : app.status"
-                                :disabled="reviewingId === app.id"
-                                @update:model-value="(v) => decide(app, v)"
-                            >
-                                <ToggleGroupItem value="accepted" class="gap-1 text-teal-700 data-[state=on]:bg-teal-50 data-[state=on]:text-teal-700">
-                                    <Check class="size-3.5" /> Diterima
-                                </ToggleGroupItem>
-                                <ToggleGroupItem value="rejected" class="gap-1 text-destructive data-[state=on]:bg-red-50 data-[state=on]:text-destructive">
-                                    <X class="size-3.5" /> Ditolak
-                                </ToggleGroupItem>
-                            </ToggleGroup>
-                            <span v-if="app.status === 'pending'" class="text-xs text-muted-foreground">menunggu</span>
-                        </div>
-                    </div>
-                </div>
+            <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                            <th class="px-4 py-3 font-semibold">Program</th>
+                            <th class="px-4 py-3 font-semibold">Angkatan</th>
+                            <th class="px-4 py-3 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3 font-semibold">Keputusan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="!person.applications.length">
+                            <td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Belum pernah mendaftar program.</td>
+                        </tr>
+                        <tr v-for="app in person.applications" :key="app.id" class="border-b border-border align-top last:border-0">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
+                                    <Badge v-if="person.applications.length > 1" variant="secondary">ke-{{ app.attempt }}</Badge>
+                                </div>
+                                <p v-if="app.motivation" class="mt-1 max-w-md text-xs italic text-muted-foreground">"{{ app.motivation }}"</p>
+                                <p v-if="app.status === 'rejected' && app.review_note" class="mt-1 max-w-md text-xs text-muted-foreground">
+                                    Catatan penolakan: {{ app.review_note }}
+                                </p>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground">{{ app.cohort ?? '—' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-muted-foreground">{{ fmtDate(app.created_at) }}</td>
+                            <td class="px-4 py-3">
+                                <div v-if="auth.can('applications.review')" class="flex items-center gap-2">
+                                    <ToggleGroup
+                                        type="single"
+                                        variant="outline"
+                                        :model-value="app.status === 'pending' ? '' : app.status"
+                                        :disabled="reviewingId === app.id"
+                                        @update:model-value="(v) => decide(app, v)"
+                                    >
+                                        <ToggleGroupItem value="accepted" class="gap-1 text-teal-700 data-[state=on]:bg-teal-50 data-[state=on]:text-teal-700">
+                                            <Check class="size-3.5" /> Diterima
+                                        </ToggleGroupItem>
+                                        <ToggleGroupItem value="rejected" class="gap-1 text-destructive data-[state=on]:bg-red-50 data-[state=on]:text-destructive">
+                                            <X class="size-3.5" /> Ditolak
+                                        </ToggleGroupItem>
+                                    </ToggleGroup>
+                                    <span v-if="app.status === 'pending'" class="text-xs text-muted-foreground">menunggu</span>
+                                </div>
+                                <Badge v-else :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <!-- Enrollments -->
