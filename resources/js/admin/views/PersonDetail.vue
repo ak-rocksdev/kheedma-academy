@@ -280,7 +280,7 @@ function fmtDate(iso) {
                         <tr v-if="!person.applications.length">
                             <td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Belum pernah mendaftar program.</td>
                         </tr>
-                        <tr v-for="app in person.applications" :key="app.id" class="border-b border-border align-top last:border-0">
+                        <tr v-for="app in person.applications" :key="app.id" class="border-b border-border align-middle last:border-0">
                             <td class="px-4 py-3">
                                 <div class="flex items-center gap-2">
                                     <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
