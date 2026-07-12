@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
+import { ArrowLeft, Check, ChevronDown, X } from 'lucide-vue-next';
 import { api, applications as applicationsApi, people as peopleApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,7 +10,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
-import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
+import { statusVariant, statusLabel } from '@/lib/status';
 import EnrollToCohortDialog from '@/components/EnrollToCohortDialog.vue';
 
 const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
@@ -32,8 +32,9 @@ function toggleClasses(enrollmentId) {
     expandedClasses.value = next;
 }
 const error = ref('');
-const savingId = ref(null);
+const reviewingId = ref(null);
 const saveError = ref('');
+const reviewSuccess = ref('');
 
 async function load() {
     loading.value = true;
@@ -54,27 +55,68 @@ onMounted(load);
 // Re-fetch when navigating between two person URLs (component instance is reused).
 watch(() => props.id, () => load());
 
-async function save(app) {
-    savingId.value = app.id;
+/** Enrollment milik lamaran ini (untuk peringatan absensi saat menolak). */
+function enrollmentFor(app) {
+    if (!app?.cohort_id) return null;
+    return (person.value?.enrollments ?? []).find((e) => e.cohort_id === app.cohort_id) ?? null;
+}
+
+/**
+ * Keputusan dua-pilihan langsung tersimpan: Diterima atau Ditolak. "Menunggu"
+ * bukan pilihan (aturan satu arah); memilih status yang sama diabaikan.
+ */
+function decide(app, value) {
+    if (!value || value === app.status) return;
+    if (value === 'accepted') {
+        accept(app);
+    } else if (value === 'rejected') {
+        rejectNote.value = '';
+        rejectTarget.value = app;
+    }
+}
+
+async function accept(app) {
+    reviewingId.value = app.id;
     saveError.value = '';
+    reviewSuccess.value = '';
     try {
-        await applicationsApi.review(app.id, app.status);
-        if (app.status === 'accepted') {
-            // Cohort-targeted applications are placed by the server; reload shows
-            // the new Keikutsertaan row. Legacy rows without a cohort still get
-            // the manual placement dialog.
-            app.cohort_id ? await load() : offerEnroll(app);
+        const res = await applicationsApi.review(app.id, 'accepted');
+        reviewSuccess.value = res.application.enrollment
+            ? `Pendaftaran diterima; ditempatkan di ${res.application.enrollment.cohort_name}.`
+            : 'Pendaftaran diterima.';
+        if (app.cohort_id) {
+            await load();
+        } else {
+            offerEnroll(app); // legacy tanpa angkatan: tawarkan penempatan manual
         }
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
-        await load(); // reset selects to the server's truth
     } finally {
-        savingId.value = null;
+        reviewingId.value = null;
     }
 }
 
-// --- Masukkan ke Angkatan (offered right after an application is accepted) --
+const rejectTarget = ref(null); // application yang akan ditolak (dialog konfirmasi)
+const rejectNote = ref('');
+
+async function confirmReject() {
+    const app = rejectTarget.value;
+    saveError.value = '';
+    reviewSuccess.value = '';
+    try {
+        await applicationsApi.review(app.id, 'rejected', { review_note: rejectNote.value || null });
+        rejectTarget.value = null;
+        reviewSuccess.value = 'Pendaftaran ditolak.';
+        await load();
+    } catch (e) {
+        if (e.sessionExpired) return; // the global re-login dialog takes over
+        rejectTarget.value = null;
+        saveError.value = e.message ?? 'Gagal menyimpan.';
+    }
+}
+
+// --- Masukkan ke Angkatan (fallback untuk lamaran legacy tanpa angkatan) ----
 
 const enrollFor = ref(null); // application yang baru diterima
 
@@ -82,7 +124,7 @@ function offerEnroll(app) {
     enrollFor.value = app;
 }
 
-async function onEnrolled() {
+async function onEnrollClosed() {
     enrollFor.value = null;
     await load();
 }
@@ -221,6 +263,9 @@ function fmtDate(iso) {
             <div v-if="saveError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
                 {{ saveError }}
             </div>
+            <div v-if="reviewSuccess" class="mt-3 rounded-lg border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-700">
+                {{ reviewSuccess }}
+            </div>
             <div class="mt-3 space-y-3">
                 <div v-if="!person.applications.length" class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
                     Belum pernah mendaftar program.
@@ -241,24 +286,25 @@ function fmtDate(iso) {
                     <p v-if="app.status === 'rejected' && app.review_note" class="mt-2 text-sm text-muted-foreground">
                         Catatan penolakan: {{ app.review_note }}
                     </p>
-                    <div class="mt-4 flex flex-wrap items-end gap-3">
-                        <div class="text-sm">
-                            <span class="text-muted-foreground">Keputusan</span>
+                    <div v-if="auth.can('applications.review')" class="mt-4 text-sm">
+                        <span class="text-muted-foreground">Keputusan</span>
+                        <div class="mt-1.5 flex items-center gap-2">
                             <ToggleGroup
                                 type="single"
                                 variant="outline"
-                                class="mt-1.5"
-                                :model-value="app.status"
-                                @update:model-value="(v) => { if (v) app.status = v; }"
+                                :model-value="app.status === 'pending' ? '' : app.status"
+                                :disabled="reviewingId === app.id"
+                                @update:model-value="(v) => decide(app, v)"
                             >
-                                <ToggleGroupItem v-for="s in APPLICATION_STATUSES" :key="s.value" :value="s.value">
-                                    {{ s.label }}
+                                <ToggleGroupItem value="accepted" class="gap-1 text-teal-700 data-[state=on]:bg-teal-50 data-[state=on]:text-teal-700">
+                                    <Check class="size-3.5" /> Diterima
+                                </ToggleGroupItem>
+                                <ToggleGroupItem value="rejected" class="gap-1 text-destructive data-[state=on]:bg-red-50 data-[state=on]:text-destructive">
+                                    <X class="size-3.5" /> Ditolak
                                 </ToggleGroupItem>
                             </ToggleGroup>
+                            <span v-if="app.status === 'pending'" class="text-xs text-muted-foreground">menunggu</span>
                         </div>
-                        <Button size="sm" :disabled="savingId === app.id" @click="save(app)">
-                            {{ savingId === app.id ? 'Menyimpan…' : 'Simpan' }}
-                        </Button>
                     </div>
                 </div>
             </div>
@@ -306,13 +352,39 @@ function fmtDate(iso) {
                 </div>
             </div>
 
-            <!-- Enroll dialog (offered right after an application is accepted) -->
+            <!-- Enroll dialog (fallback penempatan untuk lamaran legacy tanpa angkatan) -->
             <EnrollToCohortDialog
                 :application="enrollFor"
                 :exclude-cohort-ids="(person?.enrollments ?? []).map((en) => en.cohort_id)"
-                @close="enrollFor = null"
-                @enrolled="onEnrolled"
+                @close="onEnrollClosed"
+                @enrolled="onEnrollClosed"
             />
+
+            <!-- Konfirmasi tolak pendaftaran (alasan opsional; peringatan bila sudah ditempatkan/hadir) -->
+            <Dialog :open="rejectTarget !== null" title="Tolak Pendaftaran" @update:open="rejectTarget = null">
+                <p class="text-sm text-muted-foreground">
+                    Tolak pendaftaran {{ person.name }} untuk {{ rejectTarget?.program ?? 'program ini' }}? Dia masih boleh mendaftar lagi di lain waktu.
+                </p>
+                <p v-if="enrollmentFor(rejectTarget)?.hadir" class="mt-2 text-sm text-orange-700">
+                    Dia sudah tercatat hadir {{ enrollmentFor(rejectTarget).hadir }} kali di {{ enrollmentFor(rejectTarget).cohort }}. Penempatan dan riwayat kehadirannya tidak ikut terhapus.
+                </p>
+                <p v-else-if="enrollmentFor(rejectTarget)" class="mt-2 text-sm text-muted-foreground">
+                    Penempatannya di {{ enrollmentFor(rejectTarget).cohort }} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.
+                </p>
+                <div class="mt-3">
+                    <label class="text-xs text-muted-foreground">Alasan (opsional)</label>
+                    <textarea
+                        v-model="rejectNote"
+                        rows="3"
+                        placeholder="Contoh: belum sesuai kriteria angkatan ini."
+                        class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    ></textarea>
+                </div>
+                <div class="mt-4 flex justify-end gap-2">
+                    <Button variant="outline" size="sm" @click="rejectTarget = null">Batal</Button>
+                    <Button variant="destructive" size="sm" @click="confirmReject">Tolak Pendaftaran</Button>
+                </div>
+            </Dialog>
 
             <!-- Reset password dialog (generated password is shown once) -->
             <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">
