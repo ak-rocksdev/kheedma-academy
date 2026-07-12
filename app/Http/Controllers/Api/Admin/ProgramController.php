@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Application;
+use App\Models\Cohort;
+use App\Models\Enrollment;
 use App\Models\Program;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,6 +26,43 @@ class ProgramController extends Controller
             ->map(fn (Program $p) => $this->row($p));
 
         return response()->json(['data' => $programs]);
+    }
+
+    /** One program with its cohorts, applicants, and funnel stats (detail page). */
+    public function show(Program $program): JsonResponse
+    {
+        $program->loadCount(['cohorts', 'applications'])
+            ->loadExists(['cohorts as has_open_cohort' => fn ($q) => $q->openForRegistration()]);
+
+        $cohorts = $program->cohorts()
+            ->with('mentor:id,name')
+            ->withCount('enrollments')
+            ->orderByDesc('start_date')
+            ->get();
+
+        $applications = $program->applications()
+            ->with(['person:id,name,phone,email', 'enrollment.cohort:id,name'])
+            ->latest()
+            ->get();
+
+        $activeParticipants = Enrollment::query()
+            ->whereHas('cohort', fn ($q) => $q->where('program_id', $program->id))
+            ->with('latestStatusEvent')
+            ->get()
+            ->filter(fn (Enrollment $e) => ($e->latestStatusEvent?->status ?? 'accepted') === 'accepted')
+            ->count();
+
+        return response()->json([
+            'program' => $this->row($program),
+            'cohorts' => $cohorts->map(fn (Cohort $c) => $this->cohortRow($c))->values(),
+            'applications' => $applications->map(fn (Application $a) => $this->applicationRow($a))->values(),
+            'stats' => [
+                'pending' => $applications->where('status', 'pending')->count(),
+                'accepted' => $applications->where('status', 'accepted')->count(),
+                'rejected' => $applications->where('status', 'rejected')->count(),
+                'active_participants' => $activeParticipants,
+            ],
+        ]);
     }
 
     public function store(Request $request): JsonResponse
@@ -115,6 +155,56 @@ class ProgramController extends Controller
             'is_open' => $p->hasAttribute('has_open_cohort') ? $p->status === 'active' && (bool) $p->has_open_cohort : $p->isOpen(),
             'cohorts_count' => (int) ($p->cohorts_count ?? 0),
             'applications_count' => (int) ($p->applications_count ?? 0),
+        ];
+    }
+
+    /**
+     * Cohort shape for the detail page. Key names match CohortController::row()
+     * (minus the redundant program) so the frontend status maps carry over.
+     *
+     * @return array<string, mixed>
+     */
+    private function cohortRow(Cohort $c): array
+    {
+        return [
+            'id' => $c->id,
+            'name' => $c->name,
+            'start_date' => $c->start_date?->toDateString(),
+            'end_date' => $c->end_date?->toDateString(),
+            'status' => $c->status,
+            'mentor' => $c->mentor ? ['id' => $c->mentor->id, 'name' => $c->mentor->name] : null,
+            'enrollments_count' => (int) ($c->enrollments_count ?? 0),
+            'registration_opens_at' => $c->registration_opens_at?->toIso8601String(),
+            'registration_closes_at' => $c->registration_closes_at?->toIso8601String(),
+            'registration_open' => $c->isOpenForRegistration(),
+        ];
+    }
+
+    /**
+     * Applicant shape for the detail page. Person is null-safe (soft deletes);
+     * enrollment names the cohort the accepted applicant landed in.
+     *
+     * @return array<string, mixed>
+     */
+    private function applicationRow(Application $a): array
+    {
+        return [
+            'id' => $a->id,
+            'status' => $a->status,
+            'created_at' => $a->created_at?->toIso8601String(),
+            'reviewed_at' => $a->reviewed_at?->toIso8601String(),
+            'motivation' => $a->motivation,
+            'referral_source' => $a->referral_source,
+            'person' => $a->person ? [
+                'id' => $a->person->id,
+                'name' => $a->person->name,
+                'phone' => $a->person->phone,
+                'email' => $a->person->email,
+            ] : null,
+            'enrollment' => $a->enrollment ? [
+                'cohort_id' => $a->enrollment->cohort_id,
+                'cohort_name' => $a->enrollment->cohort?->name,
+            ] : null,
         ];
     }
 }
