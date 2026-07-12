@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { Pencil, Trash2 } from 'lucide-vue-next';
+import { useRouter } from 'vue-router';
+import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -44,6 +45,22 @@ function openCreate() {
 function openEdit(program) {
     editing.value = program;
     dialogOpen.value = true;
+}
+
+const router = useRouter();
+
+/** Baris = pintu utama ke halaman kelola program. */
+function goDetail(program) {
+    router.push({ name: 'program-detail', params: { id: program.id } });
+}
+
+/** Program baru langsung dibuka detailnya: tambah angkatan tinggal satu klik. */
+function onSaved(program) {
+    if (editing.value === null) {
+        router.push({ name: 'program-detail', params: { id: program.id } });
+        return;
+    }
+    load();
 }
 
 const deleteTarget = ref(null);
@@ -97,7 +114,7 @@ async function confirmRemove() {
                         v-for="program in items"
                         :key="program.id"
                         class="cursor-pointer border-b border-border last:border-0 transition-colors hover:bg-accent/50"
-                        @click="openEdit(program)"
+                        @click="goDetail(program)"
                     >
                         <td class="px-4 py-3 font-medium text-foreground">
                             <div class="flex items-center gap-2">
@@ -122,6 +139,9 @@ async function confirmRemove() {
                         <td class="px-4 py-3 text-muted-foreground">{{ program.cohorts_count }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ program.applications_count }}</td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail program" @click.stop="goDetail(program)">
+                                <Eye class="size-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah program" @click.stop="openEdit(program)">
                                 <Pencil class="size-4" />
                             </Button>
@@ -134,7 +154,7 @@ async function confirmRemove() {
             </table>
         </div>
 
-        <ProgramFormDialog v-model:open="dialogOpen" :program="editing" @saved="load" @thumbnail-changed="load" />
+        <ProgramFormDialog v-model:open="dialogOpen" :program="editing" @saved="onSaved" @thumbnail-changed="load" />
 
         <!-- Konfirmasi hapus program -->
         <Dialog :open="deleteTarget !== null" title="Hapus Program" @update:open="deleteTarget = null">

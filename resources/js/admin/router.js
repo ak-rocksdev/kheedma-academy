@@ -44,6 +44,13 @@ const routes = [
                 meta: { permission: 'programs.manage' },
             },
             {
+                path: 'programs/:id',
+                name: 'program-detail',
+                component: () => import('./views/ProgramDetail.vue'),
+                props: true,
+                meta: { permission: 'programs.manage' },
+            },
+            {
                 path: 'community',
                 name: 'community',
                 component: () => import('./views/Community.vue'),
