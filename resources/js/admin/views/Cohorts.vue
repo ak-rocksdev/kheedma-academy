@@ -1,60 +1,19 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
-import { parseDate } from '@internationalized/date';
-import { cohorts as cohortsApi, users as usersApi, programs as programsApi } from '@/api';
-import { Input } from '@/components/ui/input';
+import { cohorts as cohortsApi } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { DatePicker } from '@/components/ui/date-picker';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import CohortFormDialog from '@/components/CohortFormDialog.vue';
 
 const items = ref([]);
-const mentors = ref([]);
-const programs = ref([]);
 const loading = ref(false);
 const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-const form = ref({
-    name: '',
-    program_id: '',
-    start_date: '',
-    mentor_id: '',
-    registration_opens_at: '',
-    registration_closes_at: '',
-});
-const formErrors = ref({});
-const saving = ref(false);
-
-// The end date is never typed: it derives from the start date + a duration in
-// days (1 day = same-day class). "custom" opens a manual day-count input.
-const DURATION_OPTIONS = ['1', '2', '3'];
-const duration = ref('1');
-const customDays = ref(4);
-
-const durationDays = computed(() => {
-    if (duration.value === 'custom') {
-        return Math.max(1, parseInt(customDays.value, 10) || 1);
-    }
-    return Number(duration.value);
-});
-
-const computedEndDate = computed(() => {
-    if (!form.value.start_date) return '';
-    return parseDate(form.value.start_date).add({ days: durationDays.value - 1 }).toString();
-});
-
-/** ToggleGroup can deselect to empty; duration is mandatory, so ignore that. */
-function setDuration(value) {
-    if (value) duration.value = value;
-}
-
-const selectClass =
-    'h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 const STATUS = {
     upcoming: { label: 'Akan datang', variant: 'warning' },
@@ -66,10 +25,8 @@ async function load() {
     loading.value = true;
     error.value = '';
     try {
-        const [cRes, mRes, pRes] = await Promise.all([cohortsApi.list(), usersApi.list('?role=mentor'), programsApi.list()]);
-        items.value = cRes.data;
-        mentors.value = mRes.data;
-        programs.value = pRes.data;
+        const res = await cohortsApi.list();
+        items.value = res.data;
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         error.value = e.message ?? 'Gagal memuat data.';
@@ -82,70 +39,12 @@ onMounted(load);
 
 function openCreate() {
     editing.value = null;
-    form.value = {
-        name: '',
-        program_id: '',
-        start_date: '',
-        mentor_id: '',
-        registration_opens_at: '',
-        registration_closes_at: '',
-        };
-    duration.value = '1';
-    customDays.value = 4;
-    formErrors.value = {};
     dialogOpen.value = true;
 }
 
 function openEdit(cohort) {
     editing.value = cohort;
-    form.value = {
-        name: cohort.name,
-        program_id: cohort.program?.id ?? '',
-        start_date: cohort.start_date ?? '',
-        mentor_id: cohort.mentor?.id ?? '',
-        registration_opens_at: cohort.registration_opens_at?.slice(0, 10) ?? '',
-        registration_closes_at: cohort.registration_closes_at?.slice(0, 10) ?? '',
-    };
-
-    // Recover the duration from the stored date pair.
-    let days = 1;
-    if (cohort.start_date && cohort.end_date) {
-        days = Math.max(1, Math.round((new Date(cohort.end_date) - new Date(cohort.start_date)) / 86400000) + 1);
-    }
-    duration.value = days <= 3 ? String(days) : 'custom';
-    customDays.value = days > 3 ? days : 4;
-
-    formErrors.value = {};
     dialogOpen.value = true;
-}
-
-async function save() {
-    saving.value = true;
-    formErrors.value = {};
-    try {
-        const payload = {
-            name: form.value.name,
-            program_id: form.value.program_id || null,
-            start_date: form.value.start_date || null,
-            end_date: computedEndDate.value || null,
-            mentor_id: form.value.mentor_id || null,
-            registration_opens_at: form.value.registration_opens_at || null,
-            registration_closes_at: form.value.registration_closes_at || null,
-        };
-        if (editing.value) {
-            await cohortsApi.update(editing.value.id, payload);
-        } else {
-            await cohortsApi.create(payload);
-        }
-        dialogOpen.value = false;
-        await load();
-    } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        formErrors.value = e.errors ?? {};
-        if (!Object.keys(formErrors.value).length) error.value = e.message;
-    } finally {
-        saving.value = false;
-    }
 }
 
 const router = useRouter();
@@ -255,71 +154,7 @@ function fmtDate(iso) {
             </table>
         </div>
 
-        <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Angkatan' : 'Tambah Angkatan'">
-            <form class="space-y-3" @submit.prevent="save">
-                <div>
-                    <Input v-model="form.name" placeholder="Nama angkatan" />
-                    <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
-                </div>
-                <div>
-                    <label class="text-xs text-muted-foreground">Mulai Kelas</label>
-                    <DatePicker v-model="form.start_date" class="mt-1.5" placeholder="Pilih tanggal" />
-                    <p v-if="formErrors.start_date" class="mt-1 text-xs text-destructive">{{ formErrors.start_date[0] }}</p>
-                </div>
-                <div>
-                    <label class="text-xs text-muted-foreground">Durasi kelas</label>
-                    <ToggleGroup
-                        type="single"
-                        variant="outline"
-                        class="mt-1.5 w-full"
-                        :model-value="duration"
-                        @update:model-value="setDuration"
-                    >
-                        <ToggleGroupItem v-for="option in DURATION_OPTIONS" :key="option" :value="option" class="flex-1">
-                            {{ option }} hari
-                        </ToggleGroupItem>
-                        <ToggleGroupItem value="custom" class="flex-1">Custom</ToggleGroupItem>
-                    </ToggleGroup>
-                    <div v-if="duration === 'custom'" class="mt-2 flex items-center gap-2">
-                        <Input v-model="customDays" type="number" min="1" class="w-24" />
-                        <span class="text-xs text-muted-foreground">hari</span>
-                    </div>
-                    <p v-if="computedEndDate" class="mt-1.5 text-xs text-muted-foreground">Selesai: {{ fmtDate(computedEndDate) }}</p>
-                    <p v-if="formErrors.end_date" class="mt-1 text-xs text-destructive">{{ formErrors.end_date[0] }}</p>
-                </div>
-                <div class="flex gap-3">
-                    <div class="min-w-0 flex-1">
-                        <label class="text-xs text-muted-foreground">Pendaftaran dibuka</label>
-                        <DatePicker v-model="form.registration_opens_at" class="mt-1.5" placeholder="Pilih tanggal" />
-                    </div>
-                    <div class="min-w-0 flex-1">
-                        <label class="text-xs text-muted-foreground">Pendaftaran ditutup</label>
-                        <DatePicker v-model="form.registration_closes_at" class="mt-1.5" placeholder="Pilih tanggal" />
-                    </div>
-                </div>
-                <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
-                <div>
-                    <label class="text-xs text-muted-foreground">Program</label>
-                    <select v-model="form.program_id" :class="[selectClass, 'mt-1.5']">
-                        <option value="">Pilih program…</option>
-                        <option v-for="program in programs" :key="program.id" :value="program.id">{{ program.name }}</option>
-                    </select>
-                    <p v-if="formErrors.program_id" class="mt-1 text-xs text-destructive">{{ formErrors.program_id[0] }}</p>
-                </div>
-                <div>
-                    <label class="text-xs text-muted-foreground">Mentor</label>
-                    <select v-model="form.mentor_id" :class="[selectClass, 'mt-1.5']">
-                        <option value="">Tanpa mentor</option>
-                        <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
-                    </select>
-                    <p v-if="formErrors.mentor_id" class="mt-1 text-xs text-destructive">{{ formErrors.mentor_id[0] }}</p>
-                </div>
-                <div class="flex justify-end gap-2 pt-2">
-                    <Button type="button" variant="outline" size="sm" @click="dialogOpen = false">Batal</Button>
-                    <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>
-                </div>
-            </form>
-        </Dialog>
+        <CohortFormDialog v-model:open="dialogOpen" :cohort="editing" @saved="load" />
 
         <!-- Konfirmasi hapus Angkatan -->
         <Dialog :open="deleteTarget !== null" title="Hapus Angkatan" @update:open="deleteTarget = null">
