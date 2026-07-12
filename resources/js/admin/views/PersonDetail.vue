@@ -59,9 +59,12 @@ async function save(app) {
     saveError.value = '';
     try {
         await applicationsApi.review(app.id, app.status);
-        // The in-place v-model values already reflect the saved state, so no full
-        // reload is needed (avoids the spinner blink / scroll jump).
-        if (app.status === 'accepted') await offerEnroll(app);
+        if (app.status === 'accepted') {
+            // Cohort-targeted applications are placed by the server; reload shows
+            // the new Keikutsertaan row. Legacy rows without a cohort still get
+            // the manual placement dialog.
+            app.cohort_id ? await load() : offerEnroll(app);
+        }
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
@@ -226,6 +229,7 @@ function fmtDate(iso) {
                     <div class="flex items-center justify-between gap-3">
                         <div class="min-w-0 text-sm">
                             <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
+                            <span v-if="app.cohort" class="text-muted-foreground"> · {{ app.cohort }}</span>
                             <span class="text-muted-foreground"> · Daftar {{ fmtDate(app.created_at) }}</span>
                         </div>
                         <div class="flex shrink-0 items-center gap-2">
@@ -234,6 +238,9 @@ function fmtDate(iso) {
                         </div>
                     </div>
                     <p v-if="app.motivation" class="mt-2 text-sm italic text-muted-foreground">"{{ app.motivation }}"</p>
+                    <p v-if="app.status === 'rejected' && app.review_note" class="mt-2 text-sm text-muted-foreground">
+                        Catatan penolakan: {{ app.review_note }}
+                    </p>
                     <div class="mt-4 flex flex-wrap items-end gap-3">
                         <div class="text-sm">
                             <span class="text-muted-foreground">Keputusan</span>
