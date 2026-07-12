@@ -155,8 +155,8 @@ export const applications = {
     list(query = '') {
         return api(`/admin/applications${query}`);
     },
-    review(id, status) {
-        return api(`/admin/applications/${id}`, { method: 'PATCH', body: { status } });
+    review(id, status, extra = {}) {
+        return api(`/admin/applications/${id}`, { method: 'PATCH', body: { status, ...extra } });
     },
 };
 

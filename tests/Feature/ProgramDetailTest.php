@@ -47,7 +47,7 @@ class ProgramDetailTest extends TestCase
         Cohort::factory()->create(['program_id' => $program->id, 'mentor_id' => null]);
 
         $pendingPerson = $this->person();
-        Application::create(['people_id' => $pendingPerson->id, 'program_id' => $program->id, 'status' => 'pending']);
+        Application::create(['people_id' => $pendingPerson->id, 'program_id' => $program->id, 'cohort_id' => $withMentor->id, 'status' => 'pending']);
 
         $enrolledPerson = $this->person();
         $accepted = Application::create(['people_id' => $enrolledPerson->id, 'program_id' => $program->id, 'status' => 'accepted']);
@@ -71,7 +71,7 @@ class ProgramDetailTest extends TestCase
         $res->assertJsonStructure([
             'program' => ['id', 'slug', 'name', 'tagline', 'description', 'status', 'selection_mode', 'type', 'level', 'locked_message', 'thumbnail_url', 'is_open', 'cohorts_count', 'applications_count'],
             'cohorts' => [['id', 'name', 'start_date', 'end_date', 'status', 'mentor', 'enrollments_count', 'registration_opens_at', 'registration_closes_at', 'registration_open']],
-            'applications' => [['id', 'status', 'created_at', 'reviewed_at', 'motivation', 'referral_source', 'person', 'enrollment']],
+            'applications' => [['id', 'status', 'created_at', 'reviewed_at', 'motivation', 'referral_source', 'review_note', 'cohort_id', 'person', 'enrollment']],
         ]);
 
         $cohorts = collect($res->json('cohorts'))->keyBy('id');
@@ -84,6 +84,7 @@ class ProgramDetailTest extends TestCase
             $applications->get($enrolledPerson->id)['enrollment'],
         );
         $this->assertNull($applications->get($pendingPerson->id)['enrollment']);
+        $this->assertSame($withMentor->id, $applications->get($pendingPerson->id)['cohort_id']);
         $this->assertSame($pendingPerson->phone, $applications->get($pendingPerson->id)['person']['phone']);
     }
 

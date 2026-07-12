@@ -41,7 +41,7 @@ class ProgramController extends Controller
             ->get();
 
         $applications = $program->applications()
-            ->with(['person:id,name,phone,email', 'enrollment.cohort:id,name'])
+            ->with(['person:id,name,phone,email', 'cohort:id,name', 'enrollment.cohort:id,name'])
             ->latest()
             ->get();
 
@@ -195,6 +195,8 @@ class ProgramController extends Controller
             'reviewed_at' => $a->reviewed_at?->toIso8601String(),
             'motivation' => $a->motivation,
             'referral_source' => $a->referral_source,
+            'review_note' => $a->review_note,
+            'cohort_id' => $a->cohort_id,
             'person' => $a->person ? [
                 'id' => $a->person->id,
                 'name' => $a->person->name,
