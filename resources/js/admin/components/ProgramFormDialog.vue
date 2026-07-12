@@ -227,7 +227,8 @@ onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
                 <p v-if="thumbError" class="mt-1 text-xs text-destructive">{{ thumbError }}</p>
             </div>
             <div>
-                <Input v-model="form.name" placeholder="Nama program" @input="onNameInput" />
+                <label class="text-xs text-muted-foreground">Nama program</label>
+                <Input v-model="form.name" placeholder="Nama program" class="mt-1.5" @input="onNameInput" />
                 <p class="mt-1.5 text-xs text-muted-foreground">
                     <code>/program/{{ previewSlug || '…' }}</code>
                     <span v-if="isEditing" class="ml-1">· URL tidak berubah saat nama diedit</span>
@@ -235,13 +236,17 @@ onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
                 <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
                 <p v-if="formErrors.slug" class="mt-1 text-xs text-destructive">{{ formErrors.slug[0] }}</p>
             </div>
-            <Input v-model="form.tagline" placeholder="Tagline singkat (opsional)" />
             <div>
+                <label class="text-xs text-muted-foreground">Tagline (opsional)</label>
+                <Input v-model="form.tagline" placeholder="Tagline singkat" class="mt-1.5" />
+            </div>
+            <div>
+                <label class="text-xs text-muted-foreground">Deskripsi (opsional)</label>
                 <textarea
                     v-model="form.description"
                     rows="4"
-                    placeholder="Deskripsi program (opsional)"
-                    class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    placeholder="Deskripsi program"
+                    class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 ></textarea>
                 <p v-if="formErrors.description" class="mt-1 text-xs text-destructive">{{ formErrors.description[0] }}</p>
             </div>

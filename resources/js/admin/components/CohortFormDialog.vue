@@ -136,7 +136,8 @@ function fmtDate(iso) {
                 {{ optionsError }}
             </div>
             <div>
-                <Input v-model="form.name" placeholder="Nama angkatan" />
+                <label class="text-xs text-muted-foreground">Nama angkatan</label>
+                <Input v-model="form.name" placeholder="Nama angkatan" class="mt-1.5" />
                 <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
             </div>
             <div>
