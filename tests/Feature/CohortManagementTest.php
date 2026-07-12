@@ -170,6 +170,32 @@ class CohortManagementTest extends TestCase
             ->assertStatus(422);
     }
 
+    public function test_cohort_referenced_by_applications_cannot_be_deleted(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+
+        $personId = DB::table('people')->insertGetId([
+            'name' => 'Pendaftar Uji',
+            'phone' => '+628123450000',
+            'email' => 'pendaftar.uji@example.test',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        DB::table('applications')->insert([
+            'people_id' => $personId,
+            'program_id' => $program->id,
+            'cohort_id' => $cohort->id,
+            'status' => 'pending',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($this->admin())
+            ->deleteJson("/api/admin/cohorts/{$cohort->id}")
+            ->assertStatus(422);
+    }
+
     public function test_empty_cohort_can_be_deleted(): void
     {
         $cohort = Cohort::factory()->create();
