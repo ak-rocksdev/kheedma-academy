@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { ArrowLeft, Check, ExternalLink, Pencil, X } from 'lucide-vue-next';
+import { ArrowLeft, Check, ExternalLink, Eye, Pencil, X } from 'lucide-vue-next';
 import { programs as programsApi, applications as applicationsApi } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -65,6 +65,17 @@ const editOpen = ref(false);
 // --- Angkatan ----------------------------------------------------------------
 
 const cohortDialogOpen = ref(false);
+const editingCohort = ref(null);
+
+function openCohortCreate() {
+    editingCohort.value = null;
+    cohortDialogOpen.value = true;
+}
+
+function openCohortEdit(cohort) {
+    editingCohort.value = cohort;
+    cohortDialogOpen.value = true;
+}
 
 function goCohort(cohort) {
     router.push({ name: 'cohort-detail', params: { id: cohort.id } });
@@ -207,7 +218,7 @@ function fmtDate(iso) {
             <!-- Angkatan -->
             <div class="mt-8 flex items-end justify-between gap-4">
                 <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan</h2>
-                <Button v-if="auth.can('cohorts.manage')" variant="accent" size="sm" @click="cohortDialogOpen = true">Tambah Angkatan</Button>
+                <Button v-if="auth.can('cohorts.manage')" variant="accent" size="sm" @click="openCohortCreate">Tambah Angkatan</Button>
             </div>
             <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                 <table class="w-full text-sm">
@@ -219,10 +230,11 @@ function fmtDate(iso) {
                             <th class="px-4 py-3 font-semibold">Mentor</th>
                             <th class="px-4 py-3 font-semibold">Peserta</th>
                             <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="!cohorts.length"><td colspan="6" class="px-4 py-8 text-center text-muted-foreground">Belum ada angkatan. Buka kelas pertama dengan tombol Tambah Angkatan.</td></tr>
+                        <tr v-if="!cohorts.length"><td colspan="7" class="px-4 py-8 text-center text-muted-foreground">Belum ada angkatan. Buka kelas pertama dengan tombol Tambah Angkatan.</td></tr>
                         <tr
                             v-for="cohort in cohorts"
                             :key="cohort.id"
@@ -244,6 +256,22 @@ function fmtDate(iso) {
                                 <Badge :variant="COHORT_STATUS[cohort.status]?.variant ?? 'secondary'">
                                     {{ COHORT_STATUS[cohort.status]?.label ?? cohort.status }}
                                 </Badge>
+                            </td>
+                            <td class="px-4 py-3 text-right whitespace-nowrap">
+                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan" @click.stop="goCohort(cohort)">
+                                    <Eye class="size-4" />
+                                </Button>
+                                <Button
+                                    v-if="auth.can('cohorts.manage')"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8"
+                                    title="Ubah"
+                                    aria-label="Ubah Angkatan"
+                                    @click.stop="openCohortEdit(cohort)"
+                                >
+                                    <Pencil class="size-4" />
+                                </Button>
                             </td>
                         </tr>
                     </tbody>
@@ -319,6 +347,7 @@ function fmtDate(iso) {
 
             <CohortFormDialog
                 v-model:open="cohortDialogOpen"
+                :cohort="editingCohort"
                 :locked-program="{ id: program.id, name: program.name }"
                 @saved="load"
             />
