@@ -49,6 +49,44 @@ class ProgramModelTest extends TestCase
         $this->assertNull(Program::factory()->active()->create()->openCohort());
     }
 
+    public function test_open_cohort_prefers_nearest_start_date(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => now()->addWeeks(3)]);
+        $nearest = Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => now()->addWeek()]);
+
+        $this->assertTrue($program->openCohort()->is($nearest));
+    }
+
+    public function test_open_cohort_dated_start_beats_null_start(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => null]);
+        $dated = Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => now()->addMonth()]);
+
+        $this->assertTrue($program->openCohort()->is($dated));
+    }
+
+    public function test_open_cohort_tie_breaks_on_soonest_close(): void
+    {
+        $program = Program::factory()->active()->create();
+        $start = now()->addWeeks(2)->toDateString();
+        Cohort::factory()->create([
+            'program_id' => $program->id,
+            'start_date' => $start,
+            'registration_opens_at' => now()->subDay(),
+            'registration_closes_at' => null,
+        ]);
+        $closingSooner = Cohort::factory()->create([
+            'program_id' => $program->id,
+            'start_date' => $start,
+            'registration_opens_at' => now()->subDay(),
+            'registration_closes_at' => now()->addDays(3),
+        ]);
+
+        $this->assertTrue($program->openCohort()->is($closingSooner));
+    }
+
     public function test_cohort_window_open_logic(): void
     {
         $this->assertTrue(Cohort::factory()->openWindow()->create()->isOpenForRegistration());

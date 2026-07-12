@@ -171,9 +171,13 @@ class ApplicationController extends Controller
                 ->with('application_notice', 'Kamu sudah terdaftar di program ini.');
         }
 
+        // The application targets the class actually recruiting right now; the
+        // program is the catalog grouping. store() is only reachable while the
+        // program is open, so an open cohort always exists here.
         $person->applications()->create([
             'status' => 'pending',
             'program_id' => $program->id,
+            'cohort_id' => $program->openCohort()?->id,
             'referral_source' => $data['referral_source'],
             'motivation' => $data['motivation'],
         ]);

@@ -92,8 +92,21 @@ class PublicApplyTest extends TestCase
 
         $application = Application::sole();
         $this->assertSame($program->id, $application->program_id);
+        $this->assertSame($program->openCohort()->id, $application->cohort_id);
         $this->assertSame('instagram', $application->referral_source);
         $this->assertSame('pending', $application->status);
+    }
+
+    public function test_submission_attaches_nearest_starting_open_cohort(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => now()->addMonth()]);
+        $nearest = Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => now()->addWeek()]);
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+            ->assertRedirect(route('daftar.thankyou'));
+
+        $this->assertSame($nearest->id, Application::sole()->cohort_id);
     }
 
     public function test_referral_source_is_required_and_validated(): void

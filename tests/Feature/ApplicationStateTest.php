@@ -57,6 +57,24 @@ class ApplicationStateTest extends TestCase
         $this->assertSame('enrolled', $person->applicationStateFor($program));
     }
 
+    public function test_application_carries_cohort_and_review_note(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+
+        $application = Application::create([
+            'people_id' => $this->person()->id,
+            'program_id' => $program->id,
+            'cohort_id' => $cohort->id,
+            'status' => 'rejected',
+            'review_note' => 'Belum memenuhi syarat.',
+        ]);
+
+        $this->assertTrue($application->cohort->is($cohort));
+        $this->assertSame('Belum memenuhi syarat.', $application->fresh()->review_note);
+        $this->assertTrue($cohort->applications->first()->is($application));
+    }
+
     public function test_state_is_scoped_per_program(): void
     {
         $applied = Program::factory()->active()->create();

@@ -17,8 +17,10 @@ class Application extends Model
     protected $fillable = [
         'people_id',
         'program_id',
+        'cohort_id',
         'referral_source',
         'motivation',
+        'review_note',
         'status',
         'reviewed_at',
     ];
@@ -38,6 +40,11 @@ class Application extends Model
     public function program(): BelongsTo
     {
         return $this->belongsTo(Program::class);
+    }
+
+    public function cohort(): BelongsTo
+    {
+        return $this->belongsTo(Cohort::class);
     }
 
     public function enrollment(): HasOne
