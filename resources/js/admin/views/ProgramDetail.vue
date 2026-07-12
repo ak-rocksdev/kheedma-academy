@@ -6,6 +6,7 @@ import { programs as programsApi, applications as applicationsApi } from '@/api'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
 import { statusVariant, statusLabel } from '@/lib/status';
@@ -94,9 +95,6 @@ function periodLabel(cohort) {
 
 // Angkatan aktif di dropdown; '' = belum memilih (empty state).
 const selectedCohortId = ref('');
-
-const selectClass =
-    'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /** Angkatan efektif: penempatan nyata menang atas target lamaran. */
 function effectiveCohortId(app) {
@@ -334,20 +332,20 @@ function fmtDate(iso) {
             <div v-if="selectedCohortId === ''" class="mt-3 rounded-xl border border-border bg-card px-5 py-10 text-center">
                 <template v-if="cohorts.length || hasUnlinked">
                     <p class="text-sm text-muted-foreground">Pilih Angkatan untuk melihat pendaftarnya.</p>
-                    <select v-model="selectedCohortId" :class="[selectClass, 'mt-3 w-64 max-w-full']" aria-label="Pilih Angkatan">
+                    <NativeSelect v-model="selectedCohortId" class="mx-auto mt-3 w-64 max-w-full" aria-label="Pilih Angkatan">
                         <option value="">Pilih Angkatan…</option>
                         <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
                         <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
-                    </select>
+                    </NativeSelect>
                 </template>
                 <p v-else class="text-sm text-muted-foreground">Belum ada angkatan maupun pendaftar.</p>
             </div>
             <template v-else>
-                <select v-model="selectedCohortId" :class="[selectClass, 'mt-3 w-64 max-w-full']" aria-label="Pilih Angkatan">
+                <NativeSelect v-model="selectedCohortId" class="mt-3 w-64 max-w-full" aria-label="Pilih Angkatan">
                     <option value="">Pilih Angkatan…</option>
                     <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
                     <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
-                </select>
+                </NativeSelect>
                 <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                     <table class="w-full text-sm">
                         <thead>

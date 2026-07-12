@@ -3,6 +3,7 @@ import { ref, onMounted } from 'vue';
 import { Pencil, Power } from 'lucide-vue-next';
 import { users as usersApi } from '@/api';
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -19,8 +20,6 @@ const formErrors = ref({});
 const generatedPassword = ref('');
 const saving = ref(false);
 
-const selectClass =
-    'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 async function load() {
     loading.value = true;
@@ -177,10 +176,10 @@ async function toggleActive(user) {
                     <p v-if="formErrors.email" class="mt-1 text-xs text-destructive">{{ formErrors.email[0] }}</p>
                 </div>
                 <Input v-model="form.phone" placeholder="No. HP (opsional)" />
-                <select v-model="form.role" :class="[selectClass, 'w-full']">
+                <NativeSelect v-model="form.role">
                     <option value="mentor">Mentor</option>
                     <option value="admin">Admin</option>
-                </select>
+                </NativeSelect>
                 <div>
                     <PasswordInput v-model="form.password" autocomplete="new-password" :placeholder="editing ? 'Kata sandi baru (opsional)' : 'Kata sandi (kosongkan untuk generate)'" />
                     <p v-if="formErrors.password" class="mt-1 text-xs text-destructive">{{ formErrors.password[0] }}</p>

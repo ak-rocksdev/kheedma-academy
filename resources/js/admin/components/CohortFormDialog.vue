@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/date-picker';
+import { NativeSelect } from '@/components/ui/native-select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const props = defineProps({
@@ -52,9 +53,6 @@ const computedEndDate = computed(() => {
 function setDuration(value) {
     if (value) duration.value = value;
 }
-
-const selectClass =
-    'h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 async function loadOptions() {
     optionsError.value = '';
@@ -183,19 +181,19 @@ function fmtDate(iso) {
                     {{ lockedProgram.name }}
                 </p>
                 <template v-else>
-                    <select v-model="form.program_id" :class="[selectClass, 'mt-1.5']">
+                    <NativeSelect v-model="form.program_id" class="mt-1.5">
                         <option value="">Pilih program…</option>
                         <option v-for="program in programs ?? []" :key="program.id" :value="program.id">{{ program.name }}</option>
-                    </select>
+                    </NativeSelect>
                 </template>
                 <p v-if="formErrors.program_id" class="mt-1 text-xs text-destructive">{{ formErrors.program_id[0] }}</p>
             </div>
             <div>
                 <label class="text-xs text-muted-foreground">Mentor</label>
-                <select v-model="form.mentor_id" :class="[selectClass, 'mt-1.5']">
+                <NativeSelect v-model="form.mentor_id" class="mt-1.5">
                     <option value="">Tanpa mentor</option>
                     <option v-for="mentor in mentors ?? []" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
-                </select>
+                </NativeSelect>
                 <p v-if="formErrors.mentor_id" class="mt-1 text-xs text-destructive">{{ formErrors.mentor_id[0] }}</p>
             </div>
             <div class="flex justify-end gap-2 pt-2">
