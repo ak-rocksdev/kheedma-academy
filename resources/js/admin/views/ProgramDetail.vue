@@ -92,19 +92,22 @@ function periodLabel(cohort) {
 
 // --- Pendaftar: dikelompokkan per angkatan terpilih ---------------------------
 
-// Chip angkatan yang aktif; null = belum memilih (empty state).
-const selectedCohortId = ref(null);
+// Angkatan aktif di dropdown; '' = belum memilih (empty state).
+const selectedCohortId = ref('');
+
+const selectClass =
+    'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 
 /** Angkatan efektif: penempatan nyata menang atas target lamaran. */
 function effectiveCohortId(app) {
     return app.enrollment?.cohort_id ?? app.cohort_id ?? null;
 }
 
-// Lamaran legacy tanpa angkatan butuh chip khusus agar tetap terjangkau.
+// Lamaran legacy tanpa angkatan butuh opsi khusus agar tetap terjangkau.
 const hasUnlinked = computed(() => applications.value.some((app) => effectiveCohortId(app) === null));
 
 const filteredApplications = computed(() => {
-    if (selectedCohortId.value === null) return [];
+    if (selectedCohortId.value === '') return [];
     if (selectedCohortId.value === 'none') {
         return applications.value.filter((app) => effectiveCohortId(app) === null);
     }
@@ -118,6 +121,20 @@ const reviewError = ref('');
 const reviewSuccess = ref('');
 const rejectTarget = ref(null); // application yang akan ditolak (dialog konfirmasi)
 const rejectNote = ref('');
+
+/**
+ * Keputusan lewat toggle dua-pilihan pada baris: Diterima atau Ditolak.
+ * "Menunggu" bukan pilihan (aturan satu arah); memilih status yang sama
+ * atau klik-deselect diabaikan.
+ */
+function decide(app, value) {
+    if (!value || value === app.status) return;
+    if (value === 'accepted') {
+        accept(app);
+    } else if (value === 'rejected') {
+        openReject(app);
+    }
+}
 
 async function accept(app) {
     reviewingId.value = app.id;
@@ -306,86 +323,83 @@ function fmtDate(iso) {
                 </table>
             </div>
 
-            <!-- Pendaftar: daftar per angkatan, dipilih lewat chip -->
+            <!-- Pendaftar: daftar per angkatan, dipilih lewat dropdown -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Pendaftar</h2>
-            <div v-if="cohorts.length || hasUnlinked" class="mt-3">
-                <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    :model-value="selectedCohortId"
-                    @update:model-value="(v) => (selectedCohortId = v || null)"
-                >
-                    <ToggleGroupItem v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">
-                        {{ cohort.name }}
-                    </ToggleGroupItem>
-                    <ToggleGroupItem v-if="hasUnlinked" value="none">Tanpa angkatan</ToggleGroupItem>
-                </ToggleGroup>
-            </div>
             <div v-if="reviewError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
                 {{ reviewError }}
             </div>
             <div v-if="reviewSuccess" class="mt-3 rounded-lg border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-700">
                 {{ reviewSuccess }}
             </div>
-            <div v-if="selectedCohortId === null" class="mt-3 rounded-xl border border-border bg-card px-5 py-10 text-center text-sm text-muted-foreground">
-                {{ cohorts.length || hasUnlinked ? 'Pilih Angkatan untuk melihat pendaftarnya.' : 'Belum ada angkatan maupun pendaftar.' }}
+            <div v-if="selectedCohortId === ''" class="mt-3 rounded-xl border border-border bg-card px-5 py-10 text-center">
+                <template v-if="cohorts.length || hasUnlinked">
+                    <p class="text-sm text-muted-foreground">Pilih Angkatan untuk melihat pendaftarnya.</p>
+                    <select v-model="selectedCohortId" :class="[selectClass, 'mt-3 w-64 max-w-full']" aria-label="Pilih Angkatan">
+                        <option value="">Pilih Angkatan…</option>
+                        <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
+                        <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
+                    </select>
+                </template>
+                <p v-else class="text-sm text-muted-foreground">Belum ada angkatan maupun pendaftar.</p>
             </div>
-            <div v-else class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                            <th class="px-4 py-3 font-semibold">Nama</th>
-                            <th class="px-4 py-3 font-semibold">Tanggal</th>
-                            <th class="px-4 py-3 font-semibold">Status</th>
-                            <th class="px-4 py-3"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-if="!filteredApplications.length"><td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar di angkatan ini.</td></tr>
-                        <tr
-                            v-for="app in filteredApplications"
-                            :key="app.id"
-                            class="border-b border-border transition-colors last:border-0"
-                            :class="app.person ? 'cursor-pointer hover:bg-accent/50' : ''"
-                            @click="goPerson(app)"
-                        >
-                            <td class="px-4 py-3">
-                                <template v-if="app.person">
-                                    <div class="font-medium text-foreground">{{ app.person.name }}</div>
-                                    <div class="text-xs text-muted-foreground">{{ app.person.phone }}<span v-if="app.person.email"> · {{ app.person.email }}</span></div>
-                                </template>
-                                <span v-else class="italic text-muted-foreground">Orang dihapus</span>
-                            </td>
-                            <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(app.created_at) }}</td>
-                            <td class="px-4 py-3">
-                                <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
-                            </td>
-                            <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <template v-if="app.status === 'pending' && auth.can('applications.review')">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        class="text-teal-700"
-                                        :disabled="reviewingId === app.id"
-                                        @click.stop="accept(app)"
-                                    >
-                                        <Check class="size-3.5" /> Terima
-                                    </Button>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        class="ml-1.5 text-destructive hover:text-destructive"
-                                        :disabled="reviewingId === app.id"
-                                        @click.stop="openReject(app)"
-                                    >
-                                        <X class="size-3.5" /> Tolak
-                                    </Button>
-                                </template>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+            <template v-else>
+                <select v-model="selectedCohortId" :class="[selectClass, 'mt-3 w-64 max-w-full']" aria-label="Pilih Angkatan">
+                    <option value="">Pilih Angkatan…</option>
+                    <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
+                    <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
+                </select>
+                <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                                <th class="px-4 py-3 font-semibold">Nama</th>
+                                <th class="px-4 py-3 font-semibold">Tanggal</th>
+                                <th class="px-4 py-3 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-if="!filteredApplications.length"><td colspan="3" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar di angkatan ini.</td></tr>
+                            <tr
+                                v-for="app in filteredApplications"
+                                :key="app.id"
+                                class="border-b border-border transition-colors last:border-0"
+                                :class="app.person ? 'cursor-pointer hover:bg-accent/50' : ''"
+                                @click="goPerson(app)"
+                            >
+                                <td class="px-4 py-3">
+                                    <template v-if="app.person">
+                                        <div class="font-medium text-foreground">{{ app.person.name }}</div>
+                                        <div class="text-xs text-muted-foreground">{{ app.person.phone }}<span v-if="app.person.email"> · {{ app.person.email }}</span></div>
+                                    </template>
+                                    <span v-else class="italic text-muted-foreground">Orang dihapus</span>
+                                </td>
+                                <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(app.created_at) }}</td>
+                                <td class="px-4 py-3">
+                                    <!-- Keputusan dua pilihan langsung di baris; menunggu = belum ada yang aktif. -->
+                                    <div v-if="auth.can('applications.review')" class="flex items-center gap-2" @click.stop>
+                                        <ToggleGroup
+                                            type="single"
+                                            variant="outline"
+                                            :model-value="app.status === 'pending' ? '' : app.status"
+                                            :disabled="reviewingId === app.id"
+                                            @update:model-value="(v) => decide(app, v)"
+                                        >
+                                            <ToggleGroupItem value="accepted" class="gap-1 text-teal-700 data-[state=on]:bg-teal-50 data-[state=on]:text-teal-700">
+                                                <Check class="size-3.5" /> Diterima
+                                            </ToggleGroupItem>
+                                            <ToggleGroupItem value="rejected" class="gap-1 text-destructive data-[state=on]:bg-red-50 data-[state=on]:text-destructive">
+                                                <X class="size-3.5" /> Ditolak
+                                            </ToggleGroupItem>
+                                        </ToggleGroup>
+                                        <span v-if="app.status === 'pending'" class="text-xs text-muted-foreground">menunggu</span>
+                                    </div>
+                                    <Badge v-else :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </template>
 
             <!-- Dialogs -->
             <ProgramFormDialog v-model:open="editOpen" :program="program" @saved="load" @thumbnail-changed="load" />
@@ -401,6 +415,9 @@ function fmtDate(iso) {
             <Dialog :open="rejectTarget !== null" title="Tolak Pendaftaran" @update:open="rejectTarget = null">
                 <p class="text-sm text-muted-foreground">
                     Tolak pendaftaran {{ rejectTarget?.person?.name ?? 'pendaftar ini' }}? Dia masih boleh mendaftar lagi di lain waktu.
+                </p>
+                <p v-if="rejectTarget?.enrollment" class="mt-2 text-sm text-muted-foreground">
+                    Penempatannya di {{ rejectTarget.enrollment.cohort_name }} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.
                 </p>
                 <div class="mt-3">
                     <label class="text-xs text-muted-foreground">Alasan (opsional)</label>
