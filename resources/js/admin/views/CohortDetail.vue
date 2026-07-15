@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, Pencil, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, Check, Trash2, UserMinus } from 'lucide-vue-next';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,10 @@ const auth = useAuthStore();
 const cohort = ref(null);
 const sessionList = ref([]);
 const roster = ref([]);
+
+// Mode peluncuran: satu angkatan = satu pertemuan. Sesi bawaan dibuat otomatis
+// oleh server; UI cukup menunjuk sesi pertama untuk seluruh pencatatan hadir.
+const mainSession = computed(() => sessionList.value[0] ?? null);
 const loading = ref(true);
 const error = ref('');
 
@@ -35,11 +39,6 @@ const dropTarget = ref(null);
 const dropNote = ref('');
 const dropError = ref('');
 
-// Sesi form + konfirmasi hapus (menghapus sesi ikut menghapus absensinya)
-const sessionForm = ref({ id: null, title: '', scheduled_at: '' });
-const sessionOpen = ref(false);
-const sessionError = ref('');
-const deleteSessionTarget = ref(null);
 
 async function load() {
     loading.value = true;
@@ -155,60 +154,12 @@ async function removeEnrollment(row) {
     }
 }
 
-function openSessionForm(session = null) {
-    sessionError.value = '';
-    sessionForm.value = session
-        ? { id: session.id, title: session.title, scheduled_at: session.scheduled_at?.slice(0, 10) ?? '' }
-        : { id: null, title: '', scheduled_at: '' };
-    sessionOpen.value = true;
-}
-
-async function saveSession() {
-    sessionError.value = '';
-    const payload = { title: sessionForm.value.title, scheduled_at: sessionForm.value.scheduled_at || null };
-    try {
-        if (sessionForm.value.id) {
-            await sessionsApi.update(sessionForm.value.id, payload);
-        } else {
-            await sessionsApi.create(cohort.value.id, { ...payload, position: sessionList.value.length + 1 });
-        }
-        sessionOpen.value = false;
-        await load();
-    } catch (e) {
-        if (!e.sessionExpired) sessionError.value = e.errors?.title?.[0] ?? e.message;
-    }
-}
-
-/** Dari dialog ubah sesi: tutup form, buka konfirmasi hapus untuk sesi itu. */
-function requestDeleteFromForm() {
-    const session = sessionList.value.find((s) => s.id === sessionForm.value.id);
-    sessionOpen.value = false;
-    deleteSessionTarget.value = session ?? null;
-}
-
-async function confirmRemoveSession() {
-    const session = deleteSessionTarget.value;
-    error.value = '';
-    try {
-        await sessionsApi.remove(session.id);
-        deleteSessionTarget.value = null;
-        await load();
-    } catch (e) {
-        if (!e.sessionExpired) error.value = e.message ?? 'Gagal menghapus sesi.';
-    }
-}
-
 function statusVariant(status) {
     return { accepted: 'success', dropped: 'destructive' }[status] ?? 'secondary';
 }
 
 function statusLabel(status) {
-    return { accepted: 'Aktif', dropped: 'Keluar' }[status] ?? (status ?? 'Belum ada status');
-}
-
-function shortDate(iso) {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
+    return { accepted: 'Aktif', dropped: 'Keluar', completed: 'Selesai' }[status] ?? (status ?? 'Belum ada status');
 }
 
 onMounted(load);
@@ -231,114 +182,88 @@ watch(() => props.id, () => load());
                     <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan / Kelas' }}</p>
                     <h1 class="mt-2 text-2xl font-bold text-foreground">{{ cohort.name }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
-                        {{ sessionList.length }} kelas · Mentor: {{ cohort.mentor?.name ?? '—' }}
+                        Mentor: {{ cohort.mentor?.name ?? '—' }} · {{ roster.length }} peserta
                     </p>
                 </div>
-                <div class="flex items-center gap-2">
-                    <Button v-if="auth.can('cohorts.manage')" variant="outline" size="sm" @click="openSessionForm()">Tambah Sesi</Button>
-                    <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
-                </div>
+                <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
             </div>
 
-            <!-- Matriks peserta x sesi: satu baris mengelola peserta DAN absensinya. -->
+            <!-- Daftar hadir: satu angkatan = satu pertemuan, satu tombol per peserta. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-sm">
-                        <thead>
-                            <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                                <th class="px-4 py-3 font-semibold">Peserta</th>
-                                <th v-for="(s, i) in sessionList" :key="s.id" class="px-2 py-2 text-center font-semibold">
-                                    <button
-                                        v-if="auth.can('cohorts.manage')"
-                                        type="button"
-                                        class="group mx-auto rounded-md px-2 py-1 transition hover:bg-accent"
-                                        :title="`${s.title} · klik untuk mengubah`"
-                                        @click="openSessionForm(s)"
-                                    >
-                                        <span class="flex items-center justify-center gap-1">
-                                            S{{ i + 1 }}
-                                            <Pencil class="size-3 opacity-0 transition group-hover:opacity-60" />
-                                        </span>
-                                        <span class="block text-[0.6rem] font-normal normal-case text-muted-foreground/80">{{ shortDate(s.scheduled_at) || '—' }}</span>
-                                    </button>
-                                    <span v-else :title="s.title">
-                                        S{{ i + 1 }}
-                                        <span class="block text-[0.6rem] font-normal normal-case text-muted-foreground/80">{{ shortDate(s.scheduled_at) || '—' }}</span>
-                                    </span>
-                                </th>
-                                <th class="px-3 py-3 text-center font-semibold">Kehadiran</th>
-                                <th class="px-3 py-3 font-semibold">Status</th>
-                                <th class="px-3 py-3"></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-if="!roster.length">
-                                <td :colspan="sessionList.length + 4" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
-                            </tr>
-                            <tr
-                                v-for="row in roster"
-                                :key="row.enrollment_id"
-                                class="border-b border-border last:border-0"
-                                :class="row.latest_status === 'dropped' ? 'opacity-50' : ''"
-                            >
-                                <td class="px-4 py-3">
-                                    <RouterLink :to="{ name: 'person', params: { id: row.person.id } }" class="font-medium text-foreground hover:underline">
-                                        {{ row.person.name }}
-                                    </RouterLink>
-                                    <div class="text-xs text-muted-foreground">{{ row.person.phone }}</div>
-                                </td>
-                                <td
-                                    v-for="s in sessionList"
-                                    :key="s.id"
-                                    class="px-2 py-2 text-center"
-                                    :class="canToggle(row) ? 'cursor-pointer hover:bg-accent/60' : ''"
-                                    :title="canToggle(row) ? `${row.person.name} · ${s.title}` : ''"
-                                    @click="toggleAttendance(row, s)"
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                            <th class="px-4 py-3 font-semibold">Peserta</th>
+                            <th class="px-3 py-3 text-center font-semibold">Kehadiran</th>
+                            <th class="px-3 py-3 font-semibold">Status</th>
+                            <th class="px-3 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="!roster.length">
+                            <td colspan="4" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
+                        </tr>
+                        <tr
+                            v-for="row in roster"
+                            :key="row.enrollment_id"
+                            class="border-b border-border last:border-0"
+                            :class="row.latest_status === 'dropped' ? 'opacity-50' : ''"
+                        >
+                            <td class="px-4 py-3">
+                                <RouterLink :to="{ name: 'person', params: { id: row.person.id } }" class="font-medium text-foreground hover:underline">
+                                    {{ row.person.name }}
+                                </RouterLink>
+                                <div class="text-xs text-muted-foreground">{{ row.person.phone }}</div>
+                            </td>
+                            <td class="px-3 py-3 text-center">
+                                <button
+                                    v-if="mainSession"
+                                    type="button"
+                                    :disabled="!canToggle(row)"
+                                    class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed"
+                                    :class="isHadir(row, mainSession)
+                                        ? 'border-teal-600 bg-teal-600 text-white'
+                                        : 'border-border text-muted-foreground hover:border-teal-600/50 hover:text-foreground'"
+                                    @click="toggleAttendance(row, mainSession)"
                                 >
-                                    <span
-                                        class="mx-auto flex size-5 items-center justify-center rounded-full transition"
-                                        :class="isHadir(row, s) ? 'bg-teal-600 text-white' : 'border-2 border-border'"
-                                    >
-                                        <Check v-if="isHadir(row, s)" class="size-3.5" />
-                                    </span>
-                                </td>
-                                <td class="px-3 py-3 text-center tabular-nums text-muted-foreground">{{ row.hadir }}/{{ sessionList.length }}</td>
-                                <td class="px-3 py-3">
-                                    <Badge :variant="statusVariant(row.latest_status)">{{ statusLabel(row.latest_status) }}</Badge>
-                                </td>
-                                <td class="px-3 py-3 text-right whitespace-nowrap">
-                                    <Button
-                                        v-if="auth.can('enrollments.manage') && row.latest_status !== 'dropped'"
-                                        variant="ghost"
-                                        size="icon"
-                                        class="h-8 w-8"
-                                        title="Keluarkan (catat alasan)"
-                                        aria-label="Keluarkan peserta"
-                                        @click="openDrop(row)"
-                                    >
-                                        <UserMinus class="size-4" />
-                                    </Button>
-                                    <Button
-                                        v-if="auth.can('enrollments.manage') && row.hadir === 0 && (row.latest_status === 'accepted' || !row.latest_status)"
-                                        variant="ghost"
-                                        size="icon"
-                                        class="h-8 w-8 text-destructive hover:text-destructive"
-                                        title="Hapus dari Angkatan / Kelas"
-                                        aria-label="Hapus enrollment"
-                                        @click="removeEnrollment(row)"
-                                    >
-                                        <Trash2 class="size-4" />
-                                    </Button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
+                                    <Check v-if="isHadir(row, mainSession)" class="size-3.5" />
+                                    {{ isHadir(row, mainSession) ? 'Hadir' : 'Tandai hadir' }}
+                                </button>
+                            </td>
+                            <td class="px-3 py-3">
+                                <Badge :variant="statusVariant(row.latest_status)">{{ statusLabel(row.latest_status) }}</Badge>
+                            </td>
+                            <td class="px-3 py-3 text-right whitespace-nowrap">
+                                <Button
+                                    v-if="auth.can('enrollments.manage') && row.latest_status !== 'dropped'"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8"
+                                    title="Keluarkan (catat alasan)"
+                                    aria-label="Keluarkan peserta"
+                                    @click="openDrop(row)"
+                                >
+                                    <UserMinus class="size-4" />
+                                </Button>
+                                <Button
+                                    v-if="auth.can('enrollments.manage') && row.hadir === 0 && (row.latest_status === 'accepted' || !row.latest_status)"
+                                    variant="ghost"
+                                    size="icon"
+                                    class="h-8 w-8 text-destructive hover:text-destructive"
+                                    title="Hapus dari Angkatan / Kelas"
+                                    aria-label="Hapus enrollment"
+                                    @click="removeEnrollment(row)"
+                                >
+                                    <Trash2 class="size-4" />
+                                </Button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <div class="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
-                    <span v-if="!sessionList.length">Belum ada sesi. Tambahkan sesi untuk mulai mencatat absensi.</span>
-                    <span v-else-if="auth.can('attendance.record')">Klik sel sesi untuk menandai hadir. Perubahan tersimpan otomatis.</span>
-                    <span v-else>Anda hanya dapat melihat absensi.</span>
+                    <span v-if="auth.can('attendance.record')">Ketuk tombol kehadiran untuk mencatat hadir. Tersimpan otomatis.</span>
+                    <span v-else>Anda hanya dapat melihat kehadiran.</span>
                     <span v-if="isSavingAttendance" class="font-medium text-teal-700">Menyimpan…</span>
                 </div>
             </div>
@@ -372,38 +297,5 @@ watch(() => props.id, () => load());
             </div>
         </Dialog>
 
-        <!-- Konfirmasi hapus sesi (destruktif: absensinya ikut terhapus) -->
-        <Dialog :open="deleteSessionTarget !== null" title="Hapus Sesi" @update:open="deleteSessionTarget = null">
-            <p class="text-sm text-muted-foreground">
-                Menghapus "{{ deleteSessionTarget?.title }}" ikut menghapus catatan absensinya dan menghitung ulang kelulusan peserta. Lanjutkan?
-            </p>
-            <div class="mt-4 flex justify-end gap-2">
-                <Button variant="outline" size="sm" @click="deleteSessionTarget = null">Batal</Button>
-                <Button variant="destructive" size="sm" @click="confirmRemoveSession">Hapus Sesi</Button>
-            </div>
-        </Dialog>
-
-        <!-- Sesi form -->
-        <Dialog v-model:open="sessionOpen" :title="sessionForm.id ? 'Ubah Sesi' : 'Tambah Sesi'">
-            <form class="space-y-3" @submit.prevent="saveSession">
-                <div>
-                    <Input v-model="sessionForm.title" placeholder="Judul sesi (mis. Sesi 1: Dasar Affiliate)" />
-                    <p v-if="sessionError" class="mt-1 text-xs text-destructive">{{ sessionError }}</p>
-                </div>
-                <div>
-                    <label class="text-xs text-muted-foreground">Tanggal (opsional)</label>
-                    <Input v-model="sessionForm.scheduled_at" type="date" class="mt-1" />
-                </div>
-                <div class="flex items-center justify-between gap-2 pt-2">
-                    <Button v-if="sessionForm.id" type="button" variant="ghost" size="sm" class="text-destructive hover:text-destructive" @click="requestDeleteFromForm">
-                        Hapus Sesi
-                    </Button>
-                    <div class="ml-auto flex gap-2">
-                        <Button type="button" variant="outline" size="sm" @click="sessionOpen = false">Batal</Button>
-                        <Button type="submit" size="sm">Simpan</Button>
-                    </div>
-                </div>
-            </form>
-        </Dialog>
     </div>
 </template>
