@@ -38,7 +38,7 @@ watch(
             {{ warning }}
         </p>
         <div class="mt-3">
-            <label class="text-xs text-muted-foreground">Alasan (opsional)</label>
+            <label class="text-xs text-muted-foreground">Alasan (opsional, tampil untuk pendaftar di akunnya)</label>
             <Textarea v-model="note" rows="3" placeholder="Contoh: belum sesuai kriteria angkatan ini." class="mt-1.5" />
         </div>
         <div class="mt-4 flex justify-end gap-2">

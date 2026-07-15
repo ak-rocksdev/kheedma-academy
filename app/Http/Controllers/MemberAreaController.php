@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\Program;
 use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
@@ -31,7 +32,12 @@ class MemberAreaController extends Controller
             return redirect('/admin');
         }
 
-        $person = $user->person()->with(['communityMembership', 'applications' => fn ($q) => $q->latest(), 'applications.program:id,name'])->first();
+        $person = $user->person()->with([
+            'communityMembership',
+            'applications' => fn ($q) => $q->latest(),
+            'applications.program:id,name',
+            'applications.cohort:id,name,start_date',
+        ])->first();
 
         $eligibility = app(ProgramEligibility::class);
         $affiliate = Program::query()
@@ -46,12 +52,72 @@ class MemberAreaController extends Controller
                 'message' => $program->locked_message ?? config('kheedma.default_locked_message'),
             ]);
 
+        // General classes currently open for registration: the member-area door
+        // into the same funnel form (which short-circuits to a confirm card for
+        // logged-in members). An active relation replaces the CTA with a chip.
+        $openClasses = Program::query()
+            ->openForRegistration()
+            ->where('type', 'general')
+            ->latest()
+            ->get()
+            ->map(function (Program $program) use ($person) {
+                $state = $person?->applicationStateFor($program) ?? 'none';
+
+                return [
+                    'program' => $program,
+                    'openCohort' => $program->openCohort(),
+                    'state' => $state,
+                    'chip' => $this->stateChip($state),
+                ];
+            });
+
         return view('member.akun', [
             'user' => $user,
             'person' => $person,
             'membership' => $person?->communityMembership,
-            'applications' => $person?->applications ?? collect(),
+            'applications' => ($person?->applications ?? collect())->map(fn ($a) => $this->applicationCard($a)),
             'affiliate' => $affiliate,
+            'openClasses' => $openClasses,
         ]);
+    }
+
+    /** Chip text for an open-class card; null = no active relation, show the CTA. */
+    private function stateChip(string $state): ?string
+    {
+        return match ($state) {
+            'pending' => 'Menunggu review',
+            'accepted' => 'Kamu diterima',
+            'enrolled' => 'Kamu peserta',
+            default => null,
+        };
+    }
+
+    /**
+     * Presentation of one application row on the status card (label + badge
+     * classes computed here, not in the Blade).
+     *
+     * @return array<string, mixed>
+     */
+    private function applicationCard(Application $application): array
+    {
+        return [
+            'program' => $application->program?->name ?? 'Program',
+            'cohort' => $application->cohort?->name,
+            'created_at' => $application->created_at,
+            'status' => $application->status,
+            'statusLabel' => match ($application->status) {
+                'pending' => 'Menunggu',
+                'accepted' => 'Diterima',
+                'rejected' => 'Belum lolos',
+                default => $application->status,
+            },
+            'statusClass' => match ($application->status) {
+                'pending' => 'bg-orange-100 text-orange-700',
+                'accepted' => 'bg-teal-100 text-teal-700',
+                'rejected' => 'bg-red-50 text-red-600',
+                default => 'bg-sand-100 text-teal-800/70',
+            },
+            'reviewNote' => $application->status === 'rejected' ? $application->review_note : null,
+        ];
     }
 }

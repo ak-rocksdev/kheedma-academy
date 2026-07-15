@@ -51,19 +51,61 @@
             @if ($applications->isNotEmpty())
                 <div class="mt-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Status Pendaftaran</h2>
-                    <ul class="mt-4 space-y-3 text-sm">
+                    <ul class="mt-4 space-y-4 text-sm">
                         @foreach ($applications as $application)
-                            <li class="flex items-center justify-between gap-4">
-                                <div>
-                                    <p class="font-medium text-teal-900">{{ $application->program?->name ?? 'Program' }}</p>
-                                    <p class="text-xs text-teal-800/60">Daftar {{ $application->created_at->locale('id')->translatedFormat('j F Y') }}</p>
+                            <li>
+                                <div class="flex items-center justify-between gap-4">
+                                    <div>
+                                        <p class="font-medium text-teal-900">
+                                            {{ $application['program'] }}@if ($application['cohort'])<span class="text-teal-800/60"> · {{ $application['cohort'] }}</span>@endif
+                                        </p>
+                                        <p class="text-xs text-teal-800/60">Daftar {{ $application['created_at']->locale('id')->translatedFormat('j F Y') }}</p>
+                                    </div>
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $application['statusClass'] }}">{{ $application['statusLabel'] }}</span>
                                 </div>
-                                @php($statusLabel = ['pending' => 'Menunggu', 'accepted' => 'Diterima', 'rejected' => 'Belum lolos'][$application->status] ?? $application->status)
-                                @php($statusClass = ['pending' => 'bg-orange-100 text-orange-700', 'accepted' => 'bg-teal-100 text-teal-700', 'rejected' => 'bg-red-50 text-red-600'][$application->status] ?? 'bg-sand-100 text-teal-800/70')
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClass }}">{{ $statusLabel }}</span>
+                                @if ($application['status'] === 'rejected')
+                                    <div class="mt-2 rounded-xl bg-sand-100/70 px-4 py-3 text-xs leading-relaxed text-teal-800/80">
+                                        @if ($application['reviewNote'])
+                                            <p><span class="font-semibold">Catatan dari tim:</span> {{ $application['reviewNote'] }}</p>
+                                        @endif
+                                        <p @class(['mt-1' => $application['reviewNote']])>Jangan berkecil hati, kamu boleh mendaftar lagi kapan saja.</p>
+                                    </div>
+                                @endif
                             </li>
                         @endforeach
                     </ul>
+                </div>
+            @endif
+
+            @if ($openClasses->isNotEmpty())
+                <div class="mt-10">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Dibuka</h2>
+                    <div class="mt-4 space-y-3">
+                        @foreach ($openClasses as $entry)
+                            <div class="flex items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white px-5 py-4">
+                                <div>
+                                    <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
+                                    <p class="text-xs text-teal-800/60">
+                                        @if ($entry['openCohort']?->start_date)
+                                            Kelas dimulai {{ $entry['openCohort']->start_date->locale('id')->translatedFormat('j F Y') }}
+                                        @else
+                                            Pendaftaran sedang dibuka
+                                        @endif
+                                    </p>
+                                </div>
+                                @if ($entry['chip'])
+                                    <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $entry['state'] === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700' }}">
+                                        {{ $entry['chip'] }}
+                                    </span>
+                                @else
+                                    <a href="{{ route('program.apply', $entry['program']) }}"
+                                       class="shrink-0 rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">
+                                        Daftar
+                                    </a>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 </div>
             @endif
 
