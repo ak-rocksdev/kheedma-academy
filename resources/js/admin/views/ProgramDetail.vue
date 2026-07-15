@@ -230,7 +230,22 @@ function goPerson(app) {
                         </tr>
                     </thead>
                     <tbody>
-                        <tr v-if="!cohorts.length"><td colspan="7" class="px-4 py-8 text-center text-muted-foreground">Belum ada angkatan. Buka kelas pertama dengan tombol Tambah Angkatan.</td></tr>
+                        <tr v-if="!cohorts.length">
+                            <td colspan="7" class="px-4 py-10 text-center">
+                                <p class="text-sm text-muted-foreground">
+                                    Belum ada angkatan. Program belum bisa menerima pendaftar sampai angkatan pertama dibuka.
+                                </p>
+                                <Button
+                                    v-if="auth.can('cohorts.manage')"
+                                    variant="accent"
+                                    size="sm"
+                                    class="mt-4"
+                                    @click="openCohortCreate"
+                                >
+                                    Tambah Angkatan Pertama
+                                </Button>
+                            </td>
+                        </tr>
                         <tr
                             v-for="cohort in cohorts"
                             :key="cohort.id"
@@ -287,7 +302,7 @@ function goPerson(app) {
                         <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
                     </NativeSelect>
                 </template>
-                <p v-else class="text-sm text-muted-foreground">Belum ada angkatan maupun pendaftar.</p>
+                <p v-else class="text-sm text-muted-foreground">Belum ada pendaftar. Buka angkatan dulu agar kelas ini bisa didaftari.</p>
             </div>
             <template v-else>
                 <NativeSelect v-model="selectedCohortId" class="mt-3 w-64 max-w-full" aria-label="Pilih Angkatan">

@@ -97,6 +97,19 @@ class PublicApplyTest extends TestCase
         $this->assertSame('pending', $application->status);
     }
 
+    public function test_program_without_any_cohort_cannot_receive_registrations(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->get("/program/{$program->slug}/daftar")
+            ->assertRedirect("/program/{$program->slug}");
+
+        $this->post("/program/{$program->slug}/daftar", $this->validPayload())
+            ->assertRedirect("/program/{$program->slug}");
+
+        $this->assertSame(0, Application::count());
+    }
+
     public function test_submission_attaches_nearest_starting_open_cohort(): void
     {
         $program = Program::factory()->active()->create();
