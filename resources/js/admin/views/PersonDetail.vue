@@ -2,15 +2,18 @@
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
-import { api, people as peopleApi, cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
+import { api, applications as applicationsApi, people as peopleApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
-import { APPLICATION_STATUSES, statusVariant, statusLabel } from '@/lib/status';
+import { statusVariant, statusLabel } from '@/lib/status';
+import { fmtDate } from '@/lib/format';
+import ApplicationDecisionToggle from '@/components/ApplicationDecisionToggle.vue';
+import EnrollToCohortDialog from '@/components/EnrollToCohortDialog.vue';
+import RejectApplicationDialog from '@/components/RejectApplicationDialog.vue';
 
 const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
 const GENDER_LABELS = { male: 'Laki-laki', female: 'Perempuan' };
@@ -31,8 +34,9 @@ function toggleClasses(enrollmentId) {
     expandedClasses.value = next;
 }
 const error = ref('');
-const savingId = ref(null);
+const reviewingId = ref(null);
 const saveError = ref('');
+const reviewSuccess = ref('');
 
 async function load() {
     loading.value = true;
@@ -53,53 +57,77 @@ onMounted(load);
 // Re-fetch when navigating between two person URLs (component instance is reused).
 watch(() => props.id, () => load());
 
-async function save(app) {
-    savingId.value = app.id;
+/** Enrollment milik lamaran ini (untuk peringatan absensi saat menolak). */
+function enrollmentFor(app) {
+    if (!app?.cohort_id) return null;
+    return (person.value?.enrollments ?? []).find((e) => e.cohort_id === app.cohort_id) ?? null;
+}
+
+function decide(app, value) {
+    value === 'accepted' ? accept(app) : (rejectTarget.value = app);
+}
+
+async function accept(app) {
+    reviewingId.value = app.id;
     saveError.value = '';
+    reviewSuccess.value = '';
     try {
-        await api(`/admin/applications/${app.id}`, {
-            method: 'PATCH',
-            body: { status: app.status },
-        });
-        // The in-place v-model values already reflect the saved state, so no full
-        // reload is needed (avoids the spinner blink / scroll jump).
-        if (app.status === 'accepted') await offerEnroll(app);
+        const res = await applicationsApi.review(app.id, 'accepted');
+        reviewSuccess.value = res.application.enrollment
+            ? `Pendaftaran diterima; ditempatkan di ${res.application.enrollment.cohort_name}.`
+            : 'Pendaftaran diterima.';
+        if (app.cohort_id) {
+            await load();
+        } else {
+            offerEnroll(app); // legacy tanpa angkatan / kelas: tawarkan penempatan manual
+        }
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         saveError.value = e.message ?? 'Gagal menyimpan.';
-        await load(); // reset selects to the server's truth
     } finally {
-        savingId.value = null;
+        reviewingId.value = null;
     }
 }
 
-// --- Masukkan ke Angkatan (offered right after an application is accepted) --
+const rejectTarget = ref(null); // application yang akan ditolak (dialog konfirmasi)
 
-const enrollFor = ref(null); // application yang baru diterima
-const enrollCohorts = ref([]);
-const enrollError = ref('');
-
-async function offerEnroll(app) {
-    enrollFor.value = app;
-    enrollError.value = '';
-    try {
-        const res = await cohortsApi.list();
-        const enrolledCohortIds = new Set((person.value?.enrollments ?? []).map((en) => en.cohort_id));
-        enrollCohorts.value = res.data.filter((c) => c.program?.id === app.program_id && !enrolledCohortIds.has(c.id));
-    } catch (e) {
-        if (!e.sessionExpired) enrollError.value = e.message;
+/** Peringatan absensi/penempatan untuk dialog tolak. */
+function rejectWarning(app) {
+    const enrollment = enrollmentFor(app);
+    if (!enrollment) return '';
+    if (enrollment.hadir > 0) {
+        return `Dia sudah tercatat hadir ${enrollment.hadir} kali di ${enrollment.cohort}. Penempatan dan riwayat kehadirannya tidak ikut terhapus.`;
     }
+    return `Penempatannya di ${enrollment.cohort} tidak ikut terhapus; kelola dari halaman Angkatan / Kelas bila perlu.`;
 }
 
-async function enrollInto(cohort) {
-    enrollError.value = '';
+async function confirmReject(note) {
+    const app = rejectTarget.value;
+    saveError.value = '';
+    reviewSuccess.value = '';
     try {
-        await enrollmentsApi.create({ cohort_id: cohort.id, application_id: enrollFor.value.id });
-        enrollFor.value = null;
+        await applicationsApi.review(app.id, 'rejected', { review_note: note });
+        rejectTarget.value = null;
+        reviewSuccess.value = 'Pendaftaran ditolak.';
         await load();
     } catch (e) {
-        if (!e.sessionExpired) enrollError.value = e.errors ? Object.values(e.errors)[0][0] : e.message;
+        if (e.sessionExpired) return; // the global re-login dialog takes over
+        rejectTarget.value = null;
+        saveError.value = e.message ?? 'Gagal menyimpan.';
     }
+}
+
+// --- Masukkan ke Angkatan (fallback untuk lamaran legacy tanpa angkatan) ----
+
+const enrollFor = ref(null); // application yang baru diterima
+
+function offerEnroll(app) {
+    enrollFor.value = app;
+}
+
+async function onEnrollClosed() {
+    enrollFor.value = null;
+    await load();
 }
 
 // --- Akun (participant account) actions -------------------------------------
@@ -153,11 +181,6 @@ async function submitReset() {
         accountBusy.value = false;
     }
 }
-
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 </script>
 
 <template>
@@ -205,9 +228,7 @@ function fmtDate(iso) {
 
             <!-- Account -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Akun</h2>
-            <div v-if="accountError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                {{ accountError }}
-            </div>
+            <Alert v-if="accountError" class="mt-3">{{ accountError }}</Alert>
             <div class="mt-3 rounded-xl border border-border bg-card p-5">
                 <div v-if="!person.account" class="text-sm text-muted-foreground">
                     Belum memiliki akun login. Akun dibuat saat orang ini bergabung komunitas atau mendaftar program.
@@ -233,58 +254,60 @@ function fmtDate(iso) {
 
             <!-- Applications (cross-attempt history) -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Riwayat Pendaftaran</h2>
-            <div v-if="saveError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                {{ saveError }}
-            </div>
-            <div class="mt-3 space-y-3">
-                <div v-if="!person.applications.length" class="rounded-xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-                    Belum pernah mendaftar program.
-                </div>
-                <div v-for="app in person.applications" :key="app.id" class="rounded-xl border border-border bg-card p-5">
-                    <div class="flex items-center justify-between gap-3">
-                        <div class="min-w-0 text-sm">
-                            <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
-                            <span class="text-muted-foreground"> · Daftar {{ fmtDate(app.created_at) }}</span>
-                        </div>
-                        <div class="flex shrink-0 items-center gap-2">
-                            <Badge v-if="person.applications.length > 1" variant="secondary">Pendaftaran ke-{{ app.attempt }}</Badge>
-                            <Badge :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
-                        </div>
-                    </div>
-                    <p v-if="app.motivation" class="mt-2 text-sm italic text-muted-foreground">"{{ app.motivation }}"</p>
-                    <div class="mt-4 flex flex-wrap items-end gap-3">
-                        <div class="text-sm">
-                            <span class="text-muted-foreground">Keputusan</span>
-                            <ToggleGroup
-                                type="single"
-                                variant="outline"
-                                class="mt-1.5"
-                                :model-value="app.status"
-                                @update:model-value="(v) => { if (v) app.status = v; }"
-                            >
-                                <ToggleGroupItem v-for="s in APPLICATION_STATUSES" :key="s.value" :value="s.value">
-                                    {{ s.label }}
-                                </ToggleGroupItem>
-                            </ToggleGroup>
-                        </div>
-                        <Button size="sm" :disabled="savingId === app.id" @click="save(app)">
-                            {{ savingId === app.id ? 'Menyimpan…' : 'Simpan' }}
-                        </Button>
-                    </div>
-                </div>
+            <Alert v-if="saveError" class="mt-3">{{ saveError }}</Alert>
+            <Alert v-if="reviewSuccess" variant="success" class="mt-3">{{ reviewSuccess }}</Alert>
+            <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
+                            <th class="px-4 py-3 font-semibold">Program</th>
+                            <th class="px-4 py-3 font-semibold">Angkatan / Kelas</th>
+                            <th class="px-4 py-3 font-semibold">Tanggal</th>
+                            <th class="px-4 py-3 font-semibold">Keputusan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-if="!person.applications.length">
+                            <td colspan="4" class="px-4 py-8 text-center text-muted-foreground">Belum pernah mendaftar program.</td>
+                        </tr>
+                        <tr v-for="app in person.applications" :key="app.id" class="border-b border-border align-middle last:border-0">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-medium text-foreground">{{ app.program ?? 'Program tidak diketahui' }}</span>
+                                    <Badge v-if="person.applications.length > 1" variant="secondary">ke-{{ app.attempt }}</Badge>
+                                </div>
+                                <p v-if="app.motivation" class="mt-1 max-w-md text-xs italic text-muted-foreground">"{{ app.motivation }}"</p>
+                                <p v-if="app.status === 'rejected' && app.review_note" class="mt-1 max-w-md text-xs text-muted-foreground">
+                                    Catatan penolakan: {{ app.review_note }}
+                                </p>
+                            </td>
+                            <td class="px-4 py-3 text-muted-foreground">{{ app.cohort ?? '—' }}</td>
+                            <td class="px-4 py-3 whitespace-nowrap text-muted-foreground">{{ fmtDate(app.created_at) }}</td>
+                            <td class="px-4 py-3">
+                                <ApplicationDecisionToggle
+                                    v-if="auth.can('applications.review')"
+                                    :status="app.status"
+                                    :disabled="reviewingId === app.id"
+                                    @decide="(v) => decide(app, v)"
+                                />
+                                <Badge v-else :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
 
             <!-- Enrollments -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
-                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
+                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan / kelas.</div>
                 <div v-for="e in person.enrollments" :key="e.id" class="border-b border-border last:border-0">
                     <button
                         type="button"
                         class="flex w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition hover:bg-accent/50"
                         @click="toggleClasses(e.id)"
                     >
-                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
+                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan / Kelas dihapus' }}</span>
                         <span class="flex items-center gap-2 text-muted-foreground">
                             Hadir {{ e.hadir }} dari {{ e.classes.length }} kelas
                             <span v-if="e.latest_status === 'dropped'" class="text-destructive">· keluar</span>
@@ -293,7 +316,7 @@ function fmtDate(iso) {
                     </button>
                     <!-- Rincian per-kelas: pernah diikuti atau tidak. -->
                     <div v-if="expandedClasses.has(e.id)" class="border-t border-border/60 bg-accent/20 px-5 py-2">
-                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan ini belum punya kelas.</p>
+                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan / Kelas ini belum punya kelas.</p>
                         <div
                             v-for="c in e.classes"
                             :key="c.id"
@@ -317,21 +340,23 @@ function fmtDate(iso) {
                 </div>
             </div>
 
-            <!-- Enroll dialog (offered right after an application is accepted) -->
-            <Dialog :open="enrollFor !== null" title="Masukkan ke Angkatan" @update:open="enrollFor = null">
-                <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih Angkatan untuk mendaftarkannya sekarang, atau tutup untuk melakukannya nanti dari halaman Angkatan.</p>
-                <div v-if="enrollError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ enrollError }}</div>
-                <p v-if="!enrollCohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada Angkatan untuk program ini.</p>
-                <div v-else class="mt-3 space-y-2">
-                    <div v-for="c in enrollCohorts" :key="c.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
-                        <div>
-                            <p class="font-medium text-foreground">{{ c.name }}</p>
-                            <p class="text-xs text-muted-foreground">{{ c.enrollments_count }} peserta</p>
-                        </div>
-                        <Button size="sm" variant="outline" @click="enrollInto(c)">Masukkan</Button>
-                    </div>
-                </div>
-            </Dialog>
+            <!-- Enroll dialog (fallback penempatan untuk lamaran legacy tanpa angkatan) -->
+            <EnrollToCohortDialog
+                :application="enrollFor"
+                :exclude-cohort-ids="(person?.enrollments ?? []).map((en) => en.cohort_id)"
+                @close="onEnrollClosed"
+                @enrolled="onEnrollClosed"
+            />
+
+            <!-- Konfirmasi tolak pendaftaran (alasan opsional; peringatan bila sudah ditempatkan/hadir) -->
+            <RejectApplicationDialog
+                :target="rejectTarget"
+                :person-name="person.name"
+                :warning="rejectTarget ? rejectWarning(rejectTarget) : ''"
+                :warning-muted="!(rejectTarget && enrollmentFor(rejectTarget)?.hadir > 0)"
+                @close="rejectTarget = null"
+                @confirm="confirmReject"
+            />
 
             <!-- Reset password dialog (generated password is shown once) -->
             <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">

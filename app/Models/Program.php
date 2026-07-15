@@ -59,11 +59,16 @@ class Program extends Model
             ->whereHas('cohorts', fn (Builder $q) => $q->openForRegistration());
     }
 
-    /** The Angkatan currently accepting registrations (soonest-closing first). */
+    /**
+     * The Angkatan currently accepting registrations. When several are open at
+     * once, the nearest class start wins (decision 2026-07-12); ties fall back
+     * to the soonest-closing window.
+     */
     public function openCohort(): ?Cohort
     {
         return $this->cohorts()
             ->openForRegistration()
+            ->orderByRaw('start_date IS NULL, start_date ASC')
             ->orderByRaw('registration_closes_at IS NULL, registration_closes_at ASC')
             ->first();
     }

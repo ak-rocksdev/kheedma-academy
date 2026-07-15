@@ -79,6 +79,24 @@ class PrecognitionValidationTest extends TestCase
         ];
     }
 
+    public function test_live_validation_does_not_eat_the_submit_rate_limit(): void
+    {
+        $program = $this->openProgram();
+
+        // A visitor filling the long form fires one live validation per field;
+        // that burned the old shared throttle:10 budget before the real submit.
+        foreach (range(1, 15) as $i) {
+            $this->withPrecognition()
+                ->withHeaders(['Precognition-Validate-Only' => 'name', 'Accept' => 'application/json'])
+                ->post("/program/{$program->slug}/daftar", $this->applyPayload())
+                ->assertSuccessful();
+        }
+
+        $this->flushHeaders()
+            ->post("/program/{$program->slug}/daftar", $this->applyPayload())
+            ->assertRedirect(route('daftar.thankyou'));
+    }
+
     public function test_precognitive_community_join_validating_invalid_email_returns_422_without_persisting(): void
     {
         $this->withPrecognition()

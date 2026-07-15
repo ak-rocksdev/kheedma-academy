@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
+import { Alert } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
@@ -109,7 +111,7 @@ async function openAdd() {
         // Accepted applications of this cohort's program, not yet enrolled here.
         const res = await api(`/admin/applications?status=accepted&program=${cohort.value.program.id}&per_page=200`);
         const enrolledPersonIds = new Set(roster.value.map((r) => r.person.id));
-        candidates.value = res.data.filter((a) => !enrolledPersonIds.has(a.person.id));
+        candidates.value = res.data.filter((a) => a.person && !enrolledPersonIds.has(a.person.id));
     } catch (e) {
         if (!e.sessionExpired) addError.value = e.message ?? 'Gagal memuat pelamar.';
     }
@@ -204,11 +206,6 @@ function statusLabel(status) {
     return { accepted: 'Aktif', dropped: 'Keluar' }[status] ?? (status ?? 'Belum ada status');
 }
 
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 function shortDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
@@ -222,16 +219,16 @@ watch(() => props.id, () => load());
 <template>
     <div>
         <RouterLink :to="{ name: 'cohorts' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft class="size-4" /> Semua Angkatan
+            <ArrowLeft class="size-4" /> Semua Angkatan / Kelas
         </RouterLink>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">{{ error }}</div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
         <div v-if="loading" class="mt-10 text-center text-muted-foreground">Memuat…</div>
 
         <template v-else-if="cohort">
             <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan' }}</p>
+                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan / Kelas' }}</p>
                     <h1 class="mt-2 text-2xl font-bold text-foreground">{{ cohort.name }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
                         {{ sessionList.length }} kelas · Mentor: {{ cohort.mentor?.name ?? '—' }}
@@ -326,7 +323,7 @@ watch(() => props.id, () => load());
                                         variant="ghost"
                                         size="icon"
                                         class="h-8 w-8 text-destructive hover:text-destructive"
-                                        title="Hapus dari Angkatan"
+                                        title="Hapus dari Angkatan / Kelas"
                                         aria-label="Hapus enrollment"
                                         @click="removeEnrollment(row)"
                                     >
@@ -349,8 +346,8 @@ watch(() => props.id, () => load());
 
         <!-- Tambah peserta -->
         <Dialog v-model:open="addOpen" title="Tambah Peserta">
-            <div v-if="addError" class="mb-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ addError }}</div>
-            <p v-if="!candidates.length" class="text-sm text-muted-foreground">Tidak ada pelamar diterima yang belum terdaftar di Angkatan ini.</p>
+            <Alert v-if="addError" class="mb-3 px-3.5 py-2.5">{{ addError }}</Alert>
+            <p v-if="!candidates.length" class="text-sm text-muted-foreground">Tidak ada pelamar diterima yang belum terdaftar di Angkatan / Kelas ini.</p>
             <div v-else class="max-h-72 space-y-2 overflow-y-auto">
                 <div v-for="app in candidates" :key="app.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
                     <div>
@@ -367,13 +364,8 @@ watch(() => props.id, () => load());
             <p class="text-sm text-muted-foreground">
                 Catat alasan {{ dropTarget?.person.name }} keluar. Riwayatnya tetap tersimpan untuk analisis.
             </p>
-            <div v-if="dropError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ dropError }}</div>
-            <textarea
-                v-model="dropNote"
-                rows="3"
-                placeholder="Alasan keluar (wajib)"
-                class="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            ></textarea>
+            <Alert v-if="dropError" class="mt-3 px-3.5 py-2.5">{{ dropError }}</Alert>
+            <Textarea v-model="dropNote" rows="3" placeholder="Alasan keluar (wajib)" class="mt-3" />
             <div class="mt-4 flex justify-end gap-2">
                 <Button variant="outline" size="sm" @click="dropTarget = null">Batal</Button>
                 <Button variant="destructive" size="sm" :disabled="!dropNote" @click="confirmDrop">Keluarkan</Button>

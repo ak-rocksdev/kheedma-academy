@@ -1,18 +1,36 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
-import { api } from '@/api';
+import { ref, computed, onMounted } from 'vue';
+import { RouterLink, useRouter } from 'vue-router';
+import { ChevronRight, Check } from 'lucide-vue-next';
+import { api, applications as applicationsApi } from '@/api';
 import { useAuthStore } from '@/stores/auth';
+import { fmtDate } from '@/lib/format';
+import StatTile from '@/components/StatTile.vue';
 
 const auth = useAuthStore();
-const stats = ref(null);
+const router = useRouter();
 
-const TILES = [
-    { key: 'pending_applications', label: 'Pelamar menunggu', to: { name: 'people', query: { segment: 'needs-review' } } },
-    { key: 'community_members', label: 'Member komunitas' },
-    { key: 'active_cohorts', label: 'Angkatan berjalan' },
-    { key: 'active_participants', label: 'Peserta aktif' },
-    { key: 'attended_participants', label: 'Pernah hadir' },
+const stats = ref(null);
+const pending = ref([]);
+const pendingLoaded = ref(false);
+
+const todayLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+// Satu kalimat yang menjawab "ada kerjaan apa hari ini?"
+const summary = computed(() => {
+    if (!stats.value) return '';
+    const waiting = stats.value.pending_applications;
+
+    return waiting > 0
+        ? `${waiting} pendaftaran menunggu keputusanmu.`
+        : 'Tidak ada antrean review hari ini.';
+});
+
+// Tahapan perjalanan peserta: urutan strip ini adalah urutan funnel sungguhan.
+const JOURNEY = [
+    { key: 'pending_applications', label: 'Menunggu review', hot: true, to: { name: 'people', query: { segment: 'needs-review' } } },
+    { key: 'active_participants', label: 'Peserta aktif', to: { name: 'people', query: { segment: 'participants' } } },
+    { key: 'attended_participants', label: 'Pernah hadir', to: { name: 'people', query: { segment: 'participants' } } },
 ];
 
 onMounted(async () => {
@@ -20,45 +38,131 @@ onMounted(async () => {
         const res = await api('/admin/stats');
         stats.value = res.stats;
     } catch {
-        stats.value = null; // tiles simply don't render; entity cards remain
+        stats.value = null; // strip funnel tidak dirender; antrean tetap tampil
+    }
+
+    try {
+        const res = await applicationsApi.list('?status=pending&per_page=5');
+        pending.value = res.data;
+    } catch {
+        pending.value = [];
+    } finally {
+        pendingLoaded.value = true;
     }
 });
 
-// The data foundation the admin tool is built on.
-const entities = [
-    { name: 'Person', desc: 'Satu record per manusia, anchor nomor HP.' },
-    { name: 'Application', desc: 'Submission formulir pendaftaran program.' },
-    { name: 'Angkatan', desc: 'Kelas nyata: nama, tanggal, sesi, satu mentor.' },
-    { name: 'Enrollment', desc: 'Tautan Person ke Angkatan saat diterima.' },
-    { name: 'Absensi', desc: 'Kehadiran per sesi; dasar kelulusan otomatis.' },
-    { name: 'Status Event', desc: 'Log append-only transisi status.' },
-];
+function goPerson(application) {
+    if (!application.person) return;
+    router.push({ name: 'person', params: { id: application.person.id } });
+}
 </script>
 
 <template>
     <div>
-        <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Dashboard</p>
-        <h1 class="mt-2 text-3xl font-bold text-foreground">Selamat datang, {{ auth.user?.name }}.</h1>
+        <!-- Sapaan + ringkasan hari ini -->
+        <header class="rise">
+            <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Dashboard</p>
+            <h1 class="mt-2 text-2xl font-bold text-foreground sm:text-3xl">Selamat datang, {{ auth.user?.name }}.</h1>
+            <p class="mt-1.5 text-sm text-muted-foreground">
+                {{ todayLabel }}<template v-if="summary"> · <span :class="stats?.pending_applications ? 'font-medium text-orange-600' : ''">{{ summary }}</span></template>
+            </p>
+        </header>
 
-        <div v-if="stats" class="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <component
-                :is="tile.to ? RouterLink : 'div'"
-                v-for="tile in TILES"
-                :key="tile.key"
-                :to="tile.to"
-                class="block rounded-xl border border-border bg-card p-5"
-                :class="tile.to ? 'transition hover:border-primary/40 hover:shadow-sm' : ''"
-            >
-                <p class="text-3xl font-bold tabular-nums text-foreground">{{ stats[tile.key] }}</p>
-                <p class="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{{ tile.label }}</p>
-            </component>
-        </div>
+        <div class="mt-6 gap-6 sm:mt-8 lg:grid lg:grid-cols-5">
+            <!-- Antrean kerja: alasan halaman ini dibuka -->
+            <section class="rise lg:col-span-3" style="--rise-delay: 60ms">
+                <div class="flex items-end justify-between gap-4">
+                    <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Perlu Tindakan</h2>
+                    <RouterLink
+                        v-if="pending.length"
+                        :to="{ name: 'people', query: { segment: 'needs-review' } }"
+                        class="text-sm font-medium text-teal-700 hover:underline"
+                    >
+                        Lihat semua
+                    </RouterLink>
+                </div>
+                <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
+                    <p v-if="!pendingLoaded" class="px-5 py-10 text-center text-sm text-muted-foreground">Memuat…</p>
+                    <div v-else-if="!pending.length" class="flex flex-col items-center gap-2 px-5 py-10 text-center">
+                        <span class="flex size-9 items-center justify-center rounded-full bg-teal-700/10">
+                            <Check class="size-4 text-teal-700" />
+                        </span>
+                        <p class="text-sm text-muted-foreground">Antrean bersih. Semua pendaftaran sudah ditinjau.</p>
+                    </div>
+                    <ul v-else class="divide-y divide-border">
+                        <li
+                            v-for="application in pending"
+                            :key="application.id"
+                            class="flex cursor-pointer items-center justify-between gap-3 px-4 py-3.5 transition-colors hover:bg-accent/50 sm:px-5"
+                            @click="goPerson(application)"
+                        >
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-medium text-foreground">{{ application.person?.name ?? 'Orang dihapus' }}</p>
+                                <p class="truncate text-xs text-muted-foreground">
+                                    {{ application.program ?? 'Program' }}<span v-if="application.cohort"> · {{ application.cohort.name }}</span>
+                                    · {{ fmtDate(application.created_at) }}
+                                </p>
+                            </div>
+                            <ChevronRight class="size-4 shrink-0 text-muted-foreground" />
+                        </li>
+                    </ul>
+                </div>
+            </section>
 
-        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            <div v-for="entity in entities" :key="entity.name" class="rounded-xl border border-border bg-card p-5 transition hover:border-primary/30 hover:shadow-sm">
-                <h2 class="font-display text-sm font-bold uppercase tracking-wide text-primary">{{ entity.name }}</h2>
-                <p class="mt-2 text-sm leading-relaxed text-muted-foreground">{{ entity.desc }}</p>
+            <!-- Denyut funnel + kondisi -->
+            <div class="mt-8 space-y-6 lg:col-span-2 lg:mt-0">
+                <!-- Strip perjalanan: tiga angka ini adalah tahapan satu perjalanan -->
+                <section v-if="stats" class="rise" style="--rise-delay: 120ms">
+                    <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Perjalanan Peserta</h2>
+                    <div class="mt-3 flex items-center rounded-xl border border-border bg-card px-2 py-5">
+                        <template v-for="(stage, index) in JOURNEY" :key="stage.key">
+                            <div v-if="index > 0" class="flex shrink-0 items-center" aria-hidden="true">
+                                <span class="h-px w-3 bg-border sm:w-5"></span>
+                                <ChevronRight class="-ml-1 size-3.5 text-muted-foreground/50" />
+                            </div>
+                            <RouterLink :to="stage.to" class="group min-w-0 flex-1 text-center">
+                                <p
+                                    class="text-2xl font-bold tabular-nums"
+                                    :class="stage.hot && stats[stage.key] ? 'text-orange-600' : 'text-foreground'"
+                                >
+                                    {{ stats[stage.key] }}
+                                </p>
+                                <p class="mt-1 text-[0.65rem] uppercase tracking-wide text-muted-foreground group-hover:text-foreground">
+                                    {{ stage.label }}
+                                </p>
+                            </RouterLink>
+                        </template>
+                    </div>
+                </section>
+
+                <!-- Kondisi di luar funnel -->
+                <section v-if="stats" class="rise" style="--rise-delay: 180ms">
+                    <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Kondisi</h2>
+                    <div class="mt-3 grid grid-cols-2 gap-3">
+                        <StatTile :value="stats.active_cohorts" label="Kelas berjalan" :to="{ name: 'cohorts' }" />
+                        <StatTile :value="stats.community_members" label="Member komunitas" :to="{ name: 'community' }" />
+                    </div>
+                </section>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+/* Orkestrasi masuk satu arah: tiap seksi naik berurutan, sekali saja. */
+@media (prefers-reduced-motion: no-preference) {
+    .rise {
+        opacity: 0;
+        transform: translateY(10px);
+        animation: rise 0.45s ease-out forwards;
+        animation-delay: var(--rise-delay, 0ms);
+    }
+
+    @keyframes rise {
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
+</style>

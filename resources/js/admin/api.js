@@ -129,6 +129,9 @@ export const programs = {
     list() {
         return api('/admin/programs');
     },
+    detail(id) {
+        return api(`/admin/programs/${id}`);
+    },
     create(payload) {
         return api('/admin/programs', { method: 'POST', body: payload });
     },
@@ -145,6 +148,15 @@ export const programs = {
     },
     removeThumbnail(id) {
         return api(`/admin/programs/${id}/thumbnail`, { method: 'DELETE' });
+    },
+};
+
+export const applications = {
+    list(query = '') {
+        return api(`/admin/applications${query}`);
+    },
+    review(id, status, extra = {}) {
+        return api(`/admin/applications/${id}`, { method: 'PATCH', body: { status, ...extra } });
     },
 };
 

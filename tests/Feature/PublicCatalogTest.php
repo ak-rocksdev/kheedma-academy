@@ -88,6 +88,18 @@ class PublicCatalogTest extends TestCase
             ->assertSee('1 Agustus 2026');
     }
 
+    public function test_landing_shows_nearest_start_when_two_cohorts_are_open(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => '2026-09-01']);
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => '2026-08-01']);
+
+        $this->get("/program/{$program->slug}")
+            ->assertOk()
+            ->assertSee('1 Agustus 2026')
+            ->assertDontSee('1 September 2026');
+    }
+
     public function test_chooser_shows_affiliate_section_with_locked_teaser(): void
     {
         Program::factory()->affiliate(1)->active()->create(['name' => 'Affiliate Kelas Satu']);
@@ -149,7 +161,7 @@ class PublicCatalogTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Program untuk Anda')
             ->assertSee('Affiliate Kelas Satu')

@@ -1,9 +1,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { communityMembers as communityApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { fmtDate } from '@/lib/format';
 
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
@@ -45,11 +47,6 @@ watch(q, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => fetchPage(1), 300);
 });
-
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 </script>
 
 <template>
@@ -66,9 +63,7 @@ function fmtDate(iso) {
             <Input v-model="q" placeholder="Cari nama, HP, atau email…" class="sm:max-w-xs" />
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
             <table class="w-full text-sm">

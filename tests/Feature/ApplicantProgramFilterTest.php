@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Cohort;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
@@ -92,6 +93,25 @@ class ApplicantProgramFilterTest extends TestCase
             ->assertJsonPath('person.applications.0.attempt', 2)
             ->assertJsonPath('person.applications.0.motivation', 'Ingin serius belajar affiliate.')
             ->assertJsonPath('person.applications.1.attempt', 1);
+    }
+
+    public function test_person_detail_history_names_the_cohort_and_rejection_note(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'name' => 'Angkatan Uji']);
+        $application = $this->makeApplication($program, '+628555000111');
+        $application->update([
+            'cohort_id' => $cohort->id,
+            'status' => 'rejected',
+            'review_note' => 'Jadwal tidak cocok.',
+        ]);
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->getJson("/api/admin/people/{$application->people_id}")
+            ->assertOk()
+            ->assertJsonPath('person.applications.0.cohort_id', $cohort->id)
+            ->assertJsonPath('person.applications.0.cohort', 'Angkatan Uji')
+            ->assertJsonPath('person.applications.0.review_note', 'Jadwal tidak cocok.');
     }
 
     public function test_per_page_can_raise_the_page_size_beyond_the_default(): void

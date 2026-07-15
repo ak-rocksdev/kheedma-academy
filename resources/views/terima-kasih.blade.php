@@ -1,5 +1,5 @@
 <x-layouts.public title="Terima Kasih"
-    description="Pendaftaran Kheedma Academy berhasil. Langkah berikutnya: tugas pra-seleksi.">
+    description="Pendaftaran Kheedma Academy berhasil diterima.">
 
     <section class="mx-auto flex max-w-2xl flex-col items-center px-6 py-24 text-center sm:py-28">
         <div class="flex h-16 w-16 items-center justify-center rounded-full bg-teal-700/10">
@@ -18,15 +18,13 @@
         </h1>
 
         <p class="mt-5 max-w-lg text-base leading-relaxed text-teal-800/80">
-            Pendaftaranmu sudah kami terima. Langkah berikutnya adalah
-            <strong class="font-semibold text-teal-900">tugas pra-seleksi</strong>. Caranya akan kami
-            kirimkan melalui WhatsApp/email ke kontak yang kamu isi. Tugas ini menyaring kesungguhan,
-            bukan uang.
+            Pendaftaranmu sudah kami terima dan sedang ditinjau oleh tim kami.
+            Kamu bisa memantau status pendaftaranmu kapan saja di halaman akunmu.
         </p>
 
         @if (session('has_account'))
             <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <x-cta :href="route('member.area')" label="Kelola Status Pendaftaran" />
+                <x-cta :href="route('member.area', ['bagian' => 'pendaftaran'])" label="Kelola Status Pendaftaran" />
                 <a href="{{ url('/') }}"
                    class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">
                     ← Kembali ke beranda

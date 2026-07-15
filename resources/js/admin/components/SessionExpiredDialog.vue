@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { PasswordInput } from '@/components/ui/password-input';
 import { useAuthStore } from '@/stores/auth';
@@ -81,9 +82,9 @@ async function switchAccount() {
                             </p>
                         </div>
 
-                        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">
+                        <Alert v-if="error" class="mt-4 px-3.5 py-2.5">
                             {{ error }}
-                        </div>
+                        </Alert>
 
                         <form v-if="!deactivated" class="mt-4 space-y-3" @submit.prevent="submit">
                             <PasswordInput v-model="password" autofocus required placeholder="Kata sandi" />

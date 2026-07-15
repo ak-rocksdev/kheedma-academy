@@ -55,6 +55,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
         Route::middleware('permission:programs.manage')->group(function () {
             Route::get('/programs', [ProgramController::class, 'index']);
+            Route::get('/programs/{program:id}', [ProgramController::class, 'show']);
             Route::post('/programs', [ProgramController::class, 'store']);
             Route::patch('/programs/{program:id}', [ProgramController::class, 'update']);
             Route::delete('/programs/{program:id}', [ProgramController::class, 'destroy']);

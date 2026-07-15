@@ -51,6 +51,11 @@ class Cohort extends Model
         return $this->hasMany(Enrollment::class);
     }
 
+    public function applications(): HasMany
+    {
+        return $this->hasMany(Application::class);
+    }
+
     public function sessions(): HasMany
     {
         return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at');

@@ -6,6 +6,9 @@ import { people } from '@/api';
 
 const router = useRouter();
 import { Input } from '@/components/ui/input';
+import { NativeSelect } from '@/components/ui/native-select';
+import { Alert } from '@/components/ui/alert';
+import { fmtDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -54,13 +57,6 @@ watch(q, () => {
 });
 watch(segment, () => fetchPage(1));
 
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
-const selectClass =
-    'h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 </script>
 
 <template>
@@ -76,15 +72,13 @@ const selectClass =
         <!-- Filters -->
         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center">
             <Input v-model="q" placeholder="Cari nama, HP, atau email…" class="sm:max-w-xs" />
-            <select v-model="segment" :class="selectClass">
+            <NativeSelect v-model="segment" class="sm:w-56">
                 <option value="">Semua segmen</option>
                 <option v-for="s in SEGMENTS" :key="s.value" :value="s.value">{{ s.label }}</option>
-            </select>
+            </NativeSelect>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <!-- Table -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
@@ -123,7 +117,7 @@ const selectClass =
                                 <Badge v-if="item.applications_count" :variant="item.pending_applications_count ? 'warning' : 'secondary'">
                                     Melamar {{ item.applications_count }}×<template v-if="item.pending_applications_count"> · menunggu</template>
                                 </Badge>
-                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan</Badge>
+                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan / Kelas</Badge>
                                 <Badge v-if="item.is_community_member" variant="secondary">Komunitas</Badge>
                                 <Badge v-if="item.has_account" variant="outline">Akun</Badge>
                                 <span v-if="!item.applications_count && !item.enrollments_count && !item.is_community_member && !item.has_account" class="text-muted-foreground">—</span>
