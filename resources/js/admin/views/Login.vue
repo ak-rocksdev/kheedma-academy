@@ -68,6 +68,11 @@ async function submit() {
                 >
                     {{ loading ? 'Memproses…' : 'Masuk' }}
                 </button>
+
+                <p class="text-center text-sm text-teal-800/60">
+                    Bukan bagian dari tim?
+                    <a href="/masuk" class="font-medium text-teal-700 transition hover:text-orange-600">Masuk sebagai member</a>
+                </p>
             </form>
         </div>
     </div>
