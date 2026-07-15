@@ -79,7 +79,7 @@ async function accept(app) {
         if (app.cohort_id) {
             await load();
         } else {
-            offerEnroll(app); // legacy tanpa angkatan: tawarkan penempatan manual
+            offerEnroll(app); // legacy tanpa angkatan / kelas: tawarkan penempatan manual
         }
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
@@ -98,7 +98,7 @@ function rejectWarning(app) {
     if (enrollment.hadir > 0) {
         return `Dia sudah tercatat hadir ${enrollment.hadir} kali di ${enrollment.cohort}. Penempatan dan riwayat kehadirannya tidak ikut terhapus.`;
     }
-    return `Penempatannya di ${enrollment.cohort} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.`;
+    return `Penempatannya di ${enrollment.cohort} tidak ikut terhapus; kelola dari halaman Angkatan / Kelas bila perlu.`;
 }
 
 async function confirmReject(note) {
@@ -261,7 +261,7 @@ async function submitReset() {
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                             <th class="px-4 py-3 font-semibold">Program</th>
-                            <th class="px-4 py-3 font-semibold">Angkatan</th>
+                            <th class="px-4 py-3 font-semibold">Angkatan / Kelas</th>
                             <th class="px-4 py-3 font-semibold">Tanggal</th>
                             <th class="px-4 py-3 font-semibold">Keputusan</th>
                         </tr>
@@ -300,14 +300,14 @@ async function submitReset() {
             <!-- Enrollments -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
             <div class="mt-3 rounded-xl border border-border bg-card">
-                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
+                <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan / kelas.</div>
                 <div v-for="e in person.enrollments" :key="e.id" class="border-b border-border last:border-0">
                     <button
                         type="button"
                         class="flex w-full items-center justify-between gap-3 px-5 py-3 text-left text-sm transition hover:bg-accent/50"
                         @click="toggleClasses(e.id)"
                     >
-                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan dihapus' }}</span>
+                        <span class="font-medium text-foreground">{{ e.cohort ?? 'Angkatan / Kelas dihapus' }}</span>
                         <span class="flex items-center gap-2 text-muted-foreground">
                             Hadir {{ e.hadir }} dari {{ e.classes.length }} kelas
                             <span v-if="e.latest_status === 'dropped'" class="text-destructive">· keluar</span>
@@ -316,7 +316,7 @@ async function submitReset() {
                     </button>
                     <!-- Rincian per-kelas: pernah diikuti atau tidak. -->
                     <div v-if="expandedClasses.has(e.id)" class="border-t border-border/60 bg-accent/20 px-5 py-2">
-                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan ini belum punya kelas.</p>
+                        <p v-if="!e.classes.length" class="py-2 text-xs text-muted-foreground">Angkatan / Kelas ini belum punya kelas.</p>
                         <div
                             v-for="c in e.classes"
                             :key="c.id"

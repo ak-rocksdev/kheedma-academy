@@ -17,7 +17,7 @@ const nav = computed(() =>
         { to: { name: 'people' }, match: '/people', label: 'Orang', icon: BookUser, show: auth.can('people.view') },
         { to: { name: 'programs' }, match: '/programs', label: 'Program', icon: BookOpen, show: auth.can('programs.manage') },
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', icon: HeartHandshake, show: auth.can('community.view') },
-        { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
+        { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan / Kelas', icon: GraduationCap, show: auth.can('cohorts.view') },
         { to: { name: 'users' }, match: '/users', label: 'Tim', icon: UserCog, show: auth.can('users.manage') },
     ].filter((item) => item.show),
 );

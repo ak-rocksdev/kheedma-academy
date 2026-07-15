@@ -62,7 +62,7 @@ async function confirmRemove() {
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
         deleteTarget.value = null;
-        error.value = e.message ?? 'Gagal menghapus angkatan.';
+        error.value = e.message ?? 'Gagal menghapus angkatan / kelas.';
     }
 }
 
@@ -72,10 +72,10 @@ async function confirmRemove() {
     <div>
         <div class="flex items-end justify-between gap-4">
             <div>
-                <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan</p>
-                <h1 class="mt-2 text-2xl font-bold text-foreground">Daftar Angkatan</h1>
+                <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan / Kelas</p>
+                <h1 class="mt-2 text-2xl font-bold text-foreground">Daftar Angkatan / Kelas</h1>
             </div>
-            <Button variant="accent" size="sm" @click="openCreate">Tambah Angkatan</Button>
+            <Button variant="accent" size="sm" @click="openCreate">Tambah Angkatan / Kelas</Button>
         </div>
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
@@ -96,7 +96,7 @@ async function confirmRemove() {
                 </thead>
                 <tbody>
                     <tr v-if="loading"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
-                    <tr v-else-if="!items.length"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan.</td></tr>
+                    <tr v-else-if="!items.length"><td colspan="8" class="px-4 py-10 text-center text-muted-foreground">Belum ada angkatan / kelas.</td></tr>
                     <tr
                         v-for="cohort in items"
                         :key="cohort.id"
@@ -121,13 +121,13 @@ async function confirmRemove() {
                             </Badge>
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">
-                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan" @click.stop="goDetail(cohort)">
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan / Kelas" @click.stop="goDetail(cohort)">
                                 <Eye class="size-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah Angkatan" @click.stop="openEdit(cohort)">
+                            <Button variant="ghost" size="icon" class="h-8 w-8" title="Ubah" aria-label="Ubah Angkatan / Kelas" @click.stop="openEdit(cohort)">
                                 <Pencil class="size-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive" title="Hapus" aria-label="Hapus Angkatan" @click.stop="deleteTarget = cohort">
+                            <Button variant="ghost" size="icon" class="h-8 w-8 text-destructive hover:text-destructive" title="Hapus" aria-label="Hapus Angkatan / Kelas" @click.stop="deleteTarget = cohort">
                                 <Trash2 class="size-4" />
                             </Button>
                         </td>
@@ -139,13 +139,13 @@ async function confirmRemove() {
         <CohortFormDialog v-model:open="dialogOpen" :cohort="editing" @saved="load" />
 
         <!-- Konfirmasi hapus Angkatan -->
-        <Dialog :open="deleteTarget !== null" title="Hapus Angkatan" @update:open="deleteTarget = null">
+        <Dialog :open="deleteTarget !== null" title="Hapus Angkatan / Kelas" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
-                Hapus "{{ deleteTarget?.name }}" beserta sesi-sesinya? Angkatan yang sudah punya peserta tidak bisa dihapus.
+                Hapus "{{ deleteTarget?.name }}" beserta sesi-sesinya? Angkatan / Kelas yang sudah punya peserta tidak bisa dihapus.
             </p>
             <div class="mt-4 flex justify-end gap-2">
                 <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>
-                <Button variant="destructive" size="sm" @click="confirmRemove">Hapus Angkatan</Button>
+                <Button variant="destructive" size="sm" @click="confirmRemove">Hapus Angkatan / Kelas</Button>
             </div>
         </Dialog>
     </div>

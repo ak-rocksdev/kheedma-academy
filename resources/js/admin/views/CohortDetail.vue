@@ -219,7 +219,7 @@ watch(() => props.id, () => load());
 <template>
     <div>
         <RouterLink :to="{ name: 'cohorts' }" class="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-            <ArrowLeft class="size-4" /> Semua Angkatan
+            <ArrowLeft class="size-4" /> Semua Angkatan / Kelas
         </RouterLink>
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
@@ -228,7 +228,7 @@ watch(() => props.id, () => load());
         <template v-else-if="cohort">
             <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan' }}</p>
+                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan / Kelas' }}</p>
                     <h1 class="mt-2 text-2xl font-bold text-foreground">{{ cohort.name }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
                         {{ sessionList.length }} kelas · Mentor: {{ cohort.mentor?.name ?? '—' }}
@@ -323,7 +323,7 @@ watch(() => props.id, () => load());
                                         variant="ghost"
                                         size="icon"
                                         class="h-8 w-8 text-destructive hover:text-destructive"
-                                        title="Hapus dari Angkatan"
+                                        title="Hapus dari Angkatan / Kelas"
                                         aria-label="Hapus enrollment"
                                         @click="removeEnrollment(row)"
                                     >
@@ -347,7 +347,7 @@ watch(() => props.id, () => load());
         <!-- Tambah peserta -->
         <Dialog v-model:open="addOpen" title="Tambah Peserta">
             <Alert v-if="addError" class="mb-3 px-3.5 py-2.5">{{ addError }}</Alert>
-            <p v-if="!candidates.length" class="text-sm text-muted-foreground">Tidak ada pelamar diterima yang belum terdaftar di Angkatan ini.</p>
+            <p v-if="!candidates.length" class="text-sm text-muted-foreground">Tidak ada pelamar diterima yang belum terdaftar di Angkatan / Kelas ini.</p>
             <div v-else class="max-h-72 space-y-2 overflow-y-auto">
                 <div v-for="app in candidates" :key="app.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
                     <div>

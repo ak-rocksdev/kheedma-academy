@@ -55,7 +55,7 @@ class ApplicationController extends Controller
             ],
             'enrolled' => [
                 'title' => 'Kamu peserta program ini.',
-                'body' => 'Kamu sudah tergabung di Angkatan program ini. Lihat perjalananmu di halaman akunmu.',
+                'body' => 'Kamu sudah tergabung di Angkatan / Kelas program ini. Lihat perjalananmu di halaman akunmu.',
             ],
             default => null,
         };

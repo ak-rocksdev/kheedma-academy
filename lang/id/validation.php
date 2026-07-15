@@ -189,7 +189,7 @@ return [
         'province_code' => 'Provinsi',
         'city_code' => 'Kota/kabupaten',
         'program_id' => 'Program',
-        'cohort_id' => 'Angkatan',
+        'cohort_id' => 'Angkatan / Kelas',
         'mentor_id' => 'Mentor',
         'start_date' => 'Tanggal mulai',
         'end_date' => 'Tanggal selesai',

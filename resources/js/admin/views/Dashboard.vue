@@ -10,7 +10,7 @@ const stats = ref(null);
 const TILES = [
     { key: 'pending_applications', label: 'Pelamar menunggu', to: { name: 'people', query: { segment: 'needs-review' } } },
     { key: 'community_members', label: 'Member komunitas' },
-    { key: 'active_cohorts', label: 'Angkatan berjalan' },
+    { key: 'active_cohorts', label: 'Angkatan / Kelas berjalan' },
     { key: 'active_participants', label: 'Peserta aktif' },
     { key: 'attended_participants', label: 'Pernah hadir' },
 ];
@@ -28,8 +28,8 @@ onMounted(async () => {
 const entities = [
     { name: 'Person', desc: 'Satu record per manusia, anchor nomor HP.' },
     { name: 'Application', desc: 'Submission formulir pendaftaran program.' },
-    { name: 'Angkatan', desc: 'Kelas nyata: nama, tanggal, sesi, satu mentor.' },
-    { name: 'Enrollment', desc: 'Tautan Person ke Angkatan saat diterima.' },
+    { name: 'Angkatan / Kelas', desc: 'Kelas nyata: nama, tanggal, sesi, satu mentor.' },
+    { name: 'Enrollment', desc: 'Tautan Person ke Angkatan / Kelas saat diterima.' },
     { name: 'Absensi', desc: 'Kehadiran per sesi; dasar kelulusan otomatis.' },
     { name: 'Status Event', desc: 'Log append-only transisi status.' },
 ];

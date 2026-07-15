@@ -117,7 +117,7 @@ watch(segment, () => fetchPage(1));
                                 <Badge v-if="item.applications_count" :variant="item.pending_applications_count ? 'warning' : 'secondary'">
                                     Melamar {{ item.applications_count }}×<template v-if="item.pending_applications_count"> · menunggu</template>
                                 </Badge>
-                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan</Badge>
+                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan / Kelas</Badge>
                                 <Badge v-if="item.is_community_member" variant="secondary">Komunitas</Badge>
                                 <Badge v-if="item.has_account" variant="outline">Akun</Badge>
                                 <span v-if="!item.applications_count && !item.enrollments_count && !item.is_community_member && !item.has_account" class="text-muted-foreground">—</span>

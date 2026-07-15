@@ -96,7 +96,7 @@ async function confirmRemove() {
                         <th class="px-4 py-3 font-semibold">Slug</th>
                         <th class="px-4 py-3 font-semibold">Status</th>
                         <th class="px-4 py-3 font-semibold">Pendaftaran</th>
-                        <th class="px-4 py-3 font-semibold">Angkatan</th>
+                        <th class="px-4 py-3 font-semibold">Angkatan / Kelas</th>
                         <th class="px-4 py-3 font-semibold">Pendaftar</th>
                         <th class="px-4 py-3"></th>
                     </tr>
@@ -153,7 +153,7 @@ async function confirmRemove() {
         <!-- Konfirmasi hapus program -->
         <Dialog :open="deleteTarget !== null" title="Hapus Program" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
-                Hapus "{{ deleteTarget?.name }}" dari katalog? Program dengan angkatan atau pendaftar tidak bisa dihapus.
+                Hapus "{{ deleteTarget?.name }}" dari katalog? Program dengan angkatan / kelas atau pendaftar tidak bisa dihapus.
             </p>
             <div class="mt-4 flex justify-end gap-2">
                 <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>

@@ -125,12 +125,12 @@ async function save() {
 </script>
 
 <template>
-    <Dialog v-model:open="open" :title="isEditing ? 'Ubah Angkatan' : 'Tambah Angkatan'">
+    <Dialog v-model:open="open" :title="isEditing ? 'Ubah Angkatan / Kelas' : 'Tambah Angkatan / Kelas'">
         <form class="space-y-3" @submit.prevent="save">
             <Alert v-if="optionsError" class="px-3.5 py-2.5">{{ optionsError }}</Alert>
             <div>
-                <label class="text-xs text-muted-foreground">Nama angkatan</label>
-                <Input v-model="form.name" placeholder="Nama angkatan" class="mt-1.5" />
+                <label class="text-xs text-muted-foreground">Nama angkatan / kelas</label>
+                <Input v-model="form.name" placeholder="Nama angkatan / kelas" class="mt-1.5" />
                 <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
             </div>
             <div>
