@@ -3,6 +3,7 @@ import { ref, computed, onUnmounted, watch } from 'vue';
 import { ImagePlus } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
@@ -242,12 +243,7 @@ onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
             </div>
             <div>
                 <label class="text-xs text-muted-foreground">Deskripsi (opsional)</label>
-                <textarea
-                    v-model="form.description"
-                    rows="4"
-                    placeholder="Deskripsi program"
-                    class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                ></textarea>
+                <Textarea v-model="form.description" rows="4" placeholder="Deskripsi program" class="mt-1.5" />
                 <p v-if="formErrors.description" class="mt-1 text-xs text-destructive">{{ formErrors.description[0] }}</p>
             </div>
             <div>
@@ -299,12 +295,7 @@ onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
             </div>
             <div v-if="form.type === 'affiliate_community'">
                 <label class="text-xs text-muted-foreground">Pesan terkunci (opsional)</label>
-                <textarea
-                    v-model="form.locked_message"
-                    rows="3"
-                    placeholder="Kosongkan untuk memakai pesan default."
-                    class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                ></textarea>
+                <Textarea v-model="form.locked_message" rows="3" placeholder="Kosongkan untuk memakai pesan default." class="mt-1.5" />
             </div>
             <div class="flex justify-end gap-2 pt-2">
                 <Button type="button" variant="outline" size="sm" @click="open = false">Batal</Button>

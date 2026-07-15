@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { DatePicker } from '@/components/ui/date-picker';
 import { NativeSelect } from '@/components/ui/native-select';
+import { Alert } from '@/components/ui/alert';
+import { fmtDate } from '@/lib/format';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
 const props = defineProps({
@@ -120,19 +122,12 @@ async function save() {
         saving.value = false;
     }
 }
-
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 </script>
 
 <template>
     <Dialog v-model:open="open" :title="isEditing ? 'Ubah Angkatan' : 'Tambah Angkatan'">
         <form class="space-y-3" @submit.prevent="save">
-            <div v-if="optionsError" class="rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">
-                {{ optionsError }}
-            </div>
+            <Alert v-if="optionsError" class="px-3.5 py-2.5">{{ optionsError }}</Alert>
             <div>
                 <label class="text-xs text-muted-foreground">Nama angkatan</label>
                 <Input v-model="form.name" placeholder="Nama angkatan" class="mt-1.5" />

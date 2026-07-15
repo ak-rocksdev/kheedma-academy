@@ -1,17 +1,19 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, ChevronDown, X } from 'lucide-vue-next';
+import { ArrowLeft, Check, ChevronDown } from 'lucide-vue-next';
 import { api, applications as applicationsApi, people as peopleApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
 import { PasswordInput } from '@/components/ui/password-input';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAuthStore } from '@/stores/auth';
 import { statusVariant, statusLabel } from '@/lib/status';
+import { fmtDate } from '@/lib/format';
+import ApplicationDecisionToggle from '@/components/ApplicationDecisionToggle.vue';
 import EnrollToCohortDialog from '@/components/EnrollToCohortDialog.vue';
+import RejectApplicationDialog from '@/components/RejectApplicationDialog.vue';
 
 const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
 const GENDER_LABELS = { male: 'Laki-laki', female: 'Perempuan' };
@@ -61,18 +63,8 @@ function enrollmentFor(app) {
     return (person.value?.enrollments ?? []).find((e) => e.cohort_id === app.cohort_id) ?? null;
 }
 
-/**
- * Keputusan dua-pilihan langsung tersimpan: Diterima atau Ditolak. "Menunggu"
- * bukan pilihan (aturan satu arah); memilih status yang sama diabaikan.
- */
 function decide(app, value) {
-    if (!value || value === app.status) return;
-    if (value === 'accepted') {
-        accept(app);
-    } else if (value === 'rejected') {
-        rejectNote.value = '';
-        rejectTarget.value = app;
-    }
+    value === 'accepted' ? accept(app) : (rejectTarget.value = app);
 }
 
 async function accept(app) {
@@ -98,14 +90,23 @@ async function accept(app) {
 }
 
 const rejectTarget = ref(null); // application yang akan ditolak (dialog konfirmasi)
-const rejectNote = ref('');
 
-async function confirmReject() {
+/** Peringatan absensi/penempatan untuk dialog tolak. */
+function rejectWarning(app) {
+    const enrollment = enrollmentFor(app);
+    if (!enrollment) return '';
+    if (enrollment.hadir > 0) {
+        return `Dia sudah tercatat hadir ${enrollment.hadir} kali di ${enrollment.cohort}. Penempatan dan riwayat kehadirannya tidak ikut terhapus.`;
+    }
+    return `Penempatannya di ${enrollment.cohort} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.`;
+}
+
+async function confirmReject(note) {
     const app = rejectTarget.value;
     saveError.value = '';
     reviewSuccess.value = '';
     try {
-        await applicationsApi.review(app.id, 'rejected', { review_note: rejectNote.value || null });
+        await applicationsApi.review(app.id, 'rejected', { review_note: note });
         rejectTarget.value = null;
         reviewSuccess.value = 'Pendaftaran ditolak.';
         await load();
@@ -180,11 +181,6 @@ async function submitReset() {
         accountBusy.value = false;
     }
 }
-
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 </script>
 
 <template>
@@ -232,9 +228,7 @@ function fmtDate(iso) {
 
             <!-- Account -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Akun</h2>
-            <div v-if="accountError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                {{ accountError }}
-            </div>
+            <Alert v-if="accountError" class="mt-3">{{ accountError }}</Alert>
             <div class="mt-3 rounded-xl border border-border bg-card p-5">
                 <div v-if="!person.account" class="text-sm text-muted-foreground">
                     Belum memiliki akun login. Akun dibuat saat orang ini bergabung komunitas atau mendaftar program.
@@ -260,12 +254,8 @@ function fmtDate(iso) {
 
             <!-- Applications (cross-attempt history) -->
             <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Riwayat Pendaftaran</h2>
-            <div v-if="saveError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-                {{ saveError }}
-            </div>
-            <div v-if="reviewSuccess" class="mt-3 rounded-lg border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-700">
-                {{ reviewSuccess }}
-            </div>
+            <Alert v-if="saveError" class="mt-3">{{ saveError }}</Alert>
+            <Alert v-if="reviewSuccess" variant="success" class="mt-3">{{ reviewSuccess }}</Alert>
             <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                 <table class="w-full text-sm">
                     <thead>
@@ -294,23 +284,12 @@ function fmtDate(iso) {
                             <td class="px-4 py-3 text-muted-foreground">{{ app.cohort ?? '—' }}</td>
                             <td class="px-4 py-3 whitespace-nowrap text-muted-foreground">{{ fmtDate(app.created_at) }}</td>
                             <td class="px-4 py-3">
-                                <div v-if="auth.can('applications.review')" class="flex items-center gap-2">
-                                    <ToggleGroup
-                                        type="single"
-                                        variant="outline"
-                                        :model-value="app.status === 'pending' ? '' : app.status"
-                                        :disabled="reviewingId === app.id"
-                                        @update:model-value="(v) => decide(app, v)"
-                                    >
-                                        <ToggleGroupItem value="accepted" class="gap-1 text-teal-700 data-[state=on]:bg-teal-50 data-[state=on]:text-teal-700">
-                                            <Check class="size-3.5" /> Diterima
-                                        </ToggleGroupItem>
-                                        <ToggleGroupItem value="rejected" class="gap-1 text-destructive data-[state=on]:bg-red-50 data-[state=on]:text-destructive">
-                                            <X class="size-3.5" /> Ditolak
-                                        </ToggleGroupItem>
-                                    </ToggleGroup>
-                                    <span v-if="app.status === 'pending'" class="text-xs text-muted-foreground">menunggu</span>
-                                </div>
+                                <ApplicationDecisionToggle
+                                    v-if="auth.can('applications.review')"
+                                    :status="app.status"
+                                    :disabled="reviewingId === app.id"
+                                    @decide="(v) => decide(app, v)"
+                                />
                                 <Badge v-else :variant="statusVariant(app.status)">{{ statusLabel(app.status) }}</Badge>
                             </td>
                         </tr>
@@ -370,30 +349,14 @@ function fmtDate(iso) {
             />
 
             <!-- Konfirmasi tolak pendaftaran (alasan opsional; peringatan bila sudah ditempatkan/hadir) -->
-            <Dialog :open="rejectTarget !== null" title="Tolak Pendaftaran" @update:open="rejectTarget = null">
-                <p class="text-sm text-muted-foreground">
-                    Tolak pendaftaran {{ person.name }} untuk {{ rejectTarget?.program ?? 'program ini' }}? Dia masih boleh mendaftar lagi di lain waktu.
-                </p>
-                <p v-if="enrollmentFor(rejectTarget)?.hadir" class="mt-2 text-sm text-orange-700">
-                    Dia sudah tercatat hadir {{ enrollmentFor(rejectTarget).hadir }} kali di {{ enrollmentFor(rejectTarget).cohort }}. Penempatan dan riwayat kehadirannya tidak ikut terhapus.
-                </p>
-                <p v-else-if="enrollmentFor(rejectTarget)" class="mt-2 text-sm text-muted-foreground">
-                    Penempatannya di {{ enrollmentFor(rejectTarget).cohort }} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.
-                </p>
-                <div class="mt-3">
-                    <label class="text-xs text-muted-foreground">Alasan (opsional)</label>
-                    <textarea
-                        v-model="rejectNote"
-                        rows="3"
-                        placeholder="Contoh: belum sesuai kriteria angkatan ini."
-                        class="mt-1.5 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                    ></textarea>
-                </div>
-                <div class="mt-4 flex justify-end gap-2">
-                    <Button variant="outline" size="sm" @click="rejectTarget = null">Batal</Button>
-                    <Button variant="destructive" size="sm" @click="confirmReject">Tolak Pendaftaran</Button>
-                </div>
-            </Dialog>
+            <RejectApplicationDialog
+                :target="rejectTarget"
+                :person-name="person.name"
+                :warning="rejectTarget ? rejectWarning(rejectTarget) : ''"
+                :warning-muted="!(rejectTarget && enrollmentFor(rejectTarget)?.hadir > 0)"
+                @close="rejectTarget = null"
+                @confirm="confirmReject"
+            />
 
             <!-- Reset password dialog (generated password is shown once) -->
             <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">

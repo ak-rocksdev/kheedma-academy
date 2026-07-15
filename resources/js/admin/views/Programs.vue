@@ -3,10 +3,12 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import ProgramFormDialog from '@/components/ProgramFormDialog.vue';
+import { programStatusVariant, programStatusLabel } from '@/lib/status';
 
 const items = ref([]);
 const loading = ref(false);
@@ -14,12 +16,6 @@ const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-
-const STATUS = {
-    draft: { label: 'Draf', variant: 'secondary' },
-    active: { label: 'Aktif', variant: 'success' },
-    inactive: { label: 'Nonaktif', variant: 'destructive' },
-};
 
 async function load() {
     loading.value = true;
@@ -90,9 +86,7 @@ async function confirmRemove() {
             <Button variant="accent" size="sm" @click="openCreate">Tambah Program</Button>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
             <table class="w-full text-sm">
@@ -124,8 +118,8 @@ async function confirmRemove() {
                         </td>
                         <td class="px-4 py-3 text-muted-foreground"><code class="text-xs">/program/{{ program.slug }}</code></td>
                         <td class="px-4 py-3">
-                            <Badge :variant="STATUS[program.status]?.variant ?? 'secondary'">
-                                {{ STATUS[program.status]?.label ?? program.status }}
+                            <Badge :variant="programStatusVariant(program.status)">
+                                {{ programStatusLabel(program.status) }}
                             </Badge>
                             <Badge variant="secondary" class="ml-1">
                                 {{ program.type === 'affiliate_community' ? 'Affiliate L' + program.level : 'Umum' }}

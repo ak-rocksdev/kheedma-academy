@@ -3,10 +3,13 @@ import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { cohorts as cohortsApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
+import { cohortStatusVariant, cohortStatusLabel } from '@/lib/status';
+import { cohortPeriodLabel } from '@/lib/format';
 
 const items = ref([]);
 const loading = ref(false);
@@ -14,12 +17,6 @@ const error = ref('');
 
 const dialogOpen = ref(false);
 const editing = ref(null);
-
-const STATUS = {
-    upcoming: { label: 'Akan datang', variant: 'warning' },
-    active: { label: 'Berjalan', variant: 'success' },
-    ended: { label: 'Selesai', variant: 'secondary' },
-};
 
 async function load() {
     loading.value = true;
@@ -69,19 +66,6 @@ async function confirmRemove() {
     }
 }
 
-/** Periode terbaca manusiawi; keduanya kosong = belum dijadwalkan. */
-function periodLabel(cohort) {
-    if (!cohort.start_date && !cohort.end_date) {
-        return null;
-    }
-
-    return `${fmtDate(cohort.start_date)} – ${fmtDate(cohort.end_date)}`;
-}
-
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 </script>
 
 <template>
@@ -94,9 +78,7 @@ function fmtDate(iso) {
             <Button variant="accent" size="sm" @click="openCreate">Tambah Angkatan</Button>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
             <table class="w-full text-sm">
@@ -123,8 +105,8 @@ function fmtDate(iso) {
                     >
                         <td class="px-4 py-3 font-medium text-foreground">{{ cohort.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.program?.name ?? '—' }}</td>
-                        <td class="px-4 py-3" :class="periodLabel(cohort) ? 'text-muted-foreground' : 'text-muted-foreground/50 italic'">
-                            {{ periodLabel(cohort) ?? 'Belum dijadwalkan' }}
+                        <td class="px-4 py-3" :class="cohortPeriodLabel(cohort) ? 'text-muted-foreground' : 'text-muted-foreground/50 italic'">
+                            {{ cohortPeriodLabel(cohort) ?? 'Belum dijadwalkan' }}
                         </td>
                         <td class="px-4 py-3">
                             <Badge :variant="cohort.registration_open ? 'success' : 'secondary'">
@@ -134,8 +116,8 @@ function fmtDate(iso) {
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.mentor?.name ?? '—' }}</td>
                         <td class="px-4 py-3 text-muted-foreground">{{ cohort.enrollments_count }}</td>
                         <td class="px-4 py-3">
-                            <Badge :variant="STATUS[cohort.status]?.variant ?? 'secondary'">
-                                {{ STATUS[cohort.status]?.label ?? cohort.status }}
+                            <Badge :variant="cohortStatusVariant(cohort.status)">
+                                {{ cohortStatusLabel(cohort.status) }}
                             </Badge>
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap">

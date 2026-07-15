@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog } from '@/components/ui/dialog';
+import { Alert } from '@/components/ui/alert';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/auth';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
@@ -204,11 +206,6 @@ function statusLabel(status) {
     return { accepted: 'Aktif', dropped: 'Keluar' }[status] ?? (status ?? 'Belum ada status');
 }
 
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 function shortDate(iso) {
     if (!iso) return '';
     return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
@@ -225,7 +222,7 @@ watch(() => props.id, () => load());
             <ArrowLeft class="size-4" /> Semua Angkatan
         </RouterLink>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">{{ error }}</div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
         <div v-if="loading" class="mt-10 text-center text-muted-foreground">Memuat…</div>
 
         <template v-else-if="cohort">
@@ -349,7 +346,7 @@ watch(() => props.id, () => load());
 
         <!-- Tambah peserta -->
         <Dialog v-model:open="addOpen" title="Tambah Peserta">
-            <div v-if="addError" class="mb-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ addError }}</div>
+            <Alert v-if="addError" class="mb-3 px-3.5 py-2.5">{{ addError }}</Alert>
             <p v-if="!candidates.length" class="text-sm text-muted-foreground">Tidak ada pelamar diterima yang belum terdaftar di Angkatan ini.</p>
             <div v-else class="max-h-72 space-y-2 overflow-y-auto">
                 <div v-for="app in candidates" :key="app.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
@@ -367,13 +364,8 @@ watch(() => props.id, () => load());
             <p class="text-sm text-muted-foreground">
                 Catat alasan {{ dropTarget?.person.name }} keluar. Riwayatnya tetap tersimpan untuk analisis.
             </p>
-            <div v-if="dropError" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ dropError }}</div>
-            <textarea
-                v-model="dropNote"
-                rows="3"
-                placeholder="Alasan keluar (wajib)"
-                class="mt-3 w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            ></textarea>
+            <Alert v-if="dropError" class="mt-3 px-3.5 py-2.5">{{ dropError }}</Alert>
+            <Textarea v-model="dropNote" rows="3" placeholder="Alasan keluar (wajib)" class="mt-3" />
             <div class="mt-4 flex justify-end gap-2">
                 <Button variant="outline" size="sm" @click="dropTarget = null">Batal</Button>
                 <Button variant="destructive" size="sm" :disabled="!dropNote" @click="confirmDrop">Keluarkan</Button>

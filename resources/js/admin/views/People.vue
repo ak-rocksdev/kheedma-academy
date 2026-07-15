@@ -7,6 +7,8 @@ import { people } from '@/api';
 const router = useRouter();
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
+import { Alert } from '@/components/ui/alert';
+import { fmtDate } from '@/lib/format';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -55,11 +57,6 @@ watch(q, () => {
 });
 watch(segment, () => fetchPage(1));
 
-function fmtDate(iso) {
-    if (!iso) return '—';
-    return new Date(iso).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
-}
-
 </script>
 
 <template>
@@ -81,9 +78,7 @@ function fmtDate(iso) {
             </NativeSelect>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <!-- Table -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
 import { api } from '@/api';
+import StatTile from '@/components/StatTile.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const auth = useAuthStore();
@@ -41,17 +41,7 @@ const entities = [
         <h1 class="mt-2 text-3xl font-bold text-foreground">Selamat datang, {{ auth.user?.name }}.</h1>
 
         <div v-if="stats" class="mt-8 grid gap-4 sm:grid-cols-3 lg:grid-cols-5">
-            <component
-                :is="tile.to ? RouterLink : 'div'"
-                v-for="tile in TILES"
-                :key="tile.key"
-                :to="tile.to"
-                class="block rounded-xl border border-border bg-card p-5"
-                :class="tile.to ? 'transition hover:border-primary/40 hover:shadow-sm' : ''"
-            >
-                <p class="text-3xl font-bold tabular-nums text-foreground">{{ stats[tile.key] }}</p>
-                <p class="mt-1 text-xs uppercase tracking-wide text-muted-foreground">{{ tile.label }}</p>
-            </component>
+            <StatTile v-for="tile in TILES" :key="tile.key" :value="stats[tile.key]" :label="tile.label" :to="tile.to ?? null" />
         </div>
 
         <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

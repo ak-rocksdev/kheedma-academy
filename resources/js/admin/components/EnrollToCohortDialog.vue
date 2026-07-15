@@ -1,6 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi } from '@/api';
+import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 
@@ -50,7 +51,7 @@ async function enrollInto(cohort) {
 <template>
     <Dialog :open="application !== null" title="Masukkan ke Angkatan" @update:open="emit('close')">
         <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih Angkatan untuk mendaftarkannya sekarang, atau lewati untuk melakukannya nanti dari halaman Angkatan.</p>
-        <div v-if="error" class="mt-3 rounded-lg border border-destructive/30 bg-red-50 px-3.5 py-2.5 text-sm text-destructive">{{ error }}</div>
+        <Alert v-if="error" class="mt-3 px-3.5 py-2.5">{{ error }}</Alert>
         <p v-if="!cohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada Angkatan untuk program ini.</p>
         <div v-else class="mt-3 space-y-2">
             <div v-for="c in cohorts" :key="c.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">

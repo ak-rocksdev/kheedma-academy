@@ -4,6 +4,7 @@ import { Pencil, Power } from 'lucide-vue-next';
 import { users as usersApi } from '@/api';
 import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
+import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
@@ -102,9 +103,7 @@ async function toggleActive(user) {
             <Button variant="accent" size="sm" @click="openCreate">Tambah Akun</Button>
         </div>
 
-        <div v-if="error" class="mt-4 rounded-lg border border-destructive/30 bg-red-50 px-4 py-3 text-sm text-destructive">
-            {{ error }}
-        </div>
+        <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
             <table class="w-full text-sm">
