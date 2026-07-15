@@ -1,6 +1,7 @@
 @props([
     'title' => null,
     'description' => 'Kheedma Academy membimbing pemula tumbuh menjadi affiliate marketer yang amanah dan profesional. Belajar dengan niat ibadah, berkembang dengan keberkahan.',
+    'bottomNav' => true,
 ])
 
 <!DOCTYPE html>
@@ -39,7 +40,7 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="min-h-screen flex flex-col">
+<body @class(['min-h-screen flex flex-col', 'pb-14 md:pb-0' => $bottomNav])>
 
     {{-- ───────────────────────── Header ───────────────────────── --}}
     <header class="sticky top-0 z-40 border-b border-teal-900/5 bg-sand-50/85 backdrop-blur">
@@ -54,39 +55,26 @@
                 <a href="{{ url('/#program') }}" class="transition hover:text-orange-600">Program</a>
                 <a href="{{ url('/#nilai') }}" class="transition hover:text-orange-600">Nilai</a>
                 @auth
-                    <details class="account-menu relative">
-                        <summary class="flex cursor-pointer list-none items-center gap-1.5 transition hover:text-orange-600 [&::-webkit-details-marker]:hidden">
-                            <span class="flex h-6 w-6 items-center justify-center rounded-full bg-teal-700 text-[0.65rem] font-bold text-white">
-                                {{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
-                            </span>
-                            {{ auth()->user()->name }}
-                            <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M6 8l4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/>
-                            </svg>
-                        </summary>
-                        <div class="absolute right-0 z-50 mt-3 w-52 rounded-xl border border-teal-900/10 bg-white p-1.5 shadow-lg">
-                            @if (auth()->user()->hasAnyRole(['admin', 'mentor']))
-                                <a href="{{ url('/admin') }}" class="block rounded-lg px-3.5 py-2 text-sm text-teal-800 transition hover:bg-sand-50 hover:text-orange-600">Panel Admin</a>
-                            @else
-                                <a href="{{ route('member.area') }}" class="block rounded-lg px-3.5 py-2 text-sm text-teal-800 transition hover:bg-sand-50 hover:text-orange-600">Akun Saya</a>
-                            @endif
-                            <form method="POST" action="{{ route('member.logout') }}">
-                                @csrf
-                                <button type="submit" class="block w-full rounded-lg px-3.5 py-2 text-left text-sm text-teal-800 transition hover:bg-sand-50 hover:text-orange-600">
-                                    Keluar
-                                </button>
-                            </form>
-                        </div>
-                    </details>
+                    <x-nav.account-menu />
                 @else
                     <a href="{{ route('member.login') }}" class="transition hover:text-orange-600">Masuk</a>
                 @endauth
             </nav>
 
-            <a href="{{ url('/daftar') }}"
-               class="inline-flex items-center rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 hover:shadow">
-                Daftar
-            </a>
+            <div class="flex items-center gap-4">
+                {{-- Akses akun/masuk versi mobile: nav utama header hanya tampil mulai md --}}
+                <div class="text-sm font-medium text-teal-800 md:hidden">
+                    @auth
+                        <x-nav.account-menu compact />
+                    @else
+                        <a href="{{ route('member.login') }}" class="transition hover:text-orange-600">Masuk</a>
+                    @endauth
+                </div>
+                <a href="{{ url('/daftar') }}"
+                   class="inline-flex items-center rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 hover:shadow">
+                    Daftar
+                </a>
+            </div>
         </div>
     </header>
 
@@ -133,5 +121,28 @@
 
     @include('funnel.partials.lock-modal')
 
+@if ($bottomNav)
+    {{-- ───────────────── Navigasi bawah (mobile) ───────────────── --}}
+    <x-nav.bottom-nav label="Navigasi utama">
+        <x-nav.bottom-nav-item :href="url('/')" label="Beranda" :active="request()->is('/')">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="url('/#program')" label="Program">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.25C10 4.75 7.5 4.5 5 4.5v13c2.5 0 5 .25 7 1.75 2-1.5 4.5-1.75 7-1.75v-13c-2.5 0-5 .25-7 1.75Z"/><path d="M12 6.25v13"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="route('komunitas')" label="Komunitas" :active="request()->is('komunitas')">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="2.75"/><path d="M3.75 18.5a5.25 5.25 0 0 1 10.5 0"/><path d="M15.5 6.06a2.75 2.75 0 0 1 0 4.88"/><path d="M16.5 13.6a5.26 5.26 0 0 1 3.75 4.9"/></svg>
+        </x-nav.bottom-nav-item>
+        @auth
+            <x-nav.bottom-nav-item :href="route('member.area')" label="Akun">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+            </x-nav.bottom-nav-item>
+        @else
+            <x-nav.bottom-nav-item :href="route('member.login')" label="Masuk" :active="request()->is('masuk')">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2"/><path d="M4 12h10M11 9l3 3-3 3"/></svg>
+            </x-nav.bottom-nav-item>
+        @endauth
+    </x-nav.bottom-nav>
+@endif
 </body>
 </html>

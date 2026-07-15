@@ -1,5 +1,6 @@
 <x-layouts.public title="Akun Saya"
-    description="Area member Kheedma Academy.">
+    description="Area member Kheedma Academy."
+    :bottom-nav="false">
 
     @php($tabs = [
         'profil' => 'Profil',
@@ -10,7 +11,7 @@
     <section class="relative overflow-hidden">
         <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-teal-100 blur-3xl"></div>
 
-        <div class="relative mx-auto max-w-2xl px-6 py-16 pb-32 sm:py-20 sm:pb-20">
+        <div class="relative mx-auto max-w-2xl px-6 py-16 pb-32 md:py-20 md:pb-20">
             @if (session('joined'))
                 <div class="mb-8 rounded-xl border border-teal-600/30 bg-teal-50 px-5 py-4 text-sm text-teal-800">
                     Selamat datang di komunitas! Akunmu sudah aktif.
@@ -31,7 +32,7 @@
             </div>
 
             <!-- Tab bar (tablet/desktop); di mobile navigasinya pindah ke bawah layar -->
-            <nav class="mt-8 hidden gap-2 sm:flex" aria-label="Bagian akun">
+            <nav class="mt-8 hidden gap-2 md:flex" aria-label="Bagian akun">
                 @foreach ($tabs as $key => $label)
                     <a href="{{ route('member.area', $key === 'profil' ? [] : ['bagian' => $key]) }}"
                        @class([
@@ -197,32 +198,20 @@
         </div>
     </section>
 
-    <!-- Navigasi bawah (mobile): selalu terlihat, ramah jangkauan jempol -->
-    <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-teal-900/10 bg-white/95 backdrop-blur sm:hidden"
-         style="padding-bottom: env(safe-area-inset-bottom)"
-         aria-label="Bagian akun">
-        <div class="mx-auto flex max-w-2xl">
-            <a href="{{ url('/') }}"
-               class="flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold text-teal-800/60">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
-                Beranda
-            </a>
-            <a href="{{ route('member.area') }}"
-               @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'profil', 'text-teal-800/60' => $activeTab !== 'profil'])>
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
-                Profil
-            </a>
-            <a href="{{ route('member.area', ['bagian' => 'pendaftaran']) }}"
-               @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'pendaftaran', 'text-teal-800/60' => $activeTab !== 'pendaftaran'])>
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="m9.5 13 1.75 1.75L14.75 11"/></svg>
-                Pendaftaran
-            </a>
-            <a href="{{ route('member.area', ['bagian' => 'kelas']) }}"
-               @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'kelas', 'text-teal-800/60' => $activeTab !== 'kelas'])>
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.25C10 4.75 7.5 4.5 5 4.5v13c2.5 0 5 .25 7 1.75 2-1.5 4.5-1.75 7-1.75v-13c-2.5 0-5 .25-7 1.75Z"/><path d="M12 6.25v13"/></svg>
-                Kelas
-            </a>
-        </div>
-    </nav>
+    {{-- Navigasi bawah khusus halaman akun: Beranda + tab akun --}}
+    <x-nav.bottom-nav label="Bagian akun">
+        <x-nav.bottom-nav-item :href="url('/')" label="Beranda">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="route('member.area')" label="Profil" :active="$activeTab === 'profil'">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'pendaftaran'])" label="Pendaftaran" :active="$activeTab === 'pendaftaran'">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="m9.5 13 1.75 1.75L14.75 11"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'kelas'])" label="Kelas" :active="$activeTab === 'kelas'">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.25C10 4.75 7.5 4.5 5 4.5v13c2.5 0 5 .25 7 1.75 2-1.5 4.5-1.75 7-1.75v-13c-2.5 0-5 .25-7 1.75Z"/><path d="M12 6.25v13"/></svg>
+        </x-nav.bottom-nav-item>
+    </x-nav.bottom-nav>
 
 </x-layouts.public>
