@@ -124,9 +124,18 @@
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8.5" r="2.75"/><path d="M3.75 18.5a5.25 5.25 0 0 1 10.5 0"/><path d="M15.5 6.06a2.75 2.75 0 0 1 0 4.88"/><path d="M16.5 13.6a5.26 5.26 0 0 1 3.75 4.9"/></svg>
         </x-nav.bottom-nav-item>
         @auth
-            <x-nav.bottom-nav-item :href="route('member.area')" label="Akun">
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
-            </x-nav.bottom-nav-item>
+            {{-- Menu akun mobile: chip inisial dengan drop-up (Akun Saya/Panel Admin + Keluar) --}}
+            <details class="account-menu relative flex flex-1">
+                <summary class="flex w-full cursor-pointer list-none flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold text-teal-800/60 [&::-webkit-details-marker]:hidden">
+                    <span class="flex h-5 w-5 items-center justify-center rounded-full bg-teal-700 text-[0.6rem] font-bold text-white">
+                        {{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
+                    </span>
+                    Akun
+                </summary>
+                <div class="absolute bottom-full right-2 z-50 mb-3 w-52 rounded-xl border border-teal-900/10 bg-white p-1.5 shadow-lg">
+                    <x-nav.account-menu-items />
+                </div>
+            </details>
         @else
             <x-nav.bottom-nav-item :href="route('member.login')" label="Masuk" :active="request()->is('masuk')">
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 8V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-6a2 2 0 0 1-2-2v-2"/><path d="M4 12h10M11 9l3 3-3 3"/></svg>
