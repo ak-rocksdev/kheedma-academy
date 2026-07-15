@@ -2,9 +2,9 @@
     description="Area member Kheedma Academy.">
 
     @php($tabs = [
+        'profil' => 'Profil',
         'pendaftaran' => 'Pendaftaran',
         'kelas' => 'Kelas & Program',
-        'profil' => 'Profil',
     ])
 
     <section class="relative overflow-hidden">
@@ -33,7 +33,7 @@
             <!-- Tab bar (tablet/desktop); di mobile navigasinya pindah ke bawah layar -->
             <nav class="mt-8 hidden gap-2 sm:flex" aria-label="Bagian akun">
                 @foreach ($tabs as $key => $label)
-                    <a href="{{ route('member.area', $key === 'pendaftaran' ? [] : ['bagian' => $key]) }}"
+                    <a href="{{ route('member.area', $key === 'profil' ? [] : ['bagian' => $key]) }}"
                        @class([
                            'rounded-full px-5 py-2.5 text-sm font-semibold transition',
                            'bg-teal-800 text-white shadow-sm' => $activeTab === $key,
@@ -202,7 +202,17 @@
          style="padding-bottom: env(safe-area-inset-bottom)"
          aria-label="Bagian akun">
         <div class="mx-auto flex max-w-2xl">
+            <a href="{{ url('/') }}"
+               class="flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold text-teal-800/60">
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
+                Beranda
+            </a>
             <a href="{{ route('member.area') }}"
+               @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'profil', 'text-teal-800/60' => $activeTab !== 'profil'])>
+                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
+                Profil
+            </a>
+            <a href="{{ route('member.area', ['bagian' => 'pendaftaran']) }}"
                @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'pendaftaran', 'text-teal-800/60' => $activeTab !== 'pendaftaran'])>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="m9.5 13 1.75 1.75L14.75 11"/></svg>
                 Pendaftaran
@@ -211,11 +221,6 @@
                @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'kelas', 'text-teal-800/60' => $activeTab !== 'kelas'])>
                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.25C10 4.75 7.5 4.5 5 4.5v13c2.5 0 5 .25 7 1.75 2-1.5 4.5-1.75 7-1.75v-13c-2.5 0-5 .25-7 1.75Z"/><path d="M12 6.25v13"/></svg>
                 Kelas
-            </a>
-            <a href="{{ route('member.area', ['bagian' => 'profil']) }}"
-               @class(['flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold', 'text-orange-600' => $activeTab === 'profil', 'text-teal-800/60' => $activeTab !== 'profil'])>
-                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
-                Profil
             </a>
         </div>
     </nav>

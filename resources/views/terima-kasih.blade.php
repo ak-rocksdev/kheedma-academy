@@ -24,7 +24,7 @@
 
         @if (session('has_account'))
             <div class="mt-8 flex flex-wrap items-center justify-center gap-4">
-                <x-cta :href="route('member.area')" label="Kelola Status Pendaftaran" />
+                <x-cta :href="route('member.area', ['bagian' => 'pendaftaran'])" label="Kelola Status Pendaftaran" />
                 <a href="{{ url('/') }}"
                    class="inline-flex items-center rounded-full border border-teal-700/20 px-7 py-3.5 text-sm font-semibold text-teal-700 transition hover:bg-white/60">
                     ← Kembali ke beranda

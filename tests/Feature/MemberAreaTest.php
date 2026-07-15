@@ -72,8 +72,15 @@ class MemberAreaTest extends TestCase
         $program = Program::factory()->active()->create(['name' => 'Kelas Tab Uji']);
         Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
 
-        // Default = tab Pendaftaran: status ada, daftar kelas tidak.
+        // Default = tab Profil (tab pertama): data diri tampil, seksi lain tidak.
         $this->actingAs($user)->get('/akun')
+            ->assertOk()
+            ->assertSee('Nomor HP')
+            ->assertDontSee('Status Pendaftaran')
+            ->assertDontSee('Kelas Tab Uji');
+
+        // Tab Pendaftaran: status ada, daftar kelas tidak.
+        $this->actingAs($user)->get('/akun?bagian=pendaftaran')
             ->assertOk()
             ->assertSee('Status Pendaftaran')
             ->assertDontSee('Kelas Tab Uji');
@@ -84,15 +91,13 @@ class MemberAreaTest extends TestCase
             ->assertSee('Kelas Tab Uji')
             ->assertDontSee('Status Pendaftaran');
 
-        // Tab Profil: data diri tampil.
-        $this->actingAs($user)->get('/akun?bagian=profil')
-            ->assertOk()
-            ->assertSee('Nomor HP');
-
         // Nilai bagian tak dikenal jatuh kembali ke tab default.
         $this->actingAs($user)->get('/akun?bagian=ngawur')
             ->assertOk()
-            ->assertSee('Status Pendaftaran');
+            ->assertSee('Nomor HP');
+
+        // Navigasi utama ke beranda tetap tersedia dari halaman akun.
+        $this->actingAs($user)->get('/akun')->assertSee('Beranda');
     }
 
     public function test_profile_tab_shows_community_membership_state(): void
@@ -113,7 +118,7 @@ class MemberAreaTest extends TestCase
         Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'cohort_id' => $cohort->id, 'status' => 'pending']);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=pendaftaran')
             ->assertOk()
             ->assertSee('Status Pendaftaran')
             ->assertSee('Angkatan Uji 9');
@@ -131,7 +136,7 @@ class MemberAreaTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=pendaftaran')
             ->assertOk()
             ->assertSee('Belum lolos')
             ->assertSee('Fokus dulu ke followers minimal 500 ya.')
@@ -145,7 +150,7 @@ class MemberAreaTest extends TestCase
         Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'status' => 'rejected']);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=pendaftaran')
             ->assertOk()
             ->assertSee('Belum lolos')
             ->assertDontSee('Catatan dari tim');

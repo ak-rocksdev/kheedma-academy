@@ -144,7 +144,7 @@ class MemberAuthTest extends TestCase
             'program_id' => $program->id, 'referral_source' => 'teman',
         ]);
 
-        $this->actingAs($user)->get('/akun')
+        $this->actingAs($user)->get('/akun?bagian=pendaftaran')
             ->assertOk()
             ->assertSee('Program Status')
             ->assertSee('Menunggu');

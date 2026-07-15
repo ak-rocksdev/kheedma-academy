@@ -71,10 +71,10 @@ class MemberAreaController extends Controller
                 ];
             });
 
-        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke default.
-        $activeTab = in_array($request->query('bagian'), ['kelas', 'profil'], true)
+        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke tab pertama.
+        $activeTab = in_array($request->query('bagian'), ['pendaftaran', 'kelas'], true)
             ? $request->query('bagian')
-            : 'pendaftaran';
+            : 'profil';
 
         return view('member.akun', [
             'user' => $user,
