@@ -61,20 +61,10 @@
                 @endauth
             </nav>
 
-            <div class="flex items-center gap-4">
-                {{-- Akses akun/masuk versi mobile: nav utama header hanya tampil mulai md --}}
-                <div class="text-sm font-medium text-teal-800 md:hidden">
-                    @auth
-                        <x-nav.account-menu compact />
-                    @else
-                        <a href="{{ route('member.login') }}" class="transition hover:text-orange-600">Masuk</a>
-                    @endauth
-                </div>
-                <a href="{{ url('/daftar') }}"
-                   class="inline-flex items-center rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 hover:shadow">
-                    Daftar
-                </a>
-            </div>
+            <a href="{{ url('/daftar') }}"
+               class="inline-flex items-center rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-orange-600 hover:shadow">
+                Daftar
+            </a>
         </div>
     </header>
 
