@@ -314,6 +314,9 @@ class AccountAtApplicationTest extends TestCase
             ->post("/program/{$program->slug}/daftar", $this->guestPayload())
             ->assertOk()
             ->assertSee('Kelola Status Pendaftaran')
-            ->assertSee('Kembali ke beranda');
+            ->assertSee('Kembali ke beranda')
+            ->assertSee('sedang ditinjau')
+            ->assertDontSee('pra-seleksi')
+            ->assertDontSee('kesungguhan');
     }
 }
