@@ -161,7 +161,7 @@ class PublicCatalogTest extends TestCase
         ]);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Program untuk Anda')
             ->assertSee('Affiliate Kelas Satu')

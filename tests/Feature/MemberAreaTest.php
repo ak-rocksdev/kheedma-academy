@@ -44,7 +44,7 @@ class MemberAreaTest extends TestCase
         Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'start_date' => '2026-09-01']);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Kelas Dibuka')
             ->assertSee('Kelas Terbuka Uji')
@@ -60,10 +60,49 @@ class MemberAreaTest extends TestCase
         Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'cohort_id' => $cohort->id, 'status' => 'pending']);
 
         $this->actingAs($user)
-            ->get('/akun')
+            ->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Menunggu review')
             ->assertDontSee(route('program.apply', $program), false);
+    }
+
+    public function test_account_tabs_split_the_sections(): void
+    {
+        [$user] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Tab Uji']);
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+
+        // Default = tab Pendaftaran: status ada, daftar kelas tidak.
+        $this->actingAs($user)->get('/akun')
+            ->assertOk()
+            ->assertSee('Status Pendaftaran')
+            ->assertDontSee('Kelas Tab Uji');
+
+        // Tab Kelas & Program: kelas ada, status tidak.
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas Tab Uji')
+            ->assertDontSee('Status Pendaftaran');
+
+        // Tab Profil: data diri tampil.
+        $this->actingAs($user)->get('/akun?bagian=profil')
+            ->assertOk()
+            ->assertSee('Nomor HP');
+
+        // Nilai bagian tak dikenal jatuh kembali ke tab default.
+        $this->actingAs($user)->get('/akun?bagian=ngawur')
+            ->assertOk()
+            ->assertSee('Status Pendaftaran');
+    }
+
+    public function test_profile_tab_shows_community_membership_state(): void
+    {
+        [$user] = $this->member();
+
+        $this->actingAs($user)->get('/akun?bagian=profil')
+            ->assertOk()
+            ->assertSee('belum bergabung dengan komunitas')
+            ->assertSee(route('komunitas'), false);
     }
 
     public function test_status_card_names_the_cohort(): void

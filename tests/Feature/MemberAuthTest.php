@@ -45,7 +45,8 @@ class MemberAuthTest extends TestCase
             ->assertRedirect('/akun');
 
         $user->refresh();
-        $this->actingAs($user)->get('/akun')->assertOk()->assertSee($user->name)->assertSee($user->person->phone);
+        $this->actingAs($user)->get('/akun')->assertOk()->assertSee($user->name);
+        $this->actingAs($user)->get('/akun?bagian=profil')->assertOk()->assertSee($user->person->phone);
     }
 
     public function test_wrong_password_is_rejected(): void

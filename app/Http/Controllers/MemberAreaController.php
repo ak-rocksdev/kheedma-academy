@@ -71,6 +71,11 @@ class MemberAreaController extends Controller
                 ];
             });
 
+        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke default.
+        $activeTab = in_array($request->query('bagian'), ['kelas', 'profil'], true)
+            ? $request->query('bagian')
+            : 'pendaftaran';
+
         return view('member.akun', [
             'user' => $user,
             'person' => $person,
@@ -78,6 +83,7 @@ class MemberAreaController extends Controller
             'applications' => ($person?->applications ?? collect())->map(fn ($a) => $this->applicationCard($a)),
             'affiliate' => $affiliate,
             'openClasses' => $openClasses,
+            'activeTab' => $activeTab,
         ]);
     }
 
