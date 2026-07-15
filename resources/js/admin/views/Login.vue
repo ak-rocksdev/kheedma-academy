@@ -1,20 +1,23 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Eye, EyeOff } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
+import { Alert } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 
 const router = useRouter();
 const auth = useAuthStore();
 
 const email = ref('');
 const password = ref('');
-const showPassword = ref(false);
 const error = ref('');
 const loading = ref(false);
 
-const inputClass =
-    'mt-1.5 w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
+// Pagi-pagi langsung bisa mengetik: kursor menunggu di kolom email.
+const emailInput = ref(null);
+onMounted(() => emailInput.value?.$el?.focus());
 
 async function submit() {
     error.value = '';
@@ -31,49 +34,91 @@ async function submit() {
 </script>
 
 <template>
-    <div class="flex min-h-screen items-center justify-center px-6">
-        <div class="w-full max-w-sm">
-            <div class="flex flex-col items-center text-center">
-                <img :src="'/images/kheedma-academy-stacked.png'" width="1180" height="918" alt="Kheedma Academy" class="h-24 w-auto" />
-                <span class="mt-4 text-[0.6rem] font-semibold uppercase tracking-[0.4em] text-orange-600">Panel Admin</span>
+    <!-- Chrome-nya alat kerja, bukan situs publik: teal pekat + supergraphic,
+         sekali lirik tidak mungkin tertukar dengan login member. -->
+    <div class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-teal-900 px-6 py-12">
+        <div class="supergraphic pointer-events-none absolute inset-0 opacity-[0.07]" aria-hidden="true"></div>
+        <div class="glow pointer-events-none absolute left-1/2 top-1/3 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-teal-600/25 blur-3xl" aria-hidden="true"></div>
+
+        <div class="relative w-full max-w-sm">
+            <a href="/" class="rise group flex justify-center" aria-label="Kembali ke beranda Kheedma Academy">
+                <img
+                    :src="'/images/kheedma-academy-stacked-ondark.png'"
+                    width="1180" height="918" alt="Kheedma Academy"
+                    class="h-24 w-auto transition-transform duration-300 group-hover:-translate-y-1"
+                />
+            </a>
+
+            <div class="rise mt-8 rounded-2xl bg-white p-8 shadow-2xl shadow-teal-950/40" style="--rise-delay: 90ms">
+                <h1 class="font-display text-2xl font-bold text-teal-900">Panel Admin</h1>
+                <p class="mt-1 text-sm text-muted-foreground">Masuk untuk mengelola akademi.</p>
+
+                <form class="mt-6 space-y-4" @submit.prevent="submit">
+                    <Transition
+                        enter-active-class="transition duration-200 ease-out motion-reduce:transition-none"
+                        enter-from-class="-translate-y-1 opacity-0"
+                        enter-to-class="translate-y-0 opacity-100"
+                    >
+                        <Alert v-if="error" class="px-3.5 py-2.5">{{ error }}</Alert>
+                    </Transition>
+
+                    <div>
+                        <label class="text-xs text-muted-foreground">Email</label>
+                        <Input ref="emailInput" v-model="email" type="email" autocomplete="username" required placeholder="admin@kheedma.id" class="mt-1.5" />
+                    </div>
+                    <div>
+                        <label class="text-xs text-muted-foreground">Kata sandi</label>
+                        <PasswordInput v-model="password" autocomplete="current-password" required placeholder="••••••••" class="mt-1.5" />
+                    </div>
+                    <Button type="submit" :disabled="loading" class="w-full transition-transform active:scale-[0.99]">
+                        {{ loading ? 'Memproses…' : 'Masuk' }}
+                    </Button>
+                </form>
             </div>
 
-            <form class="mt-10 space-y-5" @submit.prevent="submit">
-                <div v-if="error" class="rounded-lg border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-700">
-                    {{ error }}
-                </div>
-
-                <div>
-                    <label class="block text-sm font-medium text-teal-800">Email</label>
-                    <input v-model="email" type="email" autocomplete="username" required :class="inputClass" placeholder="admin@kheedma.id" />
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-teal-800">Kata sandi</label>
-                    <div class="relative">
-                        <input v-model="password" :type="showPassword ? 'text' : 'password'" autocomplete="current-password" required :class="[inputClass, 'pr-11']" placeholder="••••••••" />
-                        <button
-                            type="button"
-                            :aria-label="showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
-                            class="absolute inset-y-0 right-0 mt-1.5 flex w-11 items-center justify-center text-teal-900/35 transition-colors hover:text-teal-700 focus-visible:outline-none"
-                            @click="showPassword = !showPassword"
-                        >
-                            <component :is="showPassword ? EyeOff : Eye" class="size-4" />
-                        </button>
-                    </div>
-                </div>
-                <button
-                    type="submit"
-                    :disabled="loading"
-                    class="w-full rounded-lg bg-teal-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                    {{ loading ? 'Memproses…' : 'Masuk' }}
-                </button>
-
-                <p class="text-center text-sm text-teal-800/60">
-                    Bukan bagian dari tim?
-                    <a href="/masuk" class="font-medium text-teal-700 transition hover:text-orange-600">Masuk sebagai member</a>
-                </p>
-            </form>
+            <p class="rise mt-6 text-center text-sm text-teal-100/70" style="--rise-delay: 180ms">
+                Bukan bagian dari tim?
+                <a href="/masuk" class="font-medium text-white underline-offset-4 transition hover:text-orange-300 hover:underline">Masuk sebagai member</a>
+            </p>
         </div>
+
+        <p class="rise absolute bottom-6 text-[0.65rem] uppercase tracking-[0.3em] text-teal-100/40" style="--rise-delay: 260ms">
+            Khidmat · Amanah · Itqan · Barakah
+        </p>
     </div>
 </template>
+
+<style scoped>
+/* Orkestrasi masuk: logo, kartu, lalu tautan naik berurutan; glow bernapas pelan. */
+@media (prefers-reduced-motion: no-preference) {
+    .rise {
+        opacity: 0;
+        transform: translateY(12px);
+        animation: rise 0.5s ease-out forwards;
+        animation-delay: var(--rise-delay, 0ms);
+    }
+
+    @keyframes rise {
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+
+    .glow {
+        animation: breathe 9s ease-in-out infinite alternate;
+    }
+
+    @keyframes breathe {
+        from {
+            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        to {
+            opacity: 1;
+            transform: translate(-50%, -52%) scale(1.12);
+        }
+    }
+}
+</style>
