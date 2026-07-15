@@ -86,12 +86,23 @@ const router = createRouter({
 
 router.beforeEach((to) => {
     const auth = useAuthStore();
+    const isStaff = auth.hasRole('admin') || auth.hasRole('mentor');
 
     if (to.meta.auth && !auth.isAuthenticated) {
         return { name: 'login' };
     }
+    // Sesi web dibagi dengan area member: member yang mengetik /admin harus
+    // dilempar ke rumahnya sendiri, bukan melihat cangkang panel staf.
+    if (to.meta.auth && auth.isAuthenticated && !isStaff) {
+        window.location.assign('/akun');
+        return false;
+    }
     if (to.meta.guest && auth.isAuthenticated) {
-        return { name: 'dashboard' };
+        if (isStaff) {
+            return { name: 'dashboard' };
+        }
+        window.location.assign('/akun');
+        return false;
     }
     if (to.meta.permission && !auth.can(to.meta.permission)) {
         return { name: 'dashboard' };
