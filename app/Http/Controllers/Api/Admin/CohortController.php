@@ -61,6 +61,15 @@ class CohortController extends Controller
     {
         $cohort = Cohort::create($this->validated($request));
 
+        // Launch decision 2026-07-15: one cohort = one meeting. The single
+        // session is seeded invisibly so attendance works the moment the
+        // cohort exists; session management stays dormant in the UI.
+        $cohort->sessions()->create([
+            'title' => 'Pertemuan',
+            'scheduled_at' => $cohort->start_date,
+            'position' => 1,
+        ]);
+
         return response()->json([
             'cohort' => $this->row($cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
         ], 201);

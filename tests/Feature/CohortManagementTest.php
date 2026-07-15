@@ -147,6 +147,23 @@ class CohortManagementTest extends TestCase
             ->assertJsonValidationErrors('registration_closes_at');
     }
 
+    public function test_creating_a_cohort_seeds_one_default_session(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', [
+                'name' => 'Angkatan Sederhana',
+                'program_id' => $program->id,
+                'start_date' => '2026-09-01',
+            ])
+            ->assertCreated();
+
+        $cohort = Cohort::where('name', 'Angkatan Sederhana')->sole();
+        $this->assertCount(1, $cohort->sessions);
+        $this->assertSame('2026-09-01', $cohort->sessions->first()->scheduled_at?->toDateString());
+    }
+
     public function test_cohort_with_enrollments_cannot_be_deleted(): void
     {
         $cohort = Cohort::factory()->create();
