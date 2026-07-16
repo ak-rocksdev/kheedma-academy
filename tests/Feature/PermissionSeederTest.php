@@ -28,4 +28,13 @@ class PermissionSeederTest extends TestCase
         $this->assertFalse($mentor->hasPermissionTo('users.manage'));
         $this->assertFalse($mentor->hasPermissionTo('enrollments.manage'));
     }
+
+    public function test_content_manage_granted_to_admin_only(): void
+    {
+        $this->seed(RoleSeeder::class);
+        $this->seed(PermissionSeeder::class);
+
+        $this->assertTrue(Role::findByName('admin', 'web')->hasPermissionTo('content.manage'));
+        $this->assertFalse(Role::findByName('mentor', 'web')->hasPermissionTo('content.manage'));
+    }
 }

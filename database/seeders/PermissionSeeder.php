@@ -26,6 +26,7 @@ class PermissionSeeder extends Seeder
             'users.manage',
             'programs.manage',
             'community.view',
+            'content.manage',
             'data.export',
         ];
 
