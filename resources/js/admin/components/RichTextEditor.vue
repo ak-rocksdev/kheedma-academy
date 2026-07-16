@@ -30,6 +30,8 @@ const editor = useEditor({
             codeBlock: false,
             horizontalRule: false,
             strike: false,
+            underline: false,
+            hardBreak: false,
             // Registered separately below so `Link.configure` controls its
             // options; StarterKit v3 bundles its own Link and would otherwise
             // register a duplicate.
@@ -70,7 +72,13 @@ function applyLink() {
         if (editor.value.state.selection.empty) {
             // No selection: insert the URL as its own link text (covers
             // pasting a copied media-file link, e.g. a PDF from Media).
-            chain.insertContent(`<a href="${linkUrl.value}">${linkUrl.value}</a>`).run();
+            // Structured content, not an HTML string, so serialization
+            // escapes the input instead of letting quotes break the href.
+            chain.insertContent({
+                type: 'text',
+                text: linkUrl.value,
+                marks: [{ type: 'link', attrs: { href: linkUrl.value } }],
+            }).run();
         } else {
             chain.setLink({ href: linkUrl.value }).run();
         }

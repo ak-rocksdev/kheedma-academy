@@ -51,16 +51,20 @@ onMounted(() => load(1));
 async function onFilesChosen(fileList) {
     error.value = '';
     uploading.value = true;
+    let uploadError = '';
     try {
         for (const file of fileList) {
             await mediaApi.upload(file);
         }
-        await load(1);
     } catch (e) {
-        if (e.sessionExpired) return; // the global re-login dialog takes over
-        error.value = e.errors?.file?.[0] ?? e.message ?? 'Gagal mengunggah file.';
+        if (!e.sessionExpired) uploadError = e.errors?.file?.[0] ?? e.message ?? 'Gagal mengunggah file.';
     } finally {
         uploading.value = false;
+        // Refresh even after a mid-batch failure so the files that did make
+        // it show up alongside the error (load() clears error.value, so the
+        // upload error is re-applied after the refresh).
+        await load(1);
+        if (uploadError) error.value = uploadError;
     }
 }
 
@@ -92,7 +96,7 @@ async function confirmDelete(item) {
         await mediaApi.remove(item.id);
         items.value = items.value.filter((m) => m.id !== item.id);
     } catch (e) {
-        if (!e.sessionExpired) error.value = e.message;
+        if (!e.sessionExpired) error.value = e.message ?? 'Gagal menghapus file.';
     } finally {
         deletingItem.value = null;
     }
