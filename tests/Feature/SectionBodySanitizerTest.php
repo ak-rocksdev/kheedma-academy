@@ -44,6 +44,21 @@ class SectionBodySanitizerTest extends TestCase
         $this->assertStringNotContainsString('evil.example', $external);
     }
 
+    public function test_protocol_relative_img_src_is_dropped(): void
+    {
+        $clean = $this->sanitizer->sanitize('<img src="//evil.example/a.jpg" alt="x">');
+
+        $this->assertStringNotContainsString('evil.example', $clean);
+    }
+
+    public function test_protocol_relative_link_href_is_kept_as_https_equivalent(): void
+    {
+        $this->assertStringContainsString(
+            'href="//kheedma.id"',
+            $this->sanitizer->sanitize('<a href="//kheedma.id">x</a>')
+        );
+    }
+
     public function test_links_allow_https_and_relative_but_not_javascript(): void
     {
         $this->assertStringContainsString(

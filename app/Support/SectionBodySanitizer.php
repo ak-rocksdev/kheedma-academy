@@ -10,6 +10,10 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  * editor produces. The editor constrains input client-side, but the API
  * must not trust the client. Image URLs stay relative so stored content
  * never bakes in APP_URL.
+ *
+ * Protocol-relative links (href="//host") are treated as https-equivalent
+ * and stay allowed; protocol-relative image sources (src="//host/...") are
+ * blocked because image URLs must be truly relative.
  */
 class SectionBodySanitizer
 {
@@ -29,6 +33,7 @@ class SectionBodySanitizer
             ->allowLinkSchemes(['http', 'https'])
             ->allowRelativeLinks()
             ->allowMediaSchemes([])
+            ->allowMediaHosts([])
             ->allowRelativeMedias()
             ->withMaxInputLength(50000);
 
