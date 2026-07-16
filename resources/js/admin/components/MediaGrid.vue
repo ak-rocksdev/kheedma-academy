@@ -24,6 +24,9 @@ const copiedId = ref(null);
 async function load(page = 1) {
     loading.value = true;
     error.value = '';
+    // Any reload (search, post-upload refresh) disarms a pending two-click
+    // delete so a stale arm can't turn the next single click into a delete.
+    deletingItem.value = null;
     try {
         const params = new URLSearchParams();
         params.set('page', page);

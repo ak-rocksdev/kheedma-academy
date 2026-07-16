@@ -55,7 +55,12 @@ onMounted(() => {
     loadPrograms();
     loadSections();
 });
-watch(selected, loadSections);
+// Switching pages disarms any pending two-click delete: without this, the arm
+// survives the switch and one click after switching back deletes with no confirm.
+watch(selected, () => {
+    deletingId.value = null;
+    loadSections();
+});
 
 function openCreate() {
     editingSection.value = null;
@@ -80,6 +85,7 @@ async function removeSection(section) {
 }
 
 async function move(index, delta) {
+    error.value = '';
     const ids = sections.value.map((s) => s.id);
     const [id] = ids.splice(index, 1);
     ids.splice(index + delta, 0, id);
