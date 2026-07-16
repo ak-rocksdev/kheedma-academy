@@ -120,4 +120,16 @@ class MediaAdminTest extends TestCase
         $this->assertDatabaseMissing('media', ['id' => $media->id]);
         Storage::disk('public')->assertMissing($media->path);
     }
+
+    public function test_delete_succeeds_even_when_file_already_missing(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $media = Media::factory()->create();
+
+        $this->actingAs($admin)->deleteJson("/api/admin/media/{$media->id}")
+            ->assertOk()
+            ->assertJson(['ok' => true]);
+
+        $this->assertDatabaseMissing('media', ['id' => $media->id]);
+    }
 }

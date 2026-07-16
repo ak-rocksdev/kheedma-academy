@@ -8,6 +8,7 @@ use App\Models\Media;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class MediaController extends Controller
 {
@@ -52,7 +53,13 @@ class MediaController extends Controller
         return response()->json(['media' => $this->payload($media)]);
     }
 
-    /** Refuses deletion while any section body still references the file. */
+    /**
+     * Refuses deletion while any section body still references the file.
+     *
+     * The row is deleted before the file on purpose: if the file delete then
+     * fails, the worst case is a logged orphaned file on disk, never a
+     * dangling row pointing at a missing file (a broken thumbnail in the UI).
+     */
     public function destroy(Media $media): JsonResponse
     {
         $usedIn = ContentSection::query()
@@ -70,8 +77,12 @@ class MediaController extends Controller
             ], 422);
         }
 
-        Storage::disk('public')->delete($media->path);
         $media->delete();
+
+        $disk = Storage::disk('public');
+        if (! $disk->delete($media->path) && $disk->exists($media->path)) {
+            report(new RuntimeException("Media row {$media->id} deleted but file could not be removed from disk: {$media->path}"));
+        }
 
         return response()->json(['ok' => true]);
     }
