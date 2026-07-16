@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\Admin\CohortSessionController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
 use App\Http\Controllers\Api\Admin\ContentSectionController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
+use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\ProgramThumbnailController;
@@ -70,6 +71,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::patch('/content-sections-order', [ContentSectionController::class, 'reorder']);
             Route::patch('/content-sections/{section}', [ContentSectionController::class, 'update']);
             Route::delete('/content-sections/{section}', [ContentSectionController::class, 'destroy']);
+
+            Route::get('/media', [MediaController::class, 'index']);
+            Route::post('/media', [MediaController::class, 'store']);
+            Route::patch('/media/{media}', [MediaController::class, 'update']);
+            Route::delete('/media/{media}', [MediaController::class, 'destroy']);
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');
