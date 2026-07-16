@@ -122,8 +122,9 @@ Toolbar (Indonesian labels): Tebal, Miring, Daftar, Daftar bernomor, Tautan, Gam
 The image toolbar button opens the media picker dialog (grid of image media + upload
 drop zone), built on the existing shadcn-vue Dialog components in the admin SPA.
 Choosing an image inserts `<img src alt>` at the cursor with a **relative** URL, `alt`
-prefilled from `media.alt_text`. A "Sisipkan sebagai tautan" action on non-image files
-inserts an `<a>` with the file name.
+prefilled from `media.alt_text`. Non-image files reach content via copy-link (Media
+manager) + the editor's link button, which inserts the URL as its own link text when
+nothing is selected — no dedicated insert action (YAGNI).
 
 ### Shared prose stylesheet
 
