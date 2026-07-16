@@ -14,6 +14,10 @@ use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
  * Protocol-relative links (href="//host") are treated as https-equivalent
  * and stay allowed; protocol-relative image sources (src="//host/...") are
  * blocked because image URLs must be truly relative.
+ *
+ * Max byte length is 4x the 50k-char validation ceiling; the request rule is
+ * the user-facing constraint, this byte-level limit is a backstop that cannot
+ * truncate content that passed character validation.
  */
 class SectionBodySanitizer
 {
@@ -35,7 +39,7 @@ class SectionBodySanitizer
             ->allowMediaSchemes([])
             ->allowMediaHosts([])
             ->allowRelativeMedias()
-            ->withMaxInputLength(50000);
+            ->withMaxInputLength(200_000);
 
         $this->sanitizer = new HtmlSanitizer($config);
     }
