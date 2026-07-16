@@ -55,6 +55,7 @@ class ProgramPageController extends Controller
 
         return view('funnel.program', [
             'program' => $program,
+            'sections' => $program->sections,
             'isOpen' => $isOpen,
             'openCohort' => $isOpen ? $program->openCohort() : null,
             'locked' => $locked,

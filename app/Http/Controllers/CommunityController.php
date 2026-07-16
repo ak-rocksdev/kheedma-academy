@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ProvisionParticipantAccount;
 use App\Http\Requests\CommunityJoinRequest;
+use App\Models\ContentSection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,7 +38,9 @@ class CommunityController extends Controller
         // story is hidden so the form is front and center.
         $focusedEdit = $user !== null && $request->boolean('ubah');
 
-        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit'));
+        $sections = $focusedEdit ? collect() : ContentSection::forCommunity()->get();
+
+        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit', 'sections'));
     }
 
     /**
