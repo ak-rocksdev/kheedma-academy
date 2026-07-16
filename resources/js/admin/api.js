@@ -219,3 +219,38 @@ export const sessions = {
         return api(`/admin/sessions/${id}/attendance`, { method: 'PUT', body: { enrollment_ids: enrollmentIds } });
     },
 };
+
+export const contentSections = {
+    list(query = '') {
+        return api(`/admin/content-sections${query}`);
+    },
+    create(payload) {
+        return api('/admin/content-sections', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/content-sections/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/content-sections/${id}`, { method: 'DELETE' });
+    },
+    reorder(payload) {
+        return api('/admin/content-sections-order', { method: 'PATCH', body: payload });
+    },
+};
+
+export const media = {
+    list(query = '') {
+        return api(`/admin/media${query}`);
+    },
+    upload(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiUpload('/admin/media', formData);
+    },
+    update(id, payload) {
+        return api(`/admin/media/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/media/${id}`, { method: 'DELETE' });
+    },
+};
