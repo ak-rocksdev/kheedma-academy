@@ -10,6 +10,7 @@ use App\Support\SectionBodySanitizer;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class ContentSectionController extends Controller
@@ -18,7 +19,7 @@ class ContentSectionController extends Controller
     {
         $data = $request->validate([
             'page' => ['required', Rule::in(['community', 'program'])],
-            'program_id' => ['required_if:page,program', 'nullable', 'exists:programs,id'],
+            'program_id' => ['required_if:page,program', 'prohibited_if:page,community', 'nullable', 'exists:programs,id'],
         ]);
 
         return response()->json([
@@ -30,9 +31,12 @@ class ContentSectionController extends Controller
     {
         $data = $request->validated();
         $data['body'] = $sanitizer->sanitize($data['body']);
-        $data['sort_order'] = ($this->pageQuery($data)->max('sort_order') ?? -1) + 1;
 
-        $section = ContentSection::create($data);
+        $section = DB::transaction(function () use ($data): ContentSection {
+            $data['sort_order'] = ($this->pageQuery($data)->lockForUpdate()->max('sort_order') ?? -1) + 1;
+
+            return ContentSection::create($data);
+        });
 
         return response()->json(['section' => $this->payload($section)], 201);
     }
@@ -72,9 +76,11 @@ class ContentSectionController extends Controller
             return response()->json(['message' => 'Daftar section tidak cocok dengan isi halaman ini. Muat ulang dulu ya.'], 422);
         }
 
-        foreach (array_values($data['ids']) as $index => $id) {
-            ContentSection::whereKey($id)->update(['sort_order' => $index]);
-        }
+        DB::transaction(function () use ($data): void {
+            foreach (array_values($data['ids']) as $index => $id) {
+                ContentSection::whereKey($id)->update(['sort_order' => $index]);
+            }
+        });
 
         return response()->json(['ok' => true]);
     }

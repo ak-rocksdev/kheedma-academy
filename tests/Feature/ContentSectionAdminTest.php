@@ -77,6 +77,16 @@ class ContentSectionAdminTest extends TestCase
         ])->assertCreated();
     }
 
+    public function test_list_rejects_program_id_for_community_page(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $program = Program::factory()->create();
+
+        $this->actingAs($admin)->getJson("/api/admin/content-sections?page=community&program_id={$program->id}")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('program_id');
+    }
+
     public function test_update_sanitizes_and_saves(): void
     {
         $admin = User::factory()->admin()->create();
