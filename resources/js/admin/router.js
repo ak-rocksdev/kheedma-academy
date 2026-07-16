@@ -51,6 +51,12 @@ const routes = [
                 meta: { permission: 'programs.manage' },
             },
             {
+                path: 'content',
+                name: 'content',
+                component: () => import('./views/Content.vue'),
+                meta: { permission: 'content.manage' },
+            },
+            {
                 path: 'community',
                 name: 'community',
                 component: () => import('./views/Community.vue'),
