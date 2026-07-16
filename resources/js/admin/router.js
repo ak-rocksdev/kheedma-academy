@@ -75,6 +75,12 @@ const routes = [
                 component: () => import('./views/Users.vue'),
                 meta: { permission: 'users.manage' },
             },
+            {
+                path: 'media',
+                name: 'media',
+                component: () => import('./views/Media.vue'),
+                meta: { permission: 'content.manage' },
+            },
         ],
     },
 ];

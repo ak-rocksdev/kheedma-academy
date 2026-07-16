@@ -1,7 +1,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { RouterView, RouterLink, useRouter, useRoute } from 'vue-router';
-import { Ellipsis, LayoutDashboard, BookUser, BookOpen, GraduationCap, UserCog, HeartHandshake } from 'lucide-vue-next';
+import { Ellipsis, LayoutDashboard, BookUser, BookOpen, GraduationCap, UserCog, HeartHandshake, Images } from 'lucide-vue-next';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/auth';
 
@@ -21,6 +21,7 @@ const nav = computed(() =>
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', short: 'Komunitas', icon: HeartHandshake, mobilePrimary: false, show: auth.can('community.view') },
         { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan / Kelas', short: 'Kelas', icon: GraduationCap, mobilePrimary: true, show: auth.can('cohorts.view') },
         { to: { name: 'users' }, match: '/users', label: 'Tim', short: 'Tim', icon: UserCog, mobilePrimary: false, show: auth.can('users.manage') },
+        { to: { name: 'media' }, match: '/media', label: 'Media', short: 'Media', icon: Images, mobilePrimary: false, show: auth.can('content.manage') },
     ].filter((item) => item.show),
 );
 
