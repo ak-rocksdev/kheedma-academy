@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\Admin\AttendanceController;
 use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\CohortSessionController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
+use App\Http\Controllers\Api\Admin\ContentSectionController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
@@ -61,6 +62,14 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::delete('/programs/{program:id}', [ProgramController::class, 'destroy']);
             Route::post('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'store']);
             Route::delete('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'destroy']);
+        });
+
+        Route::middleware('permission:content.manage')->group(function () {
+            Route::get('/content-sections', [ContentSectionController::class, 'index']);
+            Route::post('/content-sections', [ContentSectionController::class, 'store']);
+            Route::patch('/content-sections-order', [ContentSectionController::class, 'reorder']);
+            Route::patch('/content-sections/{section}', [ContentSectionController::class, 'update']);
+            Route::delete('/content-sections/{section}', [ContentSectionController::class, 'destroy']);
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');
