@@ -7,21 +7,34 @@ description: Build, launch, and drive this Laravel + Vue admin app to observe a 
 
 ## Build & boot
 
+On the dev machine the app is already served by **Laravel Herd** at
+`http://kheedma-academy.test` — do NOT run `php artisan serve`; just build and
+drive that URL directly:
+
 ```bash
 composer install && npm install
 npm run build                       # required: tests + pages need public/build/manifest.json
+# .env already exists on the dev machine — never overwrite it
+php artisan migrate --no-interaction
+php artisan permission:cache-reset   # see gotcha below
+```
+
+Fallback for sandboxes/CI without Herd (fresh checkout, no .env):
+
+```bash
 cp .env.example .env && php artisan key:generate
 touch database/database.sqlite
 php artisan migrate:fresh --no-interaction
-php artisan permission:cache-reset && php artisan cache:clear   # see gotcha below
+php artisan permission:cache-reset && php artisan cache:clear
 php artisan db:seed --no-interaction   # admin@kheedma.id / password (ADMIN_* env overrides)
 php artisan serve --host=127.0.0.1 --port=8000 --no-reload
 ```
 
 ## Gotchas
 
-- **Sanctum stateful domains**: the admin SPA login only works from
-  `127.0.0.1:8000` / `localhost` (or whatever APP_URL says). Serving on a
+- **Sanctum stateful domains**: the admin SPA login only works from the host
+  APP_URL names — `kheedma-academy.test` via Herd on the dev machine, or
+  `127.0.0.1:8000` / `localhost` in the serve fallback. Serving on a
   random port makes `/api/login` fail with "Session store not set on request".
 - **Spatie permission cache** lives in the `database` cache store. After
   `migrate:fresh`, a stale cached (empty) permission map makes
