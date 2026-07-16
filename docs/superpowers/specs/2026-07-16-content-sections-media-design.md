@@ -72,14 +72,23 @@ order". No polymorphic relation: community is a page, not an Eloquent model.
 | `uploaded_by` | FK → `users`, nullable, `nullOnDelete` | Audit. |
 | timestamps | | |
 
-Accepted uploads: images `jpeg,jpg,png,webp,gif` and documents `pdf` (max 5 MB each;
-extend the allowlist when a real need appears — YAGNI on speculative types). Files are
-referenced from section HTML **by URL**, so:
+`alt_text` is editable in the manager; `path`/`original_name` are immutable after upload
+(replace = delete + re-upload).
 
-**Deletion protection**: `DELETE /media/{id}` first checks whether the file's public URL
-appears in any `content_sections.body` (and in `programs.thumbnail_path` it does not —
-thumbnails stay a separate mechanism). If referenced, the delete is rejected with a
-message naming the section(s) (page + heading) that use it.
+Accepted uploads: images `jpeg,jpg,png,webp,gif` and documents `pdf` (max 5 MB each;
+extend the allowlist when a real need appears — YAGNI on speculative types).
+
+Files are referenced from section HTML by **relative URL** (`/storage/media/...`), never
+the absolute `Storage::url()` form — absolute URLs bake `APP_URL` into content and break
+on a domain move. The editor inserts relative URLs; `Media::url()` returns the relative
+form. A trade-off to know: editing a media item's `alt_text` later does not update
+copies already inserted into section HTML (the inserted `alt` is a snapshot).
+
+**Deletion protection**: `DELETE /media/{id}` first checks whether the file's relative
+path appears in any `content_sections.body` (matched on `media/<filename>`, not the full
+URL). `programs.thumbnail_path` is unaffected — thumbnails stay a separate mechanism.
+If referenced, the delete is rejected (422) with a message naming the section(s)
+(page + heading) that use it.
 
 ### Models & relations
 
@@ -94,7 +103,7 @@ public function scopeForCommunity(Builder $q): Builder  // where page=community,
 // Media
 public function uploader(): BelongsTo  // belongsTo(User::class, 'uploaded_by')
 public function isImage(): bool
-public function url(): string          // Storage::disk('public')->url($this->path)
+public function url(): string          // relative: '/storage/'.$this->path
 ```
 
 Factories for both models; `ContentSection` factory states `community()` and
@@ -111,16 +120,17 @@ cannot exist in the document; pasted rich content is normalized to the schema.
 Toolbar (Indonesian labels): Tebal, Miring, Daftar, Daftar bernomor, Tautan, Gambar.
 
 The image toolbar button opens the media picker dialog (grid of image media + upload
-drop zone). Choosing an image inserts `<img src alt>` at the cursor, `alt` prefilled
-from `media.alt_text`. A "Sisipkan sebagai tautan" action on non-image files inserts an
-`<a>` with the file name.
+drop zone), built on the existing shadcn-vue Dialog components in the admin SPA.
+Choosing an image inserts `<img src alt>` at the cursor with a **relative** URL, `alt`
+prefilled from `media.alt_text`. A "Sisipkan sebagai tautan" action on non-image files
+inserts an `<a>` with the file name.
 
 ### Shared prose stylesheet
 
-One stylesheet defines class `.kh-prose` (paragraph rhythm, list styles, link style,
-`img` sizing/rounding) in the shared CSS layer used by **both** Vite entries (public
-Blade pages and admin SPA), so there is a single source of truth. `.kh-prose` is applied
-to:
+The admin SPA already imports the same `resources/css/app.css` as the public pages
+(`resources/js/admin/main.js:1`) — there is exactly one stylesheet. Class `.kh-prose`
+(paragraph rhythm, list styles, link style, `img` sizing/rounding) is defined there
+once and applied to:
 
 - the Tiptap `EditorContent` element (admin), rendered on a white card canvas, and
 - the section card `<div>` on public pages.
@@ -130,16 +140,22 @@ images) in the editor and on the public page.
 
 ## Sanitization (server-side)
 
-New backend dependency (approved 2026-07-16): `mews/purifier` (HTMLPurifier). On every
-create/update, `body` passes through a purifier profile whose allowlist mirrors the
-editor schema exactly: `p, strong, em, ul, ol, li, a[href], img[src|alt]`, no inline
-styles, no classes, `a` restricted to http/https URLs. Editors are constrained
-client-side, but the API must not trust the client. Public pages render `{!! body !!}`
-(safe because writes are sanitized).
+New backend dependency (approved 2026-07-16): `symfony/html-sanitizer` — chosen over
+`mews/purifier` because it is framework-agnostic (no coupling to the Laravel major
+version; this app is on Laravel 13, which wrapper packages may lag behind) and actively
+maintained. On every create/update, `body` passes through a sanitizer config whose
+allowlist mirrors the editor schema exactly: `p, strong, em, ul, ol, li, a[href],
+img[src|alt]`, no inline styles, no classes, `a href` allows http/https and relative
+URLs (file links from the media library are relative), `img src` relative URLs only. Editors are constrained client-side, but the API must not
+trust the client. Public pages render `{!! body !!}` (safe because writes are
+sanitized). Wrapped in one small app service (e.g. `SectionBodySanitizer`) so the
+allowlist lives in a single place and tests target it directly.
 
 ## API (all under the existing staff group in `routes/api.php`)
 
 New permission: `content.manage` (sections **and** media — one hat; splitting is YAGNI).
+Added in `PermissionSeeder` via the existing `findOrCreate` list and granted to the
+`admin` role only (`mentor` keeps its current scope; grant later if the PO asks).
 
 | Route | Purpose |
 |---|---|
@@ -148,7 +164,7 @@ New permission: `content.manage` (sections **and** media — one hat; splitting 
 | `PATCH /content-sections/{section}` | Update heading/body |
 | `DELETE /content-sections/{section}` | Delete |
 | `PATCH /content-sections-order` | Persist reorder: `{page, program_id?, ids: []}` |
-| `GET /media?type=image&search=` | Paginated list, newest first |
+| `GET /media?type=image&search=` | Paginated list, newest first. `type=image` filters `mime_type LIKE 'image/%'` (used by the picker); omitted = all files. `search` matches `original_name`. |
 | `POST /media` | Upload (multipart), returns media incl. `url` |
 | `PATCH /media/{media}` | Update `alt_text` |
 | `DELETE /media/{media}` | Delete (with usage check above) |
@@ -175,8 +191,11 @@ card in the existing style (`rounded-3xl border … bg-white/70`), optional `<h2
 `heading`, body inside `div.kh-prose`.
 
 - `funnel/community.blade.php`: the three hard-coded cards are replaced by the partial
-  fed with `ContentSection::forCommunity()->get()`. The hero block (logo, h1, welcome
-  paragraph) stays hard-coded — it is layout, not managed content.
+  fed with `ContentSection::forCommunity()->get()`, in the same position — inside the
+  existing `@unless ($focusedEdit)` block, so the focused-edit flow keeps hiding the
+  intro. The hero block (logo, h1, welcome paragraph) stays hard-coded — it is layout,
+  not managed content. With zero sections (env where the seeder has not run) the page
+  degrades to hero + form, no error.
 - `funnel/program.blade.php`: renders the partial with `$program->sections`; falls back
   to the current `description` card when a program has no sections yet (no flash-empty
   pages during rollout).
@@ -191,7 +210,9 @@ Feature tests (PHPUnit, factories):
 
 - Section CRUD happy paths + permission denial without `content.manage`.
 - Validation edges: program_id required/prohibited by page; unknown page rejected.
-- Sanitization: `<script>`, inline styles, disallowed tags stripped; allowed markup kept.
+- Sanitization (targeting the sanitizer service): `<script>`, inline styles, event
+  attributes, disallowed tags stripped; allowed markup kept; relative `img src` kept,
+  absolute/javascript URLs dropped.
 - Reorder endpoint persists order; ids from another page rejected.
 - Media upload (Storage::fake): stores file, records metadata; wrong type/size rejected.
 - Media delete: blocked with 422 when URL referenced in a section body; allowed and
