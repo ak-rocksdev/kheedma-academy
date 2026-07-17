@@ -175,6 +175,27 @@ async function save() {
                 <p v-if="formErrors.start_date" class="mt-1 text-xs text-destructive">{{ formErrors.start_date[0] }}</p>
             </div>
             <div>
+                <label class="text-xs text-muted-foreground">Program</label>
+                <p v-if="lockedProgram" class="mt-1.5 rounded-md border border-border bg-accent/40 px-3 py-2 text-sm font-medium text-foreground">
+                    {{ lockedProgram.name }}
+                </p>
+                <template v-else>
+                    <NativeSelect v-model="form.program_id" class="mt-1.5">
+                        <option value="">Pilih program…</option>
+                        <option v-for="program in programs ?? []" :key="program.id" :value="program.id">{{ program.name }}</option>
+                    </NativeSelect>
+                </template>
+                <p v-if="formErrors.program_id" class="mt-1 text-xs text-destructive">{{ formErrors.program_id[0] }}</p>
+            </div>
+            <div>
+                <label class="text-xs text-muted-foreground">Mentor</label>
+                <NativeSelect v-model="form.mentor_id" class="mt-1.5">
+                    <option value="">Tanpa mentor</option>
+                    <option v-for="mentor in mentors ?? []" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
+                </NativeSelect>
+                <p v-if="formErrors.mentor_id" class="mt-1 text-xs text-destructive">{{ formErrors.mentor_id[0] }}</p>
+            </div>
+            <div>
                 <label class="text-xs text-muted-foreground">Durasi kelas</label>
                 <ToggleGroup
                     type="single"
@@ -241,27 +262,6 @@ async function save() {
                 <Input v-model="form.materials_url" placeholder="https://drive.google.com/…" class="mt-1.5" />
                 <p class="mt-1 text-xs text-muted-foreground">Opsional. Hanya terlihat oleh peserta yang terdaftar.</p>
                 <p v-if="formErrors.materials_url" class="mt-1 text-xs text-destructive">{{ formErrors.materials_url[0] }}</p>
-            </div>
-            <div>
-                <label class="text-xs text-muted-foreground">Program</label>
-                <p v-if="lockedProgram" class="mt-1.5 rounded-md border border-border bg-accent/40 px-3 py-2 text-sm font-medium text-foreground">
-                    {{ lockedProgram.name }}
-                </p>
-                <template v-else>
-                    <NativeSelect v-model="form.program_id" class="mt-1.5">
-                        <option value="">Pilih program…</option>
-                        <option v-for="program in programs ?? []" :key="program.id" :value="program.id">{{ program.name }}</option>
-                    </NativeSelect>
-                </template>
-                <p v-if="formErrors.program_id" class="mt-1 text-xs text-destructive">{{ formErrors.program_id[0] }}</p>
-            </div>
-            <div>
-                <label class="text-xs text-muted-foreground">Mentor</label>
-                <NativeSelect v-model="form.mentor_id" class="mt-1.5">
-                    <option value="">Tanpa mentor</option>
-                    <option v-for="mentor in mentors ?? []" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
-                </NativeSelect>
-                <p v-if="formErrors.mentor_id" class="mt-1 text-xs text-destructive">{{ formErrors.mentor_id[0] }}</p>
             </div>
             </div>
             </div>
