@@ -9,6 +9,7 @@ import { readonly, ref } from 'vue';
  */
 const error = ref('');
 let placesLibraryPromise = null;
+let mapKitPromise = null;
 
 /**
  * Google's official inline bootstrap loader (unminified), scoped to a
@@ -89,8 +90,39 @@ export function useGooglePlaces() {
         return placesLibraryPromise;
     }
 
+    /**
+     * Resolves the interactive-map building blocks ({ Map,
+     * AdvancedMarkerElement }), sharing the same bootstrap and key checks as
+     * loadPlaces(). Never throws; null means "no map, fall back to inputs".
+     */
+    function loadMapKit() {
+        if (mapKitPromise) {
+            return mapKitPromise;
+        }
+
+        mapKitPromise = (async () => {
+            if ((await loadPlaces()) === null) {
+                return null;
+            }
+            try {
+                const [{ Map }, { AdvancedMarkerElement }] = await Promise.all([
+                    window.google.maps.importLibrary('maps'),
+                    window.google.maps.importLibrary('marker'),
+                ]);
+
+                return { Map, AdvancedMarkerElement };
+            } catch {
+                error.value = 'Gagal memuat peta. Titik lokasi bisa diisi lewat pencarian tempat atau koordinat manual.';
+                return null;
+            }
+        })();
+
+        return mapKitPromise;
+    }
+
     return {
         error: readonly(error),
         loadPlaces,
+        loadMapKit,
     };
 }

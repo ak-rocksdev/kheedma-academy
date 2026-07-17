@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, ExternalLink, FileText, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, Check, ExternalLink, FileText, Pencil, Trash2, UserMinus } from 'lucide-vue-next';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/auth';
 import { fmtDateTime } from '@/lib/format';
+import CohortFormDialog from '@/components/CohortFormDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -39,6 +40,9 @@ const addError = ref('');
 const dropTarget = ref(null);
 const dropNote = ref('');
 const dropError = ref('');
+
+// Edit dialog — the same form the list page uses, refreshed on save.
+const editOpen = ref(false);
 
 
 async function load() {
@@ -186,7 +190,12 @@ watch(() => props.id, () => load());
                         Mentor: {{ cohort.mentor?.name ?? '—' }} · {{ roster.length }} peserta
                     </p>
                 </div>
-                <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
+                <div class="flex gap-2">
+                    <Button v-if="auth.can('cohorts.manage')" variant="outline" size="sm" @click="editOpen = true">
+                        <Pencil class="mr-1.5 h-3.5 w-3.5" /> Ubah
+                    </Button>
+                    <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
+                </div>
             </div>
 
             <!-- Logistik: jadwal, lokasi/link meeting, materi. -->
@@ -347,6 +356,8 @@ watch(() => props.id, () => load());
                 <Button variant="destructive" size="sm" :disabled="!dropNote" @click="confirmDrop">Keluarkan</Button>
             </div>
         </Dialog>
+
+        <CohortFormDialog v-model:open="editOpen" :cohort="cohort" @saved="load" />
 
     </div>
 </template>

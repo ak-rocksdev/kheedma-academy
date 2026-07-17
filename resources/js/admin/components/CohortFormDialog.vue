@@ -156,9 +156,13 @@ async function save() {
 </script>
 
 <template>
-    <Dialog v-model:open="open" :title="isEditing ? 'Ubah Angkatan / Kelas' : 'Tambah Angkatan / Kelas'">
-        <form class="space-y-3" @submit.prevent="save">
-            <Alert v-if="optionsError" class="px-3.5 py-2.5">{{ optionsError }}</Alert>
+    <Dialog v-model:open="open" wide :title="isEditing ? 'Ubah Angkatan / Kelas' : 'Tambah Angkatan / Kelas'">
+        <form @submit.prevent="save">
+            <Alert v-if="optionsError" class="mb-3 px-3.5 py-2.5">{{ optionsError }}</Alert>
+            <!-- Two columns on desktop (schedule | logistics); single column
+                 on small screens. The form has grown too tall for one column. -->
+            <div class="md:grid md:grid-cols-2 md:gap-x-8">
+            <div class="space-y-3">
             <div>
                 <label class="text-xs text-muted-foreground">Nama angkatan / kelas</label>
                 <Input v-model="form.name" placeholder="Nama angkatan / kelas" class="mt-1.5" />
@@ -201,6 +205,8 @@ async function save() {
                 </div>
             </div>
             <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
+            </div>
+            <div class="mt-3 space-y-3 md:mt-0">
             <div>
                 <label class="text-xs text-muted-foreground">Tipe kelas</label>
                 <ToggleGroup
@@ -256,7 +262,9 @@ async function save() {
                 </NativeSelect>
                 <p v-if="formErrors.mentor_id" class="mt-1 text-xs text-destructive">{{ formErrors.mentor_id[0] }}</p>
             </div>
-            <div class="flex justify-end gap-2 pt-2">
+            </div>
+            </div>
+            <div class="mt-4 flex justify-end gap-2 border-t border-border pt-4">
                 <Button type="button" variant="outline" size="sm" @click="open = false">Batal</Button>
                 <Button type="submit" size="sm" :disabled="saving">{{ saving ? 'Menyimpan…' : 'Simpan' }}</Button>
             </div>
