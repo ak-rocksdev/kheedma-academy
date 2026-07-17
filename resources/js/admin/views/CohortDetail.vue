@@ -1,7 +1,8 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, ExternalLink, FileText, Pencil, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, Check, Copy, ExternalLink, FileText, Pencil, Trash2, UserMinus } from 'lucide-vue-next';
+import { copyText } from '@/lib/clipboard';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -43,6 +44,51 @@ const dropError = ref('');
 
 // Edit dialog — the same form the list page uses, refreshed on save.
 const editOpen = ref(false);
+
+// Ringkasan kehadiran: dropped tidak dihitung sebagai target hadir.
+const activeRosterCount = computed(() => roster.value.filter((r) => r.latest_status !== 'dropped').length);
+const hadirCount = computed(() =>
+    mainSession.value ? roster.value.filter((r) => isHadir(r, mainSession.value)).length : 0
+);
+
+const lifecycleLabel = computed(() =>
+    cohort.value
+        ? ({ upcoming: 'Akan datang', active: 'Sedang berjalan', ended: 'Selesai' }[cohort.value.status] ?? null)
+        : null
+);
+
+// Mirrors Cohort::startCountdownLabel(): final week only, display-side.
+const countdownLabel = computed(() => {
+    const iso = cohort.value?.start_date;
+    if (!iso) return null;
+    const start = new Date(iso);
+    if (start <= new Date()) return null;
+    const days = Math.round((new Date(start.toDateString()) - new Date(new Date().toDateString())) / 86400000);
+    if (days === 0) return 'Hari ini';
+    if (days === 1) return 'Besok';
+    return days <= 7 ? `${days} hari lagi` : null;
+});
+
+// Paket info siap-tempel (WhatsApp dsb.) — halaman ini memberi, bukan hanya
+// mengarsip: jadwal + lokasi/link + materi dalam sekali salin.
+const copiedInfo = ref(false);
+async function copyClassInfo() {
+    const c = cohort.value;
+    const lines = [`${c.program?.name ?? ''} · ${c.name}`.replace(/^ · /, ''), `Jadwal: ${fmtDateTime(c.start_date)} WIB`];
+    if (c.type === 'offline') {
+        const place = [c.location_name, c.location_address].filter(Boolean).join(', ');
+        if (place) lines.push(`Lokasi: ${place}`);
+        if (c.maps_url) lines.push(`Peta: ${c.maps_url}`);
+    } else if (c.meeting_url) {
+        lines.push(`Link meeting: ${c.meeting_url}`);
+    }
+    if (c.materials_url) lines.push(`Materi: ${c.materials_url}`);
+
+    if (await copyText(lines.join('\n'))) {
+        copiedInfo.value = true;
+        setTimeout(() => (copiedInfo.value = false), 1800);
+    }
+}
 
 
 async function load() {
@@ -198,11 +244,15 @@ watch(() => props.id, () => load());
                 </div>
             </div>
 
-            <!-- Logistik: jadwal, lokasi/link meeting, materi. -->
-            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <!-- Baris info: jadwal (dengan posisi siklus), lokasi/link, jendela pendaftaran. -->
+            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
                     <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Jadwal</p>
                     <p class="mt-1.5 font-medium text-foreground">{{ fmtDateTime(cohort.start_date) }}</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge v-if="lifecycleLabel" :variant="cohort.status === 'ended' ? 'secondary' : 'outline'">{{ lifecycleLabel }}</Badge>
+                        <span v-if="countdownLabel" class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ countdownLabel }}</span>
+                    </div>
                 </div>
                 <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
                     <Badge :variant="cohort.type === 'online' ? 'secondary' : 'outline'">
@@ -245,11 +295,50 @@ watch(() => props.id, () => load());
                     >
                         <FileText class="size-3.5" /> Materi kelas
                     </a>
+
+                    <button
+                        type="button"
+                        class="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/50 hover:bg-accent"
+                        @click="copyClassInfo"
+                    >
+                        <Check v-if="copiedInfo" class="size-3.5" />
+                        <Copy v-else class="size-3.5" />
+                        {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas' }}
+                    </button>
+                </div>
+                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                    <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Pendaftaran</p>
+                    <div class="mt-1.5">
+                        <Badge :variant="cohort.registration_open ? 'default' : 'secondary'">
+                            {{ cohort.registration_open ? 'Dibuka' : 'Tutup' }}
+                        </Badge>
+                    </div>
+                    <p class="mt-2 text-muted-foreground">
+                        {{ cohort.registration_opens_at ? fmtDateTime(cohort.registration_opens_at) : '—' }}
+                        –
+                        {{ cohort.registration_closes_at ? fmtDateTime(cohort.registration_closes_at) : 'tanpa batas' }}
+                    </p>
                 </div>
             </div>
 
             <!-- Daftar hadir: satu angkatan = satu pertemuan, satu tombol per peserta. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
+                <div v-if="mainSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Daftar hadir</p>
+                    <!-- Progres yang terlihat mendorong pencatatan sampai tuntas;
+                         setelah kelas usai ia menjadi rekap. -->
+                    <div class="flex items-center gap-2.5">
+                        <span class="text-xs font-semibold" :class="cohort.status === 'ended' ? 'text-teal-700' : 'text-muted-foreground'">
+                            {{ cohort.status === 'ended' ? `Selesai · ${hadirCount}/${activeRosterCount} hadir` : `Hadir ${hadirCount}/${activeRosterCount}` }}
+                        </span>
+                        <div class="h-1.5 w-28 overflow-hidden rounded-full bg-secondary">
+                            <div
+                                class="h-full rounded-full bg-teal-600 transition-[width] duration-300"
+                                :style="{ width: `${Math.round((hadirCount / activeRosterCount) * 100)}%` }"
+                            ></div>
+                        </div>
+                    </div>
+                </div>
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -291,7 +380,12 @@ watch(() => props.id, () => load());
                                 </button>
                             </td>
                             <td class="px-3 py-3">
-                                <Badge :variant="statusVariant(row.latest_status)">{{ statusLabel(row.latest_status) }}</Badge>
+                                <!-- Status default (accepted/belum ada) adalah derau; hanya
+                                     kondisi menyimpang yang layak menarik mata. -->
+                                <Badge v-if="row.latest_status && row.latest_status !== 'accepted'" :variant="statusVariant(row.latest_status)">
+                                    {{ statusLabel(row.latest_status) }}
+                                </Badge>
+                                <span v-else class="text-xs text-muted-foreground/50">—</span>
                             </td>
                             <td class="px-3 py-3 text-right whitespace-nowrap">
                                 <Button
