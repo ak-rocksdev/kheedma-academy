@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue';
 import { parseDate } from '@internationalized/date';
 import { cohorts as cohortsApi, users as usersApi, programs as programsApi } from '@/api';
 import { Input } from '@/components/ui/input';
+import { DateTimePicker } from '@/components/ui/date-picker';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { NativeSelect } from '@/components/ui/native-select';
@@ -170,7 +171,7 @@ async function save() {
             </div>
             <div>
                 <label class="text-xs text-muted-foreground">Mulai Kelas</label>
-                <Input v-model="form.start_date" type="datetime-local" class="mt-1.5" />
+                <DateTimePicker v-model="form.start_date" placeholder="Pilih tanggal & jam mulai" class="mt-1.5" />
                 <p v-if="formErrors.start_date" class="mt-1 text-xs text-destructive">{{ formErrors.start_date[0] }}</p>
             </div>
             <div>
@@ -197,11 +198,11 @@ async function save() {
             <div class="flex gap-3">
                 <div class="min-w-0 flex-1">
                     <label class="text-xs text-muted-foreground">Pendaftaran dibuka</label>
-                    <Input v-model="form.registration_opens_at" type="datetime-local" class="mt-1.5" />
+                    <DateTimePicker v-model="form.registration_opens_at" clearable class="mt-1.5" />
                 </div>
                 <div class="min-w-0 flex-1">
                     <label class="text-xs text-muted-foreground">Pendaftaran ditutup</label>
-                    <Input v-model="form.registration_closes_at" type="datetime-local" class="mt-1.5" />
+                    <DateTimePicker v-model="form.registration_closes_at" clearable class="mt-1.5" />
                 </div>
             </div>
             <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
