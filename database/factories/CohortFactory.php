@@ -37,4 +37,23 @@ class CohortFactory extends Factory
             'registration_closes_at' => now()->subDay(),
         ]);
     }
+
+    public function online(): static
+    {
+        return $this->state(fn () => [
+            'type' => 'online',
+            'meeting_url' => 'https://meet.google.com/'.fake()->lexify('???-????-???'),
+        ]);
+    }
+
+    public function atLocation(): static
+    {
+        return $this->state(fn () => [
+            'type' => 'offline',
+            'location_name' => 'Kantor Kheedma Indonesia',
+            'location_address' => 'Jl. Kapten Mulyadi, Pasar Kliwon, Surakarta',
+            'location_lat' => -7.5755,
+            'location_lng' => 110.8317,
+        ]);
+    }
 }

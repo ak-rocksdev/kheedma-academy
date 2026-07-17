@@ -34,7 +34,7 @@
             <!-- Tab bar (tablet/desktop); di mobile navigasinya pindah ke bawah layar -->
             <nav class="mt-8 hidden gap-2 md:flex" aria-label="Bagian akun">
                 @foreach ($tabs as $key => $label)
-                    <a href="{{ route('member.area', $key === 'profil' ? [] : ['bagian' => $key]) }}"
+                    <a href="{{ route('member.area', ['bagian' => $key]) }}"
                        @class([
                            'rounded-full px-5 py-2.5 text-sm font-semibold transition',
                            'bg-teal-800 text-white shadow-sm' => $activeTab === $key,
@@ -83,6 +83,159 @@
                     @endif
                 </div>
             @elseif ($activeTab === 'kelas')
+                @if ($kelasNotice)
+                    {{-- Waiting states must never read as an empty, broken page. --}}
+                    <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                        @if ($kelasNotice === 'accepted')
+                            <p class="font-semibold text-teal-900">Pendaftaranmu diterima! 🎉</p>
+                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
+                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini — pantau ya.
+                            </p>
+                        @else
+                            <p class="font-semibold text-teal-900">Pendaftaranmu sedang ditinjau.</p>
+                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
+                                Kami kabari begitu ada keputusan. Cek statusnya kapan saja di tab Pendaftaran.
+                            </p>
+                        @endif
+                    </div>
+                @endif
+
+                @if ($enrolledClasses->isNotEmpty())
+                    <div class="mt-8">
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Saya</h2>
+                        <div class="mt-4 space-y-4">
+                            @foreach ($enrolledClasses as $enrollment)
+                                @php($cohort = $enrollment->cohort)
+                                <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <p class="font-semibold text-teal-900">
+                                            {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
+                                        </p>
+                                        @if ($cohort->status === 'ended')
+                                            <span class="shrink-0 rounded-full bg-sand-100 px-3 py-1 text-xs font-semibold text-teal-800/70">Selesai</span>
+                                        @else
+                                            <span @class([
+                                                'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                                                'bg-teal-100 text-teal-700' => ! $cohort->isOnline(),
+                                                'bg-sand-100 text-teal-800/70' => $cohort->isOnline(),
+                                            ])>{{ $cohort->isOnline() ? 'Online' : 'Tatap muka' }}</span>
+                                        @endif
+                                    </div>
+                                    @if ($cohort->mentor)
+                                        <p class="mt-1 inline-flex items-center gap-1.5 text-sm text-teal-800/80">
+                                            <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.2-3 3.8-4.5 7-4.5s5.8 1.5 7 4.5" stroke-linecap="round"/></svg>
+                                            Mentormu: <span class="font-semibold text-teal-900">{{ $cohort->mentor->name }}</span>
+                                        </p>
+                                    @endif
+                                    @if ($cohort->startLabel())
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-teal-800/80">
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>
+                                                Dimulai {{ $cohort->startLabel() }}
+                                            </span>
+                                            @if ($cohort->startCountdownLabel())
+                                                <span class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ $cohort->startCountdownLabel() }}</span>
+                                            @endif
+                                            @if ($cohort->googleCalendarUrl())
+                                                <a href="{{ $cohort->googleCalendarUrl() }}" target="_blank" rel="noopener"
+                                                   class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
+                                                    + Tambahkan ke Google Calendar
+                                                </a>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <div class="mt-4 space-y-2 text-sm text-teal-800/80">
+                                        @if ($cohort->status === 'ended')
+                                            {{-- Closure: the card turns into a personal record, never a stale invite. --}}
+                                            @if ($enrollment->attendances_count > 0)
+                                                <p class="inline-flex items-center gap-1.5 font-semibold text-teal-700">
+                                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Kamu hadir di kelas ini
+                                                </p>
+                                            @else
+                                                <p class="text-teal-800/60">Kelas telah selesai.</p>
+                                            @endif
+                                        @elseif ($cohort->isOnline())
+                                            <p class="font-medium text-teal-900">Kelas online</p>
+                                            @if ($cohort->meeting_url)
+                                                <a href="{{ $cohort->meeting_url }}" target="_blank" rel="noopener"
+                                                   class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 5-3v10l-5-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Gabung meeting
+                                                </a>
+                                            @else
+                                                <p class="text-teal-800/60">Link meeting akan dibagikan sebelum kelas dimulai.</p>
+                                            @endif
+                                        @else
+                                            @if ($cohort->mapsEmbedUrl())
+                                                {{-- The collapsible IS the location object: venue name up top,
+                                                     the live map one tap below. --}}
+                                                {{-- H-2: the map opens itself — the venue must not hide behind a
+                                                     tap when the (one-shot) class day is this close. --}}
+                                                <details {{ $cohort->startsWithinHours(48) ? 'open' : '' }} class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                                    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
+                                                        {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
+                                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                                                            <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6-5.1-6-9.9a6 6 0 1 1 12 0C18 15.9 12 21 12 21Z"/><circle cx="12" cy="11" r="2.3"/></svg>
+                                                        </span>
+                                                        <span class="min-w-0 flex-1">
+                                                            <span class="block text-sm font-semibold text-teal-900">{{ $cohort->location_name ?: 'Lokasi kelas' }}</span>
+                                                            <span class="block text-xs text-teal-800/60">{{ $cohort->location_address ?: 'Lihat lokasi di peta' }}</span>
+                                                        </span>
+                                                        <svg class="h-4 w-4 shrink-0 text-teal-700 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    </summary>
+                                                    <div class="border-t border-teal-900/10">
+                                                        <iframe
+                                                            src="{{ $cohort->mapsEmbedUrl() }}"
+                                                            title="Peta lokasi kelas"
+                                                            class="h-56 w-full"
+                                                            loading="lazy"
+                                                            referrerpolicy="no-referrer-when-downgrade"
+                                                            allowfullscreen
+                                                        ></iframe>
+                                                        <div class="flex flex-wrap items-center gap-3 px-4 py-3">
+                                                            <a href="{{ $cohort->mapsDirectionsUrl() }}" target="_blank" rel="noopener"
+                                                               class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-orange-600">
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M21.7 11.3 12.7 2.3a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4ZM13 14.5V12h-3v3H8v-4a1 1 0 0 1 1-1h4V7.5l3.5 3.5-3.5 3.5Z"/></svg>
+                                                                Petunjuk arah
+                                                            </a>
+                                                            <a href="{{ $cohort->mapsUrl() }}" target="_blank" rel="noopener"
+                                                               class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
+                                                                Buka di Google Maps
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </details>
+                                            @elseif ($cohort->location_name || $cohort->location_address)
+                                                {{-- Coordinates absent (legacy/manual entry): plain text location. --}}
+                                                @if ($cohort->location_name)
+                                                    <p class="font-semibold text-teal-900">{{ $cohort->location_name }}</p>
+                                                @endif
+                                                @if ($cohort->location_address)
+                                                    <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
+                                                @endif
+                                            @else
+                                                <p class="text-teal-800/60">Lokasi kelas akan diumumkan.</p>
+                                            @endif
+                                        @endif
+
+                                        @if ($cohort->materials_url)
+                                            <div class="pt-1">
+                                                <a href="{{ $cohort->materials_url }}" target="_blank" rel="noopener"
+                                                   class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 7A2.5 2.5 0 0 1 6 4.5h3.2c.6 0 1.2.25 1.7.7l1.1 1.1c.2.2.5.2.7.2H18A2.5 2.5 0 0 1 20.5 9v8A2.5 2.5 0 0 1 18 19.5H6A2.5 2.5 0 0 1 3.5 17V7Z" stroke-linejoin="round"/></svg>
+                                                    Buka materi kelas
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @if ($openClasses->isNotEmpty())
                     <div class="mt-8">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Dibuka</h2>
@@ -92,8 +245,8 @@
                                     <div>
                                         <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
                                         <p class="text-xs text-teal-800/60">
-                                            @if ($entry['openCohort']?->start_date)
-                                                Kelas dimulai {{ $entry['openCohort']->start_date->locale('id')->translatedFormat('j F Y') }}
+                                            @if ($entry['openCohort']?->startLabel())
+                                                Kelas dimulai {{ $entry['openCohort']->startLabel() }}
                                             @else
                                                 Pendaftaran sedang dibuka
                                             @endif
@@ -203,7 +356,7 @@
         <x-nav.bottom-nav-item :href="url('/')" label="Beranda">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
         </x-nav.bottom-nav-item>
-        <x-nav.bottom-nav-item :href="route('member.area')" label="Profil" :active="$activeTab === 'profil'">
+        <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'profil'])" label="Profil" :active="$activeTab === 'profil'">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
         </x-nav.bottom-nav-item>
         <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'pendaftaran'])" label="Pendaftaran" :active="$activeTab === 'pendaftaran'">

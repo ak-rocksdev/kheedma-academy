@@ -54,22 +54,30 @@ export async function api(path, { method = 'GET', body = null } = {}) {
     const data = res.status === 204 ? null : await res.json().catch(() => null);
 
     if (!res.ok) {
-        const err = new Error((data && data.message) || `Request failed (${res.status})`);
-        err.status = res.status;
-        err.errors = (data && data.errors) || {};
-
-        // A dead session answers 401 on reads and can answer 419 (stale CSRF)
-        // on writes. Both open the global re-login dialog instead of leaving
-        // the user with a dead page; callers stay quiet via the flag.
-        if ((res.status === 401 || res.status === 419) && path !== '/login' && sessionExpiredHandler) {
-            err.sessionExpired = true;
-            sessionExpiredHandler();
-        }
-
-        throw err;
+        throw buildApiError(res.status, data, path);
     }
 
     return data;
+}
+
+/**
+ * Shared error shaping for both transports (fetch in api(), XHR in
+ * apiUpload()): message from the body, { status, errors } attached, and the
+ * global re-login dialog triggered on a dead session. A dead session answers
+ * 401 on reads and can answer 419 (stale CSRF) on writes; /login itself is
+ * exempt so a wrong password never opens the re-login dialog.
+ */
+function buildApiError(status, data, path) {
+    const err = new Error((data && data.message) || `Request failed (${status})`);
+    err.status = status;
+    err.errors = (data && data.errors) || {};
+
+    if ((status === 401 || status === 419) && path !== '/login' && sessionExpiredHandler) {
+        err.sessionExpired = true;
+        sessionExpiredHandler();
+    }
+
+    return err;
 }
 
 /**
@@ -108,14 +116,7 @@ export async function apiUpload(path, formData, { onProgress = null } = {}) {
                 resolve(data);
                 return;
             }
-            const err = new Error((data && data.message) || `Request failed (${xhr.status})`);
-            err.status = xhr.status;
-            err.errors = (data && data.errors) || {};
-            if ((xhr.status === 401 || xhr.status === 419) && sessionExpiredHandler) {
-                err.sessionExpired = true;
-                sessionExpiredHandler();
-            }
-            reject(err);
+            reject(buildApiError(xhr.status, data, path));
         };
         xhr.onerror = () => reject(new Error('Koneksi terputus saat mengunggah. Coba lagi ya.'));
         xhr.send(formData);

@@ -46,8 +46,8 @@
                     @endif
                     <p class="mt-4 text-xs text-teal-800/50">
                         Pendaftaran sedang dibuka. Tempat terbatas.
-                        @if ($openCohort?->start_date)
-                            Kelas dimulai {{ $openCohort->start_date->locale('id')->translatedFormat('j F Y') }}.
+                        @if ($openCohort?->startLabel())
+                            Kelas dimulai {{ $openCohort->startLabel() }}.
                         @endif
                     </p>
                 @elseif ($locked)

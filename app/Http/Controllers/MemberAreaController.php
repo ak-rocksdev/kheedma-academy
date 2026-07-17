@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Models\Enrollment;
 use App\Models\Program;
 use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
@@ -71,10 +72,35 @@ class MemberAreaController extends Controller
                 ];
             });
 
-        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke tab pertama.
-        $activeTab = in_array($request->query('bagian'), ['pendaftaran', 'kelas'], true)
+        // Kelasmu: the member's own active enrollments, with cohort logistics.
+        $enrolledClasses = $person
+            ? $person->enrollments()
+                ->with(['cohort.program', 'cohort.mentor:id,name', 'latestStatusEvent'])
+                ->withCount('attendances')
+                ->get()
+                ->filter(fn (Enrollment $e) => $e->isActive())
+                ->values()
+            : collect();
+
+        // Kelas tab: what to say when there is no enrolled class yet — an
+        // in-review or accepted-awaiting-placement member must never face a
+        // silent, unexplained gap.
+        $applicationsRaw = $person?->applications ?? collect();
+        $kelasNotice = null;
+        if ($enrolledClasses->isEmpty()) {
+            if ($applicationsRaw->contains(fn ($a) => $a->status === 'pending')) {
+                $kelasNotice = 'pending';
+            } elseif ($applicationsRaw->contains(fn ($a) => $a->status === 'accepted')) {
+                $kelasNotice = 'accepted';
+            }
+        }
+
+        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke default.
+        // Smart default: member dengan kelas aktif datang untuk kelasnya —
+        // sambut langsung di tab kelas, bukan profil.
+        $activeTab = in_array($request->query('bagian'), ['profil', 'pendaftaran', 'kelas'], true)
             ? $request->query('bagian')
-            : 'profil';
+            : ($enrolledClasses->isNotEmpty() ? 'kelas' : 'profil');
 
         return view('member.akun', [
             'user' => $user,
@@ -83,6 +109,8 @@ class MemberAreaController extends Controller
             'applications' => ($person?->applications ?? collect())->map(fn ($a) => $this->applicationCard($a)),
             'affiliate' => $affiliate,
             'openClasses' => $openClasses,
+            'enrolledClasses' => $enrolledClasses,
+            'kelasNotice' => $kelasNotice,
             'activeTab' => $activeTab,
         ]);
     }

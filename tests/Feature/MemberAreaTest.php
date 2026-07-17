@@ -3,9 +3,13 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Attendance;
 use App\Models\Cohort;
+use App\Models\CohortSession;
+use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
+use App\Models\StatusEvent;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -154,5 +158,221 @@ class MemberAreaTest extends TestCase
             ->assertOk()
             ->assertSee('Belum lolos')
             ->assertDontSee('Catatan dari tim');
+    }
+
+    public function test_enrolled_member_lands_on_kelas_tab_by_default(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Default Uji']);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        // No ?bagian: the enrolled member's destination is their class.
+        $this->actingAs($user)->get('/akun')
+            ->assertOk()
+            ->assertSee('Kelas Default Uji')
+            ->assertDontSee('Nomor HP');
+
+        // An explicit ?bagian always wins over the smart default.
+        $this->actingAs($user)->get('/akun?bagian=profil')
+            ->assertOk()
+            ->assertSee('Nomor HP');
+    }
+
+    public function test_countdown_and_auto_open_map_near_class_day(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->atLocation()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->addDay()->setTime(9, 30),
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Besok')
+            ->assertSee('<details open', false);
+    }
+
+    public function test_kelas_tab_explains_pending_and_awaiting_placement_states(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+
+        $application = Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'status' => 'pending']);
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('sedang ditinjau');
+
+        $application->update(['status' => 'accepted']);
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Pendaftaranmu diterima');
+    }
+
+    public function test_kelas_card_names_the_mentor(): void
+    {
+        [$user, $person] = $this->member();
+        $mentor = User::factory()->create(['name' => 'Ustadz Mentor Uji']);
+        $mentor->assignRole('mentor');
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'mentor_id' => $mentor->id]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Ustadz Mentor Uji');
+    }
+
+    public function test_ended_class_becomes_a_personal_record(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->online()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->subDays(10)->setTime(9, 30),
+            'end_date' => now()->subDays(10),
+        ]);
+        $session = CohortSession::create(['cohort_id' => $cohort->id, 'title' => 'Pertemuan 1', 'scheduled_at' => $cohort->start_date, 'position' => 1]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        // Attended + ended: a record, not a stale invite — and the meeting
+        // button for a finished class must be gone.
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Selesai')
+            ->assertSee('Kamu hadir di kelas ini')
+            ->assertDontSee('Gabung meeting');
+    }
+
+    public function test_ended_class_without_attendance_shows_neutral_closure(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->subDays(10)->setTime(9, 30),
+            'end_date' => now()->subDays(10),
+        ]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas telah selesai')
+            ->assertDontSee('Kamu hadir di kelas ini');
+    }
+
+    public function test_enrolled_member_sees_kelasmu_with_location_and_maps_link(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Offline Uji']);
+        $cohort = Cohort::factory()->atLocation()->create([
+            'program_id' => $program->id,
+            'name' => 'Angkatan Offline 1',
+            'start_date' => '2026-08-01 09:00:00',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas Saya')
+            ->assertSee('Kelas Offline Uji')
+            ->assertSee('Angkatan Offline 1')
+            ->assertSee('1 Agustus 2026 pukul 09.00 WIB')
+            ->assertSee($cohort->location_name)
+            ->assertSee($cohort->location_address)
+            ->assertSee('Tatap muka')
+            ->assertSee('Tambahkan ke Google Calendar')
+            ->assertSee('Petunjuk arah')
+            ->assertSee($cohort->mapsEmbedUrl())
+            ->assertSee($cohort->mapsDirectionsUrl())
+            ->assertSee($cohort->mapsUrl());
+    }
+
+    public function test_enrolled_member_sees_meeting_link_for_online_cohort(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->online()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas online')
+            ->assertSee('Gabung meeting')
+            ->assertSee($cohort->meeting_url, false);
+    }
+
+    public function test_enrolled_online_cohort_without_meeting_url_shows_placeholder(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'type' => 'online', 'meeting_url' => null]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas online')
+            ->assertSee('Link meeting akan dibagikan sebelum kelas dimulai.')
+            ->assertDontSee('Gabung meeting');
+    }
+
+    public function test_enrolled_cohort_with_materials_shows_materials_link(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create([
+            'program_id' => $program->id,
+            'materials_url' => 'https://drive.google.com/materi-uji',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Buka materi kelas')
+            ->assertSee('https://drive.google.com/materi-uji', false);
+    }
+
+    public function test_dropped_enrollment_does_not_show_in_kelasmu(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Dropped Uji']);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'dropped', 'occurred_at' => now()]);
+
+        // "Kelas Saya" itself always appears in the account menu, so the
+        // negative check targets the dropped cohort's own content.
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Kelas Dropped Uji');
+    }
+
+    public function test_member_not_enrolled_sees_no_kelasmu_section(): void
+    {
+        [$user] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Belum Diikuti']);
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'materials_url' => 'https://drive.google.com/rahasia']);
+
+        // The open class is listed for registration, but none of its
+        // enrolled-only logistics leak to a non-enrolled member.
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas Belum Diikuti')
+            ->assertDontSee('Buka materi kelas')
+            ->assertDontSee('https://drive.google.com/rahasia', false);
     }
 }

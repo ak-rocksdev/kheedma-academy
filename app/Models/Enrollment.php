@@ -48,4 +48,14 @@ class Enrollment extends Model
     {
         return $this->hasOne(StatusEvent::class)->latestOfMany('occurred_at');
     }
+
+    /**
+     * Single source of truth for "active": no status event yet reads as
+     * accepted; only an explicit terminal status (dropped) excludes it.
+     * Eager-load latestStatusEvent before calling this in a loop.
+     */
+    public function isActive(): bool
+    {
+        return ($this->latestStatusEvent?->status ?? 'accepted') === 'accepted';
+    }
 }

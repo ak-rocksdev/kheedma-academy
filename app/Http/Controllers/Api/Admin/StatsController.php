@@ -24,7 +24,7 @@ class StatsController extends Controller
                     ->where(fn ($q) => $q->whereDate('end_date', '>=', now())->orWhereNull('end_date'))
                     ->count(),
                 'active_participants' => $enrollments->filter(
-                    fn (Enrollment $e) => ($e->latestStatusEvent?->status ?? 'accepted') === 'accepted'
+                    fn (Enrollment $e) => $e->isActive()
                 )->count(),
                 // "Pernah hadir": orang unik dengan minimal satu kehadiran kelas.
                 'attended_participants' => Enrollment::whereHas('attendances')
