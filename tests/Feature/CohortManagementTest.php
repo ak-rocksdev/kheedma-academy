@@ -324,6 +324,30 @@ class CohortManagementTest extends TestCase
         $this->assertSame($cohort->start_date->toIso8601String(), $response->json('cohort.start_date'));
     }
 
+    public function test_one_day_class_accepts_end_date_equal_to_timed_start(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', [
+                'name' => 'Angkatan Sehari',
+                'program_id' => $program->id,
+                'start_date' => '2026-08-01T09:30',
+                'end_date' => '2026-08-01',
+            ])
+            ->assertCreated();
+
+        $this->actingAs($this->admin())
+            ->postJson('/api/admin/cohorts', [
+                'name' => 'Angkatan Mundur',
+                'program_id' => $program->id,
+                'start_date' => '2026-08-01T09:30',
+                'end_date' => '2026-07-31',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors('end_date');
+    }
+
     public function test_legacy_offline_cohort_without_location_can_update_name_alone(): void
     {
         $cohort = Cohort::factory()->create();

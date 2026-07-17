@@ -128,7 +128,19 @@ class CohortController extends Controller
                 'exists:programs,id',
             ],
             'start_date' => ['nullable', 'date'],
-            'end_date' => ['nullable', 'date', 'after_or_equal:start_date'],
+            'end_date' => [
+                'nullable',
+                'date',
+                // Compare by DAY, not moment: end_date is date-only while
+                // start_date now carries a time, so a one-day class starting
+                // at 09.30 must still accept an equal end date.
+                function (string $attribute, $value, $fail) use ($request, $cohort): void {
+                    $start = $request->input('start_date', $cohort?->start_date?->toDateTimeString());
+                    if ($start && Carbon::parse($value)->startOfDay()->lt(Carbon::parse($start)->startOfDay())) {
+                        $fail('Tanggal selesai harus setelah atau sama dengan tanggal mulai.');
+                    }
+                },
+            ],
             'mentor_id' => [
                 'nullable',
                 function (string $attribute, $value, $fail): void {
