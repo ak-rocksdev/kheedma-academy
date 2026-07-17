@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, Copy, ExternalLink, FileText, Pencil, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, Copy, ExternalLink, FileText, MapPin, Pencil, Ticket, Trash2, UserMinus, Video } from 'lucide-vue-next';
 import { copyText } from '@/lib/clipboard';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
@@ -240,81 +240,107 @@ watch(() => props.id, () => load());
                 </div>
             </div>
 
-            <!-- Baris info: jadwal (dengan posisi siklus), lokasi/link, jendela pendaftaran. -->
-            <div class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                    <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Jadwal</p>
-                    <p class="mt-1.5 font-medium text-foreground">{{ fmtDateTime(cohort.start_date) }}</p>
-                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge :variant="cohortStatusVariant(cohort.status)">{{ cohortStatusLabel(cohort.status) }}</Badge>
-                        <!-- orange-200 ground + ink text: warm urgency that still passes AA. -->
-                        <span v-if="countdownLabel" class="rounded-full bg-orange-200 px-2.5 py-0.5 text-xs font-bold text-teal-900">{{ countdownLabel }}</span>
+            <!-- "Tiket kelas": satu kartu bersekat — jadwal | lokasi/link | pendaftaran.
+                 Satu objek logistik dengan tile ikon senada sisi member, bukan
+                 tiga kotak yatim dengan tinggi timpang. -->
+            <div class="mt-4 divide-y divide-border overflow-hidden rounded-xl border border-border bg-card md:grid md:grid-cols-[1fr_1.35fr_1fr] md:divide-x md:divide-y-0">
+                <div class="flex gap-3 px-5 py-4">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                        <CalendarDays class="size-5 text-teal-700" />
+                    </span>
+                    <div class="min-w-0 text-sm">
+                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Jadwal</p>
+                        <p class="mt-0.5 font-semibold text-foreground">
+                            {{ fmtDateTime(cohort.start_date) }}<span v-if="cohort.start_date" class="font-normal text-muted-foreground"> WIB</span>
+                        </p>
+                        <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                            <Badge :variant="cohortStatusVariant(cohort.status)">{{ cohortStatusLabel(cohort.status) }}</Badge>
+                            <!-- orange-200 ground + ink text: warm urgency that still passes AA. -->
+                            <span v-if="countdownLabel" class="rounded-full bg-orange-200 px-2.5 py-0.5 text-xs font-bold text-teal-900">{{ countdownLabel }}</span>
+                        </div>
                     </div>
                 </div>
-                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                    <Badge :variant="cohort.type === 'online' ? 'secondary' : 'outline'">
-                        {{ cohort.type === 'online' ? 'Online' : 'Offline (tatap muka)' }}
-                    </Badge>
 
-                    <template v-if="cohort.type === 'offline'">
-                        <p v-if="cohort.location_name" class="mt-2 font-medium text-foreground">{{ cohort.location_name }}</p>
-                        <p v-if="cohort.location_address" class="text-muted-foreground">{{ cohort.location_address }}</p>
-                        <a
-                            v-if="cohort.maps_url"
-                            :href="cohort.maps_url"
-                            target="_blank"
-                            rel="noopener"
-                            class="mt-1.5 inline-flex items-center gap-1 text-teal-700 hover:underline"
-                        >
-                            <ExternalLink class="size-3.5" /> Lihat di Google Maps
-                        </a>
-                        <p v-if="!cohort.location_name && !cohort.location_address" class="mt-2 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
-                    </template>
-                    <template v-else>
-                        <a
-                            v-if="cohort.meeting_url"
-                            :href="cohort.meeting_url"
-                            target="_blank"
-                            rel="noopener"
-                            class="mt-2 inline-flex items-center gap-1 text-teal-700 hover:underline"
-                        >
-                            <ExternalLink class="size-3.5" /> Buka link meeting
-                        </a>
-                        <p v-else class="mt-2 text-muted-foreground/60 italic">Link meeting belum diisi.</p>
-                    </template>
+                <div class="flex gap-3 px-5 py-4">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                        <Video v-if="cohort.type === 'online'" class="size-5 text-teal-700" />
+                        <MapPin v-else class="size-5 text-teal-700" />
+                    </span>
+                    <div class="min-w-0 flex-1 text-sm">
+                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                            {{ cohort.type === 'online' ? 'Kelas Online' : 'Lokasi' }}
+                        </p>
 
-                    <a
-                        v-if="cohort.materials_url"
-                        :href="cohort.materials_url"
-                        target="_blank"
-                        rel="noopener"
-                        class="mt-2 flex items-center gap-1 text-teal-700 hover:underline"
-                    >
-                        <FileText class="size-3.5" /> Materi kelas
-                    </a>
+                        <template v-if="cohort.type === 'offline'">
+                            <p v-if="cohort.location_name" class="mt-0.5 font-semibold text-foreground">{{ cohort.location_name }}</p>
+                            <p v-if="cohort.location_address" class="text-muted-foreground">{{ cohort.location_address }}</p>
+                            <p v-if="!cohort.location_name && !cohort.location_address" class="mt-0.5 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
+                        </template>
+                        <template v-else>
+                            <a
+                                v-if="cohort.meeting_url"
+                                :href="cohort.meeting_url"
+                                target="_blank"
+                                rel="noopener"
+                                class="mt-0.5 inline-flex items-center gap-1 font-semibold text-teal-700 hover:underline"
+                            >
+                                <ExternalLink class="size-3.5" /> Buka link meeting
+                            </a>
+                            <p v-else class="mt-0.5 text-muted-foreground/60 italic">Link meeting belum diisi.</p>
+                        </template>
 
-                    <button
-                        type="button"
-                        class="mt-2.5 inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/50 hover:bg-accent"
-                        @click="copyClassInfo"
-                    >
-                        <Check v-if="copiedInfo" class="size-3.5" />
-                        <Copy v-else class="size-3.5" />
-                        {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas' }}
-                    </button>
-                </div>
-                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
-                    <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Pendaftaran</p>
-                    <div class="mt-1.5">
-                        <Badge :variant="cohort.registration_open ? 'default' : 'secondary'">
-                            {{ cohort.registration_open ? 'Dibuka' : 'Tutup' }}
-                        </Badge>
+                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
+                            <a
+                                v-if="cohort.type === 'offline' && cohort.maps_url"
+                                :href="cohort.maps_url"
+                                target="_blank"
+                                rel="noopener"
+                                class="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
+                            >
+                                <ExternalLink class="size-3.5" /> Google Maps
+                            </a>
+                            <a
+                                v-if="cohort.materials_url"
+                                :href="cohort.materials_url"
+                                target="_blank"
+                                rel="noopener"
+                                class="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
+                            >
+                                <FileText class="size-3.5" /> Materi kelas
+                            </a>
+                            <button
+                                type="button"
+                                class="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-semibold text-teal-700 transition hover:border-teal-600/50 hover:bg-accent"
+                                @click="copyClassInfo"
+                            >
+                                <Check v-if="copiedInfo" class="size-3.5" />
+                                <Copy v-else class="size-3.5" />
+                                {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas' }}
+                            </button>
+                        </div>
                     </div>
-                    <p class="mt-2 text-muted-foreground">
-                        {{ cohort.registration_opens_at ? fmtDateTime(cohort.registration_opens_at) : '—' }}
-                        –
-                        {{ cohort.registration_closes_at ? fmtDateTime(cohort.registration_closes_at) : 'tanpa batas' }}
-                    </p>
+                </div>
+
+                <div class="flex gap-3 px-5 py-4">
+                    <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                        <Ticket class="size-5 text-teal-700" />
+                    </span>
+                    <div class="min-w-0 text-sm">
+                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Pendaftaran</p>
+                        <p class="mt-0.5 text-muted-foreground">
+                            <template v-if="cohort.registration_opens_at || cohort.registration_closes_at">
+                                <span class="font-semibold text-foreground">{{ cohort.registration_opens_at ? fmtDateTime(cohort.registration_opens_at) : '—' }}</span>
+                                <span class="text-muted-foreground/70"> s.d. </span>
+                                <span class="font-semibold text-foreground">{{ cohort.registration_closes_at ? fmtDateTime(cohort.registration_closes_at) : 'tanpa batas' }}</span>
+                            </template>
+                            <span v-else class="text-muted-foreground/60 italic">Jendela belum diatur.</span>
+                        </p>
+                        <div class="mt-2">
+                            <Badge :variant="cohort.registration_open ? 'default' : 'secondary'">
+                                {{ cohort.registration_open ? 'Dibuka' : 'Tutup' }}
+                            </Badge>
+                        </div>
+                    </div>
                 </div>
             </div>
 
