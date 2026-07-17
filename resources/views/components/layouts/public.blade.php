@@ -40,7 +40,10 @@
     @fonts
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body @class(['min-h-screen flex flex-col', 'pb-14 md:pb-0' => $bottomNav])>
+{{-- pb tanpa syarat: setiap halaman punya bottom nav mobile (milik layout,
+     atau milik halaman seperti /akun yang set bottom-nav=false lalu merender
+     nav-nya sendiri) — tanpa clearance, baris terakhir footer tertutup nav. --}}
+<body class="min-h-screen flex flex-col pb-16 md:pb-0">
 
     {{-- ───────────────────────── Header ───────────────────────── --}}
     <header class="sticky top-0 z-40 border-b border-teal-900/5 bg-sand-50/85 backdrop-blur">

@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { ChevronRight, Check } from 'lucide-vue-next';
+import { BookOpen, Check, ChevronRight, GraduationCap, Images, LayoutTemplate } from 'lucide-vue-next';
 import { api, applications as applicationsApi } from '@/api';
 import { useAuthStore } from '@/stores/auth';
 import { fmtDate } from '@/lib/format';
@@ -16,14 +16,12 @@ const pendingLoaded = ref(false);
 
 const todayLabel = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
 
-// Satu kalimat yang menjawab "ada kerjaan apa hari ini?"
+// Satu kalimat yang menjawab "ada kerjaan apa hari ini?" — hanya bila memang
+// ADA; kartu antrean sudah menyuarakan keadaan bersih, tak perlu dua kali.
 const summary = computed(() => {
-    if (!stats.value) return '';
-    const waiting = stats.value.pending_applications;
+    const waiting = stats.value?.pending_applications;
 
-    return waiting > 0
-        ? `${waiting} pendaftaran menunggu keputusanmu.`
-        : 'Tidak ada antrean review hari ini.';
+    return waiting > 0 ? `${waiting} pendaftaran menunggu keputusanmu.` : '';
 });
 
 // Tahapan perjalanan peserta: urutan strip ini adalah urutan funnel sungguhan.
@@ -107,6 +105,27 @@ function goPerson(application) {
                         </li>
                     </ul>
                 </div>
+
+                <!-- Aksi cepat: jalur tersering, mengisi ruang di bawah antrean. -->
+                <div class="mt-6">
+                    <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Aksi Cepat</h2>
+                    <div class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                        <RouterLink
+                            v-for="action in [
+                                { to: { name: 'cohorts' }, label: 'Kelola Angkatan', icon: GraduationCap, show: auth.can('cohorts.view') },
+                                { to: { name: 'programs' }, label: 'Kelola Program', icon: BookOpen, show: auth.can('programs.manage') },
+                                { to: { name: 'content' }, label: 'Tulis Konten', icon: LayoutTemplate, show: auth.can('content.manage') },
+                                { to: { name: 'media' }, label: 'Unggah Media', icon: Images, show: auth.can('content.manage') },
+                            ].filter((a) => a.show)"
+                            :key="action.label"
+                            :to="action.to"
+                            class="flex items-center gap-2.5 rounded-xl border border-border bg-card px-4 py-3 text-sm font-medium text-foreground transition hover:border-primary/40 hover:shadow-sm"
+                        >
+                            <component :is="action.icon" class="size-4 shrink-0 text-teal-700" />
+                            {{ action.label }}
+                        </RouterLink>
+                    </div>
+                </div>
             </section>
 
             <!-- Denyut funnel + kondisi -->
@@ -123,7 +142,9 @@ function goPerson(application) {
                             <RouterLink :to="stage.to" class="group min-w-0 flex-1 text-center">
                                 <p
                                     class="text-2xl font-bold tabular-nums"
-                                    :class="stage.hot && stats[stage.key] ? 'text-orange-600' : 'text-foreground'"
+                                    :class="stage.hot && stats[stage.key]
+                                        ? 'text-orange-600'
+                                        : stats[stage.key] ? 'text-foreground' : 'text-muted-foreground/40'"
                                 >
                                     {{ stats[stage.key] }}
                                 </p>
@@ -139,8 +160,8 @@ function goPerson(application) {
                 <section v-if="stats" class="rise" style="--rise-delay: 180ms">
                     <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Kondisi</h2>
                     <div class="mt-3 grid grid-cols-2 gap-3">
-                        <StatTile :value="stats.active_cohorts" label="Kelas berjalan" :to="{ name: 'cohorts' }" />
-                        <StatTile :value="stats.community_members" label="Member komunitas" :to="{ name: 'community' }" />
+                        <StatTile :value="stats.active_cohorts" label="Kelas berjalan" :to="{ name: 'cohorts' }" :value-class="stats.active_cohorts ? 'text-foreground' : 'text-muted-foreground/40'" />
+                        <StatTile :value="stats.community_members" label="Member komunitas" :to="{ name: 'community' }" :value-class="stats.community_members ? 'text-foreground' : 'text-muted-foreground/40'" />
                     </div>
                 </section>
             </div>

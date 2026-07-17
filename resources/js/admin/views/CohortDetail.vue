@@ -12,6 +12,7 @@ import { Alert } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/auth';
 import { fmtDateTime } from '@/lib/format';
+import { cohortStatusLabel, cohortStatusVariant } from '@/lib/status';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
@@ -51,11 +52,6 @@ const hadirCount = computed(() =>
     mainSession.value ? roster.value.filter((r) => isHadir(r, mainSession.value)).length : 0
 );
 
-const lifecycleLabel = computed(() =>
-    cohort.value
-        ? ({ upcoming: 'Akan datang', active: 'Sedang berjalan', ended: 'Selesai' }[cohort.value.status] ?? null)
-        : null
-);
 
 // Mirrors Cohort::startCountdownLabel(): final week only, display-side.
 const countdownLabel = computed(() => {
@@ -250,8 +246,9 @@ watch(() => props.id, () => load());
                     <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Jadwal</p>
                     <p class="mt-1.5 font-medium text-foreground">{{ fmtDateTime(cohort.start_date) }}</p>
                     <div class="mt-2 flex flex-wrap items-center gap-1.5">
-                        <Badge v-if="lifecycleLabel" :variant="cohort.status === 'ended' ? 'secondary' : 'outline'">{{ lifecycleLabel }}</Badge>
-                        <span v-if="countdownLabel" class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ countdownLabel }}</span>
+                        <Badge :variant="cohortStatusVariant(cohort.status)">{{ cohortStatusLabel(cohort.status) }}</Badge>
+                        <!-- orange-200 ground + ink text: warm urgency that still passes AA. -->
+                        <span v-if="countdownLabel" class="rounded-full bg-orange-200 px-2.5 py-0.5 text-xs font-bold text-teal-900">{{ countdownLabel }}</span>
                     </div>
                 </div>
                 <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
@@ -342,10 +339,12 @@ watch(() => props.id, () => load());
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
-                            <th class="px-4 py-3 font-semibold">Peserta</th>
-                            <th class="px-3 py-3 text-center font-semibold">Kehadiran</th>
-                            <th class="px-3 py-3 font-semibold">Status</th>
-                            <th class="px-3 py-3"></th>
+                            <th class="px-3 py-3 font-semibold sm:px-4">Peserta</th>
+                            <th class="px-2 py-3 text-center font-semibold sm:px-3">Kehadiran</th>
+                            <!-- Status hanya bermakna saat menyimpang; di layar sempit
+                                 kolomnya dilipat (baris dropped sudah tampak pudar). -->
+                            <th class="hidden px-3 py-3 font-semibold sm:table-cell">Status</th>
+                            <th class="px-2 py-3 sm:px-3"></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -358,18 +357,18 @@ watch(() => props.id, () => load());
                             class="border-b border-border last:border-0"
                             :class="row.latest_status === 'dropped' ? 'opacity-50' : ''"
                         >
-                            <td class="px-4 py-3">
-                                <RouterLink :to="{ name: 'person', params: { id: row.person.id } }" class="font-medium text-foreground hover:underline">
+                            <td class="max-w-0 px-3 py-3 sm:px-4">
+                                <RouterLink :to="{ name: 'person', params: { id: row.person.id } }" class="block truncate font-medium text-foreground hover:underline">
                                     {{ row.person.name }}
                                 </RouterLink>
-                                <div class="text-xs text-muted-foreground">{{ row.person.phone }}</div>
+                                <div class="truncate text-xs text-muted-foreground">{{ row.person.phone }}</div>
                             </td>
-                            <td class="px-3 py-3 text-center">
+                            <td class="px-2 py-3 text-center sm:px-3">
                                 <button
                                     v-if="mainSession"
                                     type="button"
                                     :disabled="!canToggle(row)"
-                                    class="inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed"
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed sm:px-3.5"
                                     :class="isHadir(row, mainSession)
                                         ? 'border-teal-600 bg-teal-600 text-white'
                                         : 'border-border text-muted-foreground hover:border-teal-600/50 hover:text-foreground'"
@@ -379,7 +378,7 @@ watch(() => props.id, () => load());
                                     {{ isHadir(row, mainSession) ? 'Hadir' : 'Tandai hadir' }}
                                 </button>
                             </td>
-                            <td class="px-3 py-3">
+                            <td class="hidden px-3 py-3 sm:table-cell">
                                 <!-- Status default (accepted/belum ada) adalah derau; hanya
                                      kondisi menyimpang yang layak menarik mata. -->
                                 <Badge v-if="row.latest_status && row.latest_status !== 'accepted'" :variant="statusVariant(row.latest_status)">
@@ -387,7 +386,7 @@ watch(() => props.id, () => load());
                                 </Badge>
                                 <span v-else class="text-xs text-muted-foreground/50">—</span>
                             </td>
-                            <td class="px-3 py-3 text-right whitespace-nowrap">
+                            <td class="px-2 py-3 text-right whitespace-nowrap sm:px-3">
                                 <Button
                                     v-if="auth.can('enrollments.manage') && row.latest_status !== 'dropped'"
                                     variant="ghost"

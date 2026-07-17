@@ -124,7 +124,9 @@ async function move(index, delta) {
             {{ error }}
         </p>
 
-        <div class="space-y-3">
+        <!-- Lebar baca dibatasi: baris teks kartu mendekati ukuran kartu publik
+             yang sesungguhnya, bukan membentang selebar monitor. -->
+        <div class="max-w-3xl space-y-3">
             <div
                 v-for="(section, index) in sections"
                 :key="section.id"

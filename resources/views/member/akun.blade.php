@@ -47,7 +47,7 @@
 
             @if ($activeTab === 'pendaftaran')
                 <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Status Pendaftaran</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Status Pendaftaran</h2>
                     @if ($applications->isEmpty())
                         <p class="mt-4 text-sm leading-relaxed text-teal-800/70">
                             Kamu belum punya pendaftaran. Lihat kelas yang sedang dibuka dan mulai perjalananmu.
@@ -63,9 +63,9 @@
                                     <div class="flex items-center justify-between gap-4">
                                         <div>
                                             <p class="font-medium text-teal-900">
-                                                {{ $application['program'] }}@if ($application['cohort'])<span class="text-teal-800/60"> · {{ $application['cohort'] }}</span>@endif
+                                                {{ $application['program'] }}@if ($application['cohort'])<span class="text-teal-800/70"> · {{ $application['cohort'] }}</span>@endif
                                             </p>
-                                            <p class="text-xs text-teal-800/60">Daftar {{ $application['created_at']->locale('id')->translatedFormat('j F Y') }}</p>
+                                            <p class="text-xs text-teal-800/70">Daftar {{ $application['created_at']->locale('id')->translatedFormat('j F Y') }}</p>
                                         </div>
                                         <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $application['statusClass'] }}">{{ $application['statusLabel'] }}</span>
                                     </div>
@@ -102,14 +102,14 @@
 
                 @if ($enrolledClasses->isNotEmpty())
                     <div class="mt-8">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Saya</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Kelas Saya</h2>
                         <div class="mt-4 space-y-4">
                             @foreach ($enrolledClasses as $enrollment)
                                 @php($cohort = $enrollment->cohort)
                                 <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                                     <div class="flex flex-wrap items-start justify-between gap-2">
                                         <p class="font-semibold text-teal-900">
-                                            {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
+                                            {{ $cohort->program?->name }}<span class="text-teal-800/70"> · {{ $cohort->name }}</span>
                                         </p>
                                         @if ($cohort->status === 'ended')
                                             <span class="shrink-0 rounded-full bg-sand-100 px-3 py-1 text-xs font-semibold text-teal-800/70">Selesai</span>
@@ -154,7 +154,7 @@
                                                     Kamu hadir di kelas ini
                                                 </p>
                                             @else
-                                                <p class="text-teal-800/60">Kelas telah selesai.</p>
+                                                <p class="text-teal-800/70">Kelas telah selesai.</p>
                                             @endif
                                         @elseif ($cohort->isOnline())
                                             <p class="font-medium text-teal-900">Kelas online</p>
@@ -165,7 +165,7 @@
                                                     Gabung meeting
                                                 </a>
                                             @else
-                                                <p class="text-teal-800/60">Link meeting akan dibagikan sebelum kelas dimulai.</p>
+                                                <p class="text-teal-800/70">Link meeting akan dibagikan sebelum kelas dimulai.</p>
                                             @endif
                                         @else
                                             @if ($cohort->mapsEmbedUrl())
@@ -181,7 +181,7 @@
                                                         </span>
                                                         <span class="min-w-0 flex-1">
                                                             <span class="block text-sm font-semibold text-teal-900">{{ $cohort->location_name ?: 'Lokasi kelas' }}</span>
-                                                            <span class="block text-xs text-teal-800/60">{{ $cohort->location_address ?: 'Lihat lokasi di peta' }}</span>
+                                                            <span class="block text-xs text-teal-800/70">{{ $cohort->location_address ?: 'Lihat lokasi di peta' }}</span>
                                                         </span>
                                                         <svg class="h-4 w-4 shrink-0 text-teal-700 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                     </summary>
@@ -213,10 +213,10 @@
                                                     <p class="font-semibold text-teal-900">{{ $cohort->location_name }}</p>
                                                 @endif
                                                 @if ($cohort->location_address)
-                                                    <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
+                                                    <p class="text-teal-800/70">{{ $cohort->location_address }}</p>
                                                 @endif
                                             @else
-                                                <p class="text-teal-800/60">Lokasi kelas akan diumumkan.</p>
+                                                <p class="text-teal-800/70">Lokasi kelas akan diumumkan.</p>
                                             @endif
                                         @endif
 
@@ -238,13 +238,13 @@
 
                 @if ($openClasses->isNotEmpty())
                     <div class="mt-8">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Dibuka</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Kelas Dibuka</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($openClasses as $entry)
                                 <div class="flex items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white px-5 py-4">
                                     <div>
                                         <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
-                                        <p class="text-xs text-teal-800/60">
+                                        <p class="text-xs text-teal-800/70">
                                             @if ($entry['openCohort']?->startLabel())
                                                 Kelas dimulai {{ $entry['openCohort']->startLabel() }}
                                             @else
@@ -274,7 +274,7 @@
 
                 @if ($affiliate->isNotEmpty())
                     <div class="mt-10">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Program untuk Anda</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untuk Anda</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($affiliate as $entry)
                                 @if ($entry['locked'])
@@ -296,7 +296,7 @@
                                        class="flex items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white px-5 py-4 transition hover:border-teal-600/40">
                                         <div>
                                             <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
-                                            <p class="text-xs text-teal-800/60">Level {{ $entry['program']->level }} · Terbuka untukmu</p>
+                                            <p class="text-xs text-teal-800/70">Level {{ $entry['program']->level }} · Terbuka untukmu</p>
                                         </div>
                                         <svg class="h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     </a>
@@ -307,31 +307,31 @@
                 @endif
 
                 <div class="mt-6 rounded-3xl border border-dashed border-teal-900/15 bg-white/40 p-6 text-center sm:p-8">
-                    <p class="text-sm leading-relaxed text-teal-800/60">
+                    <p class="text-sm leading-relaxed text-teal-800/70">
                         Materi pilihan dan pengumuman komunitas akan tampil di sini. Nantikan ya!
                     </p>
                 </div>
             @else
                 <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Profil</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Profil</h2>
                     <dl class="mt-4 space-y-3 text-sm">
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nama</dt>
+                            <dt class="text-teal-800/70">Nama</dt>
                             <dd class="font-medium text-teal-900">{{ $user->name }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Email</dt>
+                            <dt class="text-teal-800/70">Email</dt>
                             <dd class="font-medium text-teal-900">{{ $user->email }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nomor HP</dt>
+                            <dt class="text-teal-800/70">Nomor HP</dt>
                             <dd class="font-medium text-teal-900">{{ $person?->phone ?? '—' }}</dd>
                         </div>
                     </dl>
                 </div>
 
                 <div class="mt-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Komunitas</h2>
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Komunitas</h2>
                     @if ($membership)
                         <p class="mt-4 text-sm leading-relaxed text-teal-800/80">
                             Kamu anggota komunitas sejak
