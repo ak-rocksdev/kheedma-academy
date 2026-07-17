@@ -238,14 +238,22 @@ public function mapsUrl(): ?string
 - Produces validation in `CohortController::validated()` (extend the existing array):
 
 ```php
+// Effective type must consider partial updates: a raw-API update that omits
+// `type` on an offline cohort must still require the location fields, so use
+// Rule::requiredIf against request-then-existing-then-default, NOT the
+// string 'required_if:type,offline' (which only reads request input).
+$isOffline = fn () => $request->input('type', $cohort?->type ?? 'offline') === 'offline';
+
 'type' => ['sometimes', 'required', Rule::in(['offline', 'online'])],
 'location_name' => ['nullable', 'string', 'max:255'],
-'location_address' => ['required_if:type,offline', 'nullable', 'string', 'max:500'],
-'location_lat' => ['required_if:type,offline', 'nullable', 'numeric', 'between:-90,90'],
-'location_lng' => ['required_if:type,offline', 'nullable', 'numeric', 'between:-180,180'],
+'location_address' => [Rule::requiredIf($isOffline), 'nullable', 'string', 'max:500'],
+'location_lat' => [Rule::requiredIf($isOffline), 'nullable', 'numeric', 'between:-90,90'],
+'location_lng' => [Rule::requiredIf($isOffline), 'nullable', 'numeric', 'between:-180,180'],
 'meeting_url' => ['nullable', 'url:https', 'max:500'],
 'materials_url' => ['nullable', 'url:https', 'max:500'],
 ```
+
+(Exception to the strict requiredIf: cohorts created BEFORE this feature have no location; an update that doesn't touch type/location fields must not brick — use `sometimes` on the three location rules so they only run when the fields are present in the request OR type is being switched. Concretely: apply the requiredIf trio only when `$request->hasAny(['type', 'location_address', 'location_lat', 'location_lng'])`; add a test pinning that a legacy offline cohort can still update its name alone.)
 
 with Indonesian `required_if` messages (add a messages array to the validate call following the file's existing custom-message pattern): 'location_address.required_if' => 'Kelas offline butuh alamat lokasi.', 'location_lat.required_if' / 'location_lng.required_if' => 'Pilih titik lokasi dari pencarian tempat.'.
 - Payload gains: `type, location_name, location_address, location_lat, location_lng, meeting_url, materials_url, maps_url` (from `$c->mapsUrl()`), and `start_date` switches `toDateString()` → `toIso8601String()`.
@@ -265,7 +273,7 @@ with Indonesian `required_if` messages (add a messages array to the validate cal
 
 - Keep the existing date-only `23:59:59` append hack for `registration_closes_at` (legacy tolerance) — do not remove.
 
-**Tests to add** (failing first): offline create without address/lat/lng → 422 with the three errors; online create with only meeting_url → 201; `meeting_url` `http://` (non-https) and garbage → 422; update can change `meeting_url` later → 200 and persisted; payload includes `type` + `maps_url` for a located cohort; `start_date` accepts `2026-08-01T09:30` (datetime-local format) and round-trips the time.
+**Tests to add** (failing first): offline create without address/lat/lng → 422 with the three errors; online create with only meeting_url → 201; `meeting_url` `http://` (non-https) and garbage → 422; update can change `meeting_url` later → 200 and persisted; payload includes `type` + `maps_url` for a located cohort; `start_date` accepts `2026-08-01T09:30` (datetime-local format) and round-trips the time; a pre-feature offline cohort (no location) can update `name` alone without location errors.
 
 - [ ] Steps: failing tests → implement → file passes → full suite → pint → commit `feat: cohort logistics API validation + maps key plumbing`.
 
@@ -286,7 +294,7 @@ with Indonesian `required_if` messages (add a messages array to the validate cal
 - `CohortFormDialog.vue`:
   - `start_date` and both registration fields become `<input type="datetime-local">` (reuse `Input` with `type` attr if it forwards attrs — check; else native input with the Input's classes). Seed values from ISO payload → `datetime-local` format (`YYYY-MM-DDTHH:mm`) with a small helper; submit as-is (backend accepts it).
   - New "Tipe kelas" ToggleGroup: `offline` → "Offline (tatap muka)", `online` → "Online".
-  - offline → `<LocationPicker v-model="form.location" />`; online → `meeting_url` Input (label "Link meeting (Google Meet / Zoom)", hint "Opsional. Bisa kamu isi atau ubah kapan saja."); always → `materials_url` Input (label "Link materi (Google Drive)", hint "Opsional. Hanya terlihat oleh peserta yang terdaftar.").
+  - offline → `<LocationPicker v-model="form.location" />` where `form.location = { name, address, lat, lng }`; on submit, FLATTEN to the API's flat keys: `location_name: form.location.name, location_address: form.location.address, location_lat: form.location.lat, location_lng: form.location.lng` (seed the object from the flat payload fields on open). online → `meeting_url` Input (label "Link meeting (Google Meet / Zoom)", hint "Opsional. Bisa kamu isi atau ubah kapan saja."); always → `materials_url` Input (label "Link materi (Google Drive)", hint "Opsional. Hanya terlihat oleh peserta yang terdaftar.").
   - Switching type does NOT clear the hidden side's values (server ignores what validation allows; user can toggle back without losing input).
 - `CohortDetail.vue`: logistics card — type badge, location (name, address, "Lihat di Google Maps" link from `maps_url`) or meeting link, materials link; datetime display via the existing `fmtDate`-style helpers extended for time (check `lib/format.js` for an existing datetime formatter first).
 
@@ -304,15 +312,19 @@ with Indonesian `required_if` messages (add a messages array to the validate cal
 
 **Interfaces:**
 - Consumes: Task 1 model methods.
-- Public program page: `Kelas dimulai {{ $openCohort->start_date->locale('id')->translatedFormat('j F Y') }}` gains time when present: `translatedFormat('j F Y · H.i') . ' WIB'` (check the exact existing blade string first; same change in `member/akun.blade.php` line ~96).
-- Member area: where an ENROLLED member's cohort is rendered (explore `MemberAreaController` + `akun.blade.php` enrollment section first — follow its data shape), add a logistics block:
-  - offline: "Lokasi kelas:" + location_name (bold) + location_address + link "Lihat di Google Maps" (`$cohort->mapsUrl()`, target _blank rel noopener) — only when location data present.
-  - online: "Kelas online" + link "Gabung meeting" when `meeting_url` set.
-  - materials: "Materi kelas" link when `materials_url` set.
-  - Copy warm Indonesian; nothing renders for members who are not enrolled in that cohort (the enrollment scoping already exists — reuse it, do not widen queries).
-- Eager-load additions in MemberAreaController must include the new columns (it currently selects `cohort:id,name,start_date` — extend the column list as needed).
+- **VERIFIED FACT (self-review 2026-07-17):** `/akun` has NO enrolled-class display today — only "Status Pendaftaran" (applications) and "Kelas Dibuka" (open classes). This task CREATES the section, it does not extend one.
+- **Time display rule (both surfaces):** legacy date→datetime conversion leaves `00:00` times; render the time ONLY when it isn't midnight. Add a `Cohort::startLabel(): ?string` helper (preferred over duplicated Blade conditionals — two surfaces need it): `start_date->format('H:i') === '00:00' ? …translatedFormat('j F Y') : …translatedFormat('j F Y').' pukul '.start_date->format('H.i').' WIB'`; returns null when start_date is null. Add its two cases to CohortModelTest in Task 1's file (extend during this task).
+- Public program page: apply the rule to the existing `Kelas dimulai {{ $openCohort->start_date->…('j F Y') }}` string (funnel/program.blade.php ~line 46); same at `member/akun.blade.php` ~line 96 ("Kelas dimulai" under Kelas Dibuka).
+- **New "Kelasmu" section** in the `kelas` tab, ABOVE "Kelas Dibuka":
+  - `MemberAreaController`: load the person's enrollments (relation `Person::enrollments()` exists) with `cohort.program`, excluding dropped ones if a status/event convention exists (check the Enrollment model/StatusEvent usage before filtering — follow whatever "active enrollment" already means in AttendanceController/EnrollmentController). Pass as `$enrolledClasses` (collection of enrollments with cohort+program loaded).
+  - Blade card per enrolled cohort (existing card style `rounded-3xl border border-teal-900/10 bg-white/70`): program + cohort name, start label (time rule above), then logistics:
+    - offline with location: "Lokasi kelas:" + `location_name` (bold, when set) + `location_address` + link "Lihat di Google Maps" (`$cohort->mapsUrl()`, `target="_blank" rel="noopener"`).
+    - online: "Kelas online" + link "Gabung meeting" when `meeting_url` set; when unset: "Link meeting akan dibagikan sebelum kelas dimulai."
+    - materials: link "Buka materi kelas" when `materials_url` set.
+  - Empty state (enrolled none): the section simply doesn't render — "Kelas Dibuka" remains the tab's first block.
+- Copy warm Indonesian. Members see logistics ONLY via their own enrollments (`$person->enrollments`), never another cohort's.
 
-**Tests:** enrolled member sees location name + maps link (offline cohort) / meeting link (online cohort) / materials link; a member NOT enrolled in that cohort sees none of them; program page shows "pukul"-style time (assert the formatted time string).
+**Tests:** enrolled member sees "Kelasmu" with location name + maps link (offline cohort with location) / meeting link (online) / materials link; enrolled online cohort WITHOUT meeting_url shows the "akan dibagikan" placeholder; a member NOT enrolled sees no "Kelasmu" section; program page shows "pukul HH.MM WIB" for a timed start and NO "pukul" for a midnight (legacy) start.
 
 - [ ] Steps: failing tests → implement → file passes → full suite → pint → commit `feat: class logistics for enrolled members + start time on public page`.
 
@@ -322,4 +334,4 @@ with Indonesian `required_if` messages (add a messages array to the validate cal
 
 - [ ] `php artisan test --compact` (zero failures), `vendor/bin/pint --dirty --format agent`, `npm run build`.
 - [ ] E2E walk on Herd (`http://kheedma-academy.test`, NOT artisan serve): admin edits a cohort → set start datetime (datetime-local picker appears), pick type offline → Places autocomplete resolves a real place (key present) → save; cohort detail shows location + maps link; set a start time in the past on a second cohort → its program page shows registration closed; member enrolled sees location/materials in /akun; switch cohort to online + meeting link → member sees "Gabung meeting". Screenshots as evidence.
-- [ ] Deploy notes for the ledger: migrate (1 migration); GOOGLE_MAPS_API_KEY must be added to the VPS .env; advise referrer-restricting the key.
+- [ ] Deploy notes for the ledger: migrate (1 migration); GOOGLE_MAPS_API_KEY must be added to the VPS .env (dev key is referrer-restricted; production may need its own); **data caveat:** converted start_dates read as 00:00 — any cohort whose start date is today-or-past becomes registration-closed by the ceiling at migrate time, and admins should set real start TIMES on in-flight cohorts right after deploy.
