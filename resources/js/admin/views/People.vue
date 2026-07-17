@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
-import { Eye } from 'lucide-vue-next';
+import { ChevronRight, Eye, Phone } from 'lucide-vue-next';
 import { people } from '@/api';
 
 const router = useRouter();
@@ -9,6 +9,19 @@ import { Input } from '@/components/ui/input';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Alert } from '@/components/ui/alert';
 import { fmtDate } from '@/lib/format';
+
+/** Jejak funnel seseorang sebagai daftar chip — satu sumber untuk tabel & kartu mobile. */
+function journeyBadges(item) {
+    return [
+        item.applications_count && {
+            label: `Melamar ${item.applications_count}×${item.pending_applications_count ? ' · menunggu' : ''}`,
+            variant: item.pending_applications_count ? 'warning' : 'secondary',
+        },
+        item.enrollments_count && { label: `${item.enrollments_count} Angkatan / Kelas`, variant: 'success' },
+        item.is_community_member && { label: 'Komunitas', variant: 'secondary' },
+        item.has_account && { label: 'Akun', variant: 'outline' },
+    ].filter(Boolean);
+}
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 
@@ -80,9 +93,42 @@ watch(segment, () => fetchPage(1));
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
-        <!-- Table -->
+        <!-- ≥md: tabel penuh. Mobile: daftar kartu — tabel 6 kolom teramputasi
+             di layar sempit dan justru memenggal jejak funnel + akses detail. -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
-            <table class="w-full text-sm">
+            <ul class="divide-y divide-border md:hidden">
+                <li v-if="loading" class="px-4 py-10 text-center text-sm text-muted-foreground">Memuat…</li>
+                <li v-else-if="!items.length" class="px-4 py-10 text-center text-sm text-muted-foreground">Belum ada data.</li>
+                <li
+                    v-for="item in items"
+                    :key="`card-${item.id}`"
+                    class="cursor-pointer px-4 py-3.5 transition-colors active:bg-accent/50"
+                    @click="router.push({ name: 'person', params: { id: item.id } })"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-foreground">{{ item.name }}</p>
+                            <!-- Di perangkat telepon, nomor adalah aksi — bukan teks. -->
+                            <a
+                                v-if="item.phone"
+                                :href="`tel:${item.phone}`"
+                                class="mt-0.5 inline-flex items-center gap-1.5 py-0.5 text-sm font-medium text-teal-700"
+                                @click.stop
+                            >
+                                <Phone class="size-3.5" /> {{ item.phone }}
+                            </a>
+                            <p v-if="item.email" class="truncate text-xs text-muted-foreground">{{ item.email }}</p>
+                        </div>
+                        <ChevronRight class="mt-1 size-4 shrink-0 text-muted-foreground" />
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge v-for="badge in journeyBadges(item)" :key="badge.label" :variant="badge.variant">{{ badge.label }}</Badge>
+                        <span class="ml-auto text-[11px] text-muted-foreground">{{ fmtDate(item.created_at) }}</span>
+                    </div>
+                </li>
+            </ul>
+
+            <table class="hidden w-full text-sm md:table">
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>
@@ -114,13 +160,8 @@ watch(segment, () => fetchPage(1));
                         <td class="px-4 py-3 text-muted-foreground">{{ item.city ?? '—' }}</td>
                         <td class="px-4 py-3">
                             <div class="flex flex-wrap gap-1.5">
-                                <Badge v-if="item.applications_count" :variant="item.pending_applications_count ? 'warning' : 'secondary'">
-                                    Melamar {{ item.applications_count }}×<template v-if="item.pending_applications_count"> · menunggu</template>
-                                </Badge>
-                                <Badge v-if="item.enrollments_count" variant="success">{{ item.enrollments_count }} Angkatan / Kelas</Badge>
-                                <Badge v-if="item.is_community_member" variant="secondary">Komunitas</Badge>
-                                <Badge v-if="item.has_account" variant="outline">Akun</Badge>
-                                <span v-if="!item.applications_count && !item.enrollments_count && !item.is_community_member && !item.has_account" class="text-muted-foreground">—</span>
+                                <Badge v-for="badge in journeyBadges(item)" :key="badge.label" :variant="badge.variant">{{ badge.label }}</Badge>
+                                <span v-if="!journeyBadges(item).length" class="text-muted-foreground">—</span>
                             </div>
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(item.created_at) }}</td>
