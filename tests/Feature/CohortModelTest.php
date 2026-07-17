@@ -61,6 +61,20 @@ class CohortModelTest extends TestCase
         $this->assertNull($bare->mapsUrl());
     }
 
+    public function test_google_calendar_url_needs_a_real_start_time(): void
+    {
+        $timed = Cohort::factory()->atLocation()->create(['start_date' => '2026-08-01 09:30:00']);
+        $midnight = Cohort::factory()->create(['start_date' => '2026-08-01 00:00:00']);
+        $unscheduled = Cohort::factory()->create(['start_date' => null]);
+
+        $url = $timed->googleCalendarUrl();
+        $this->assertStringContainsString('calendar.google.com/calendar/render', $url);
+        $this->assertStringContainsString('20260801T093000%2F20260801T113000', $url);
+        $this->assertStringContainsString('Asia%2FJakarta', $url);
+        $this->assertNull($midnight->googleCalendarUrl());
+        $this->assertNull($unscheduled->googleCalendarUrl());
+    }
+
     public function test_maps_embed_and_directions_urls_follow_the_coordinates(): void
     {
         $located = Cohort::factory()->atLocation()->create();

@@ -160,6 +160,30 @@ class Cohort extends Model
     }
 
     /**
+     * Prefilled Google Calendar event (assumed 2-hour session) — a template
+     * URL, no API involved. Null without a real start time: legacy midnight
+     * conversions carry no clock, and a 00.00 event would mislead.
+     */
+    public function googleCalendarUrl(): ?string
+    {
+        if (! $this->start_date || $this->start_date->format('H:i') === '00:00') {
+            return null;
+        }
+
+        $location = $this->isOnline()
+            ? ($this->meeting_url ?? 'Online')
+            : trim(($this->location_name ? "{$this->location_name}, " : '').($this->location_address ?? ''), ', ');
+
+        return 'https://calendar.google.com/calendar/render?'.http_build_query([
+            'action' => 'TEMPLATE',
+            'text' => trim(($this->program?->name ?? 'Kelas Kheedma Academy').' · '.$this->name),
+            'dates' => $this->start_date->format('Ymd\THis').'/'.$this->start_date->copy()->addHours(2)->format('Ymd\THis'),
+            'ctz' => 'Asia/Jakarta',
+            'location' => $location,
+        ]);
+    }
+
+    /**
      * Human start date/time for member-facing surfaces. Legacy date→datetime
      * conversion left `00:00` times behind, so the clock is shown only when
      * it isn't midnight.

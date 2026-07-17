@@ -85,16 +85,34 @@
             @elseif ($activeTab === 'kelas')
                 @if ($enrolledClasses->isNotEmpty())
                     <div class="mt-8">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelasmu</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Saya</h2>
                         <div class="mt-4 space-y-4">
                             @foreach ($enrolledClasses as $enrollment)
                                 @php($cohort = $enrollment->cohort)
                                 <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                                    <p class="font-semibold text-teal-900">
-                                        {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
-                                    </p>
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <p class="font-semibold text-teal-900">
+                                            {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
+                                        </p>
+                                        <span @class([
+                                            'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                                            'bg-teal-100 text-teal-700' => ! $cohort->isOnline(),
+                                            'bg-sand-100 text-teal-800/70' => $cohort->isOnline(),
+                                        ])>{{ $cohort->isOnline() ? 'Online' : 'Tatap muka' }}</span>
+                                    </div>
                                     @if ($cohort->startLabel())
-                                        <p class="mt-1 text-xs text-teal-800/60">Kelas dimulai {{ $cohort->startLabel() }}</p>
+                                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-teal-800/80">
+                                            <span class="inline-flex items-center gap-1.5">
+                                                <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>
+                                                Dimulai {{ $cohort->startLabel() }}
+                                            </span>
+                                            @if ($cohort->googleCalendarUrl())
+                                                <a href="{{ $cohort->googleCalendarUrl() }}" target="_blank" rel="noopener"
+                                                   class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
+                                                    + Tambahkan ke Google Calendar
+                                                </a>
+                                            @endif
+                                        </div>
                                     @endif
 
                                     <div class="mt-4 space-y-2 text-sm text-teal-800/80">
@@ -110,15 +128,9 @@
                                                 <p class="text-teal-800/60">Link meeting akan dibagikan sebelum kelas dimulai.</p>
                                             @endif
                                         @else
-                                            <p class="font-medium text-teal-900">Lokasi kelas:</p>
-                                            @if ($cohort->location_name)
-                                                <p class="font-semibold text-teal-900">{{ $cohort->location_name }}</p>
-                                            @endif
-                                            @if ($cohort->location_address)
-                                                <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
-                                            @endif
-
                                             @if ($cohort->mapsEmbedUrl())
+                                                {{-- The collapsible IS the location object: venue name up top,
+                                                     the live map one tap below. --}}
                                                 <details class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
                                                     <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
                                                         {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
@@ -126,8 +138,8 @@
                                                             <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6-5.1-6-9.9a6 6 0 1 1 12 0C18 15.9 12 21 12 21Z"/><circle cx="12" cy="11" r="2.3"/></svg>
                                                         </span>
                                                         <span class="min-w-0 flex-1">
-                                                            <span class="block text-sm font-semibold text-teal-900">Lihat lokasi di peta</span>
-                                                            <span class="block text-xs text-teal-800/60">Peta langsung terbuka di sini</span>
+                                                            <span class="block text-sm font-semibold text-teal-900">{{ $cohort->location_name ?: 'Lokasi kelas' }}</span>
+                                                            <span class="block text-xs text-teal-800/60">{{ $cohort->location_address ?: 'Lihat lokasi di peta' }}</span>
                                                         </span>
                                                         <svg class="h-4 w-4 shrink-0 text-teal-700 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                     </summary>
@@ -153,11 +165,16 @@
                                                         </div>
                                                     </div>
                                                 </details>
-                                            @elseif ($cohort->mapsUrl())
-                                                <a href="{{ $cohort->mapsUrl() }}" target="_blank" rel="noopener"
-                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
-                                                    Lihat di Google Maps
-                                                </a>
+                                            @elseif ($cohort->location_name || $cohort->location_address)
+                                                {{-- Coordinates absent (legacy/manual entry): plain text location. --}}
+                                                @if ($cohort->location_name)
+                                                    <p class="font-semibold text-teal-900">{{ $cohort->location_name }}</p>
+                                                @endif
+                                                @if ($cohort->location_address)
+                                                    <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
+                                                @endif
+                                            @else
+                                                <p class="text-teal-800/60">Lokasi kelas akan diumumkan.</p>
                                             @endif
                                         @endif
 

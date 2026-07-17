@@ -173,13 +173,14 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)
             ->get('/akun?bagian=kelas')
             ->assertOk()
-            ->assertSee('Kelasmu')
+            ->assertSee('Kelas Saya')
             ->assertSee('Kelas Offline Uji')
             ->assertSee('Angkatan Offline 1')
             ->assertSee('1 Agustus 2026 pukul 09.00 WIB')
             ->assertSee($cohort->location_name)
             ->assertSee($cohort->location_address)
-            ->assertSee('Lihat lokasi di peta')
+            ->assertSee('Tatap muka')
+            ->assertSee('Tambahkan ke Google Calendar')
             ->assertSee('Petunjuk arah')
             ->assertSee($cohort->mapsEmbedUrl())
             ->assertSee($cohort->mapsDirectionsUrl())
@@ -244,22 +245,27 @@ class MemberAreaTest extends TestCase
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'dropped', 'occurred_at' => now()]);
 
+        // "Kelas Saya" itself always appears in the account menu, so the
+        // negative check targets the dropped cohort's own content.
         $this->actingAs($user)
             ->get('/akun?bagian=kelas')
             ->assertOk()
-            ->assertDontSee('Kelasmu')
             ->assertDontSee('Kelas Dropped Uji');
     }
 
     public function test_member_not_enrolled_sees_no_kelasmu_section(): void
     {
         [$user] = $this->member();
-        $program = Program::factory()->active()->create();
-        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+        $program = Program::factory()->active()->create(['name' => 'Kelas Belum Diikuti']);
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id, 'materials_url' => 'https://drive.google.com/rahasia']);
 
+        // The open class is listed for registration, but none of its
+        // enrolled-only logistics leak to a non-enrolled member.
         $this->actingAs($user)
             ->get('/akun?bagian=kelas')
             ->assertOk()
-            ->assertDontSee('Kelasmu');
+            ->assertSee('Kelas Belum Diikuti')
+            ->assertDontSee('Buka materi kelas')
+            ->assertDontSee('https://drive.google.com/rahasia', false);
     }
 }
