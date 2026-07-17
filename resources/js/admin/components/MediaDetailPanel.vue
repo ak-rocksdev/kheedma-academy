@@ -2,6 +2,7 @@
 import { ref, watch } from 'vue';
 import { Copy, Check, Trash2, ExternalLink } from 'lucide-vue-next';
 import { media as mediaApi } from '@/api';
+import { copyText } from '@/lib/clipboard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -55,10 +56,19 @@ async function saveAlt() {
     }
 }
 
+// Counter keys the burst ring so repeat copies replay the animation.
+const copyBurst = ref(0);
+
 async function copyLink() {
-    await navigator.clipboard.writeText(window.location.origin + props.item.url);
+    error.value = '';
+    const ok = await copyText(window.location.origin + props.item.url);
+    if (!ok) {
+        error.value = 'Gagal menyalin link. Salin manual: ' + props.item.url;
+        return;
+    }
     copied.value = true;
-    setTimeout(() => (copied.value = false), 1500);
+    copyBurst.value++;
+    setTimeout(() => (copied.value = false), 1800);
 }
 
 async function removeFile() {
@@ -125,11 +135,14 @@ function formatDate(iso) {
             </p>
         </div>
 
-        <Button class="mt-4 w-full" @click="copyLink">
-            <Check v-if="copied" class="mr-1.5 h-4 w-4" />
-            <Copy v-else class="mr-1.5 h-4 w-4" />
-            {{ copied ? 'Link tersalin!' : 'Salin link' }}
-        </Button>
+        <div class="relative mt-4">
+            <Button class="w-full" :class="copied && 'bg-teal-500 hover:bg-teal-500'" @click="copyLink">
+                <Check v-if="copied" class="mr-1.5 h-4 w-4" />
+                <Copy v-else class="mr-1.5 h-4 w-4" />
+                {{ copied ? 'Link tersalin!' : 'Salin link' }}
+            </Button>
+            <span v-if="copyBurst" :key="copyBurst" class="kh-copy-burst" aria-hidden="true"></span>
+        </div>
 
         <div v-if="usedIn && usedIn.length" class="mt-3 rounded-lg bg-accent px-3 py-2.5 text-xs leading-relaxed text-accent-foreground">
             Dipakai di: <b>{{ usedIn.join(', ') }}</b>
