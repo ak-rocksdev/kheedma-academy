@@ -138,4 +138,24 @@ class Cohort extends Model
 
         return "https://www.google.com/maps/search/?api=1&query={$this->location_lat},{$this->location_lng}";
     }
+
+    /**
+     * Human start date/time for member-facing surfaces. Legacy date→datetime
+     * conversion left `00:00` times behind, so the clock is shown only when
+     * it isn't midnight.
+     */
+    public function startLabel(): ?string
+    {
+        if ($this->start_date === null) {
+            return null;
+        }
+
+        $date = $this->start_date->locale('id')->translatedFormat('j F Y');
+
+        if ($this->start_date->format('H:i') === '00:00') {
+            return $date;
+        }
+
+        return $date.' pukul '.$this->start_date->format('H.i').' WIB';
+    }
 }

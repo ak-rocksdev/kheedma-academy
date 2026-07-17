@@ -88,6 +88,33 @@ class PublicCatalogTest extends TestCase
             ->assertSee('1 Agustus 2026');
     }
 
+    public function test_landing_shows_start_time_when_not_midnight(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create([
+            'program_id' => $program->id,
+            'start_date' => '2026-08-01 14:00:00',
+        ]);
+
+        $this->get("/program/{$program->slug}")
+            ->assertOk()
+            ->assertSee('1 Agustus 2026 pukul 14.00 WIB');
+    }
+
+    public function test_landing_omits_start_time_for_legacy_midnight_start(): void
+    {
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create([
+            'program_id' => $program->id,
+            'start_date' => '2026-08-01 00:00:00',
+        ]);
+
+        $this->get("/program/{$program->slug}")
+            ->assertOk()
+            ->assertSee('1 Agustus 2026')
+            ->assertDontSee('pukul');
+    }
+
     public function test_landing_shows_nearest_start_when_two_cohorts_are_open(): void
     {
         $program = Program::factory()->active()->create();

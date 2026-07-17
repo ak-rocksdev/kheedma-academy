@@ -66,4 +66,25 @@ class CohortModelTest extends TestCase
         $this->assertTrue(Cohort::factory()->online()->create()->isOnline());
         $this->assertFalse(Cohort::factory()->create()->isOnline());
     }
+
+    public function test_start_label_includes_time_when_not_midnight(): void
+    {
+        $cohort = Cohort::factory()->create(['start_date' => '2026-08-01 09:30:00']);
+
+        $this->assertSame('1 Agustus 2026 pukul 09.30 WIB', $cohort->startLabel());
+    }
+
+    public function test_start_label_omits_time_for_legacy_midnight_start(): void
+    {
+        $cohort = Cohort::factory()->create(['start_date' => '2026-08-01 00:00:00']);
+
+        $this->assertSame('1 Agustus 2026', $cohort->startLabel());
+    }
+
+    public function test_start_label_is_null_without_a_start_date(): void
+    {
+        $cohort = Cohort::factory()->create(['start_date' => null]);
+
+        $this->assertNull($cohort->startLabel());
+    }
 }

@@ -83,6 +83,62 @@
                     @endif
                 </div>
             @elseif ($activeTab === 'kelas')
+                @if ($enrolledClasses->isNotEmpty())
+                    <div class="mt-8">
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelasmu</h2>
+                        <div class="mt-4 space-y-4">
+                            @foreach ($enrolledClasses as $enrollment)
+                                @php($cohort = $enrollment->cohort)
+                                <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                                    <p class="font-semibold text-teal-900">
+                                        {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
+                                    </p>
+                                    @if ($cohort->startLabel())
+                                        <p class="mt-1 text-xs text-teal-800/60">Kelas dimulai {{ $cohort->startLabel() }}</p>
+                                    @endif
+
+                                    <div class="mt-4 space-y-2 text-sm text-teal-800/80">
+                                        @if ($cohort->isOnline())
+                                            <p class="font-medium text-teal-900">Kelas online</p>
+                                            @if ($cohort->meeting_url)
+                                                <a href="{{ $cohort->meeting_url }}" target="_blank" rel="noopener"
+                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
+                                                    Gabung meeting
+                                                </a>
+                                            @else
+                                                <p class="text-teal-800/60">Link meeting akan dibagikan sebelum kelas dimulai.</p>
+                                            @endif
+                                        @else
+                                            <p class="font-medium text-teal-900">Lokasi kelas:</p>
+                                            @if ($cohort->location_name)
+                                                <p class="font-semibold text-teal-900">{{ $cohort->location_name }}</p>
+                                            @endif
+                                            @if ($cohort->location_address)
+                                                <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
+                                            @endif
+                                            @if ($cohort->mapsUrl())
+                                                <a href="{{ $cohort->mapsUrl() }}" target="_blank" rel="noopener"
+                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
+                                                    Lihat di Google Maps
+                                                </a>
+                                            @endif
+                                        @endif
+
+                                        @if ($cohort->materials_url)
+                                            <div>
+                                                <a href="{{ $cohort->materials_url }}" target="_blank" rel="noopener"
+                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
+                                                    Buka materi kelas
+                                                </a>
+                                            </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
                 @if ($openClasses->isNotEmpty())
                     <div class="mt-8">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Dibuka</h2>
@@ -92,8 +148,8 @@
                                     <div>
                                         <p class="font-semibold text-teal-900">{{ $entry['program']->name }}</p>
                                         <p class="text-xs text-teal-800/60">
-                                            @if ($entry['openCohort']?->start_date)
-                                                Kelas dimulai {{ $entry['openCohort']->start_date->locale('id')->translatedFormat('j F Y') }}
+                                            @if ($entry['openCohort']?->startLabel())
+                                                Kelas dimulai {{ $entry['openCohort']->startLabel() }}
                                             @else
                                                 Pendaftaran sedang dibuka
                                             @endif

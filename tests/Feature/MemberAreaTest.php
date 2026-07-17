@@ -4,8 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\Cohort;
+use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
+use App\Models\StatusEvent;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -154,5 +156,107 @@ class MemberAreaTest extends TestCase
             ->assertOk()
             ->assertSee('Belum lolos')
             ->assertDontSee('Catatan dari tim');
+    }
+
+    public function test_enrolled_member_sees_kelasmu_with_location_and_maps_link(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Offline Uji']);
+        $cohort = Cohort::factory()->atLocation()->create([
+            'program_id' => $program->id,
+            'name' => 'Angkatan Offline 1',
+            'start_date' => '2026-08-01 09:00:00',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelasmu')
+            ->assertSee('Kelas Offline Uji')
+            ->assertSee('Angkatan Offline 1')
+            ->assertSee('1 Agustus 2026 pukul 09.00 WIB')
+            ->assertSee($cohort->location_name)
+            ->assertSee($cohort->location_address)
+            ->assertSee('Lihat di Google Maps')
+            ->assertSee($cohort->mapsUrl());
+    }
+
+    public function test_enrolled_member_sees_meeting_link_for_online_cohort(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->online()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas online')
+            ->assertSee('Gabung meeting')
+            ->assertSee($cohort->meeting_url, false);
+    }
+
+    public function test_enrolled_online_cohort_without_meeting_url_shows_placeholder(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'type' => 'online', 'meeting_url' => null]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas online')
+            ->assertSee('Link meeting akan dibagikan sebelum kelas dimulai.')
+            ->assertDontSee('Gabung meeting');
+    }
+
+    public function test_enrolled_cohort_with_materials_shows_materials_link(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create([
+            'program_id' => $program->id,
+            'materials_url' => 'https://drive.google.com/materi-uji',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Buka materi kelas')
+            ->assertSee('https://drive.google.com/materi-uji', false);
+    }
+
+    public function test_dropped_enrollment_does_not_show_in_kelasmu(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Dropped Uji']);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'dropped', 'occurred_at' => now()]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Kelasmu')
+            ->assertDontSee('Kelas Dropped Uji');
+    }
+
+    public function test_member_not_enrolled_sees_no_kelasmu_section(): void
+    {
+        [$user] = $this->member();
+        $program = Program::factory()->active()->create();
+        Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+
+        $this->actingAs($user)
+            ->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Kelasmu');
     }
 }
