@@ -26,8 +26,12 @@ const manualMode = ref(false);
 const placesUsable = ref(false);
 const autocompleteHost = ref(null);
 let autocompleteEl = null;
+// The dialog can unmount this component while loadPlaces() is still pending;
+// this flag stops the mount continuation from attaching after teardown.
+let disposed = false;
 
-const hasLocation = computed(() => Boolean(model.value.address || model.value.lat));
+// A 0 coordinate is valid (equator/meridian); only null/'' mean "not set".
+const hasLocation = computed(() => Boolean(model.value.address) || (model.value.lat != null && model.value.lat !== ''));
 
 async function handleSelect({ placePrediction }) {
     try {
@@ -47,6 +51,7 @@ async function handleSelect({ placePrediction }) {
 
 onMounted(async () => {
     const places = await loadPlaces();
+    if (disposed) return;
     if (!places) {
         manualMode.value = true;
         return;
@@ -64,6 +69,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+    disposed = true;
     autocompleteEl?.removeEventListener('gmp-select', handleSelect);
 });
 </script>
@@ -78,7 +84,7 @@ onBeforeUnmount(() => {
                 <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Lokasi terpilih</p>
                 <p class="font-medium text-foreground">{{ model.name || '—' }}</p>
                 <p class="text-muted-foreground">{{ model.address }}</p>
-                <p v-if="model.lat && model.lng" class="mt-1 text-xs text-muted-foreground/70">{{ model.lat }}, {{ model.lng }}</p>
+                <p v-if="model.lat != null && model.lng != null" class="mt-1 text-xs text-muted-foreground/70">{{ model.lat }}, {{ model.lng }}</p>
             </div>
 
             <p v-if="placesError" class="mt-1.5 text-xs text-muted-foreground">{{ placesError }}</p>

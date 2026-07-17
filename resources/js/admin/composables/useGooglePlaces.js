@@ -7,7 +7,6 @@ import { readonly, ref } from 'vue';
  * fetched at most once per page session no matter how many components call
  * loadPlaces() (dialog re-opens, multiple pickers, etc).
  */
-const ready = ref(false);
 const error = ref('');
 let placesLibraryPromise = null;
 
@@ -53,7 +52,11 @@ function injectBootstrapLoader(apiKey) {
 }
 
 /**
- * @returns {{ready: import('vue').Readonly<import('vue').Ref<boolean>>, error: import('vue').Readonly<import('vue').Ref<string>>, loadPlaces: () => Promise<google.maps.places.PlacesLibrary|null>}}
+ * Callers learn whether Places is usable from loadPlaces()'s resolved value
+ * (the library object, or null on failure); `error` carries the user-facing
+ * Indonesian explanation for the manual-input fallback.
+ *
+ * @returns {{error: import('vue').Readonly<import('vue').Ref<string>>, loadPlaces: () => Promise<google.maps.places.PlacesLibrary|null>}}
  */
 export function useGooglePlaces() {
     /**
@@ -76,9 +79,7 @@ export function useGooglePlaces() {
         placesLibraryPromise = (async () => {
             try {
                 injectBootstrapLoader(key);
-                const places = await window.google.maps.importLibrary('places');
-                ready.value = true;
-                return places;
+                return await window.google.maps.importLibrary('places');
             } catch {
                 error.value = 'Gagal memuat pencarian tempat. Isi lokasi secara manual di bawah.';
                 return null;
@@ -89,7 +90,6 @@ export function useGooglePlaces() {
     }
 
     return {
-        ready: readonly(ready),
         error: readonly(error),
         loadPlaces,
     };

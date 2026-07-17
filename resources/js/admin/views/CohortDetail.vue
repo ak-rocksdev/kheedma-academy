@@ -212,7 +212,7 @@ watch(() => props.id, () => load());
                         >
                             <ExternalLink class="size-3.5" /> Lihat di Google Maps
                         </a>
-                        <p v-if="!cohort.location_address" class="mt-2 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
+                        <p v-if="!cohort.location_name && !cohort.location_address" class="mt-2 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
                     </template>
                     <template v-else>
                         <a
