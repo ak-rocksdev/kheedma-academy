@@ -72,28 +72,54 @@ export async function api(path, { method = 'GET', body = null } = {}) {
     return data;
 }
 
-/** Multipart POST variant of api() — browser sets the Content-Type boundary. */
-export async function apiUpload(path, formData) {
+/**
+ * Multipart POST variant of api() — browser sets the Content-Type boundary.
+ * Built on XMLHttpRequest instead of fetch because only XHR exposes upload
+ * progress; pass onProgress(loadedBytes, totalBytes) to observe it.
+ */
+export async function apiUpload(path, formData, { onProgress = null } = {}) {
     if (!getCookie('XSRF-TOKEN')) {
         await csrf();
     }
-    const headers = { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' };
     const xsrf = getCookie('XSRF-TOKEN');
-    if (xsrf) headers['X-XSRF-TOKEN'] = xsrf;
 
-    const res = await fetch(`/api${path}`, { method: 'POST', credentials: 'include', headers, body: formData });
-    const data = await res.json().catch(() => null);
-    if (!res.ok) {
-        const err = new Error((data && data.message) || `Request failed (${res.status})`);
-        err.status = res.status;
-        err.errors = (data && data.errors) || {};
-        if ((res.status === 401 || res.status === 419) && sessionExpiredHandler) {
-            err.sessionExpired = true;
-            sessionExpiredHandler();
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/api${path}`);
+        xhr.withCredentials = true;
+        xhr.setRequestHeader('Accept', 'application/json');
+        xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+        if (xsrf) xhr.setRequestHeader('X-XSRF-TOKEN', xsrf);
+
+        if (onProgress) {
+            xhr.upload.addEventListener('progress', (event) => {
+                if (event.lengthComputable) onProgress(event.loaded, event.total);
+            });
         }
-        throw err;
-    }
-    return data;
+
+        xhr.onload = () => {
+            let data = null;
+            try {
+                data = JSON.parse(xhr.responseText);
+            } catch {
+                // Non-JSON body; the status check below decides the outcome.
+            }
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(data);
+                return;
+            }
+            const err = new Error((data && data.message) || `Request failed (${xhr.status})`);
+            err.status = xhr.status;
+            err.errors = (data && data.errors) || {};
+            if ((xhr.status === 401 || xhr.status === 419) && sessionExpiredHandler) {
+                err.sessionExpired = true;
+                sessionExpiredHandler();
+            }
+            reject(err);
+        };
+        xhr.onerror = () => reject(new Error('Koneksi terputus saat mengunggah. Coba lagi ya.'));
+        xhr.send(formData);
+    });
 }
 
 export const auth = {
@@ -217,5 +243,43 @@ export const sessions = {
     },
     setAttendance(id, enrollmentIds) {
         return api(`/admin/sessions/${id}/attendance`, { method: 'PUT', body: { enrollment_ids: enrollmentIds } });
+    },
+};
+
+export const contentSections = {
+    list(query = '') {
+        return api(`/admin/content-sections${query}`);
+    },
+    create(payload) {
+        return api('/admin/content-sections', { method: 'POST', body: payload });
+    },
+    update(id, payload) {
+        return api(`/admin/content-sections/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/content-sections/${id}`, { method: 'DELETE' });
+    },
+    reorder(payload) {
+        return api('/admin/content-sections-order', { method: 'PATCH', body: payload });
+    },
+};
+
+export const media = {
+    list(query = '') {
+        return api(`/admin/media${query}`);
+    },
+    show(id) {
+        return api(`/admin/media/${id}`);
+    },
+    upload(file, onProgress = null) {
+        const formData = new FormData();
+        formData.append('file', file);
+        return apiUpload('/admin/media', formData, { onProgress });
+    },
+    update(id, payload) {
+        return api(`/admin/media/${id}`, { method: 'PATCH', body: payload });
+    },
+    remove(id) {
+        return api(`/admin/media/${id}`, { method: 'DELETE' });
     },
 };

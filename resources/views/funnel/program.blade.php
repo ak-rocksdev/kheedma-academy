@@ -14,7 +14,11 @@
                 @endif
             </div>
 
-            @if ($program->description)
+            @if ($sections->isNotEmpty())
+                <div class="mt-10 space-y-4">
+                    @include('funnel.partials.content-sections', ['sections' => $sections])
+                </div>
+            @elseif ($program->description)
                 <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-sm leading-relaxed text-teal-800/90 shadow-sm backdrop-blur sm:p-8">
                     {!! nl2br(e($program->description)) !!}
                 </div>

@@ -45,6 +45,11 @@ class Program extends Model
         return $this->hasMany(Application::class);
     }
 
+    public function sections(): HasMany
+    {
+        return $this->hasMany(ContentSection::class)->orderBy('sort_order');
+    }
+
     /** Open for registration: catalog-active AND an Angkatan's intake window is open. */
     public function isOpen(): bool
     {

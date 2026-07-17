@@ -5,7 +5,9 @@ use App\Http\Controllers\Api\Admin\AttendanceController;
 use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\CohortSessionController;
 use App\Http\Controllers\Api\Admin\CommunityMemberController;
+use App\Http\Controllers\Api\Admin\ContentSectionController;
 use App\Http\Controllers\Api\Admin\EnrollmentController;
+use App\Http\Controllers\Api\Admin\MediaController;
 use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\ProgramThumbnailController;
@@ -61,6 +63,20 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::delete('/programs/{program:id}', [ProgramController::class, 'destroy']);
             Route::post('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'store']);
             Route::delete('/programs/{program:id}/thumbnail', [ProgramThumbnailController::class, 'destroy']);
+        });
+
+        Route::middleware('permission:content.manage')->group(function () {
+            Route::get('/content-sections', [ContentSectionController::class, 'index']);
+            Route::post('/content-sections', [ContentSectionController::class, 'store']);
+            Route::patch('/content-sections-order', [ContentSectionController::class, 'reorder']);
+            Route::patch('/content-sections/{section}', [ContentSectionController::class, 'update']);
+            Route::delete('/content-sections/{section}', [ContentSectionController::class, 'destroy']);
+
+            Route::get('/media', [MediaController::class, 'index']);
+            Route::get('/media/{media}', [MediaController::class, 'show']);
+            Route::post('/media', [MediaController::class, 'store']);
+            Route::patch('/media/{media}', [MediaController::class, 'update']);
+            Route::delete('/media/{media}', [MediaController::class, 'destroy']);
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');

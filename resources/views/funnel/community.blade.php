@@ -23,61 +23,7 @@
 
             @unless ($focusedEdit)
             <div class="mt-10 space-y-4">
-                <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-lg font-bold text-teal-900">Komunitas belajar, bukan sekadar kelas jualan.</h2>
-                    <p class="mt-2 text-sm leading-relaxed text-teal-800/80">
-                        Kami mendampingimu membangun habit dan rutinitas harian sebagai affiliator
-                        yang solid, konsisten, dan berkelanjutan.
-                    </p>
-                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
-                        <div class="rounded-2xl bg-sand-50 p-4">
-                            <p class="text-sm font-semibold text-teal-900">Mentor pribadi, gratis</p>
-                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
-                                Dedicated personal manager yang membimbing, membantu mengurai kendala
-                                affiliate, dan menjaga konsistensi konten kreatifmu.
-                            </p>
-                        </div>
-                        <div class="rounded-2xl bg-sand-50 p-4">
-                            <p class="text-sm font-semibold text-teal-900">Akses komunitas, gratis</p>
-                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
-                                Grup koordinasi tanpa biaya supaya kamu selalu up to date dengan
-                                program strategis yang akan dijalankan ke depannya.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-lg font-bold text-teal-900">Belajar daring dan luring.</h2>
-                    <ul class="mt-3 space-y-1.5 text-sm leading-relaxed text-teal-800/80">
-                        <li>Sesi Pagi Daring (Perempuan): 09.30 WIB</li>
-                        <li>Sesi Siang Luring (Laki-laki): 13.30 WIB</li>
-                        <li>Lokasi: Kantor Kheedma Indonesia, Pasar Kliwon, Surakarta, atau via Zoom/Google Meet</li>
-                    </ul>
-                    <p class="mt-4 text-sm font-semibold text-teal-900">Silabus program:</p>
-                    <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-teal-800/80">
-                        <li>Fondasi Dasar dan Teknis Awal Affiliate TikTok</li>
-                        <li>Akselerasi Penjualan dan Strategi Scale Up</li>
-                        <li>Optimalisasi Konten dan Iklan TikTok Affiliate</li>
-                        <li>Membangun Personal Branding Digital</li>
-                    </ol>
-                </div>
-
-                <div class="rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                    <h2 class="text-lg font-bold text-teal-900">Komitmen dan etika belajar.</h2>
-                    <p class="mt-2 text-sm leading-relaxed text-teal-800/80">Kami mencari rekan yang siap berkomitmen untuk:</p>
-                    <ol class="mt-2 list-decimal space-y-1 pl-5 text-sm leading-relaxed text-teal-800/80">
-                        <li>Alokasi waktu minimal 1 jam per hari untuk mempraktikkan materi dan menyelesaikan task.</li>
-                        <li>Menjaga vibrasi positif, saling support antar anggota, dan membangun circle belajar yang sehat.</li>
-                        <li>Saling menghargai dan menjaga etika, kepada sesama rekan belajar maupun mentor.</li>
-                    </ol>
-                    <p class="mt-4 rounded-2xl bg-sand-50 p-4 text-xs leading-relaxed text-teal-800/60">
-                        Kami tidak menjanjikan keberhasilan instan atau target angka tertentu. Fokus
-                        utama komunitas ini adalah membentuk mindset, kebiasaan produktif, dan
-                        framework strategi agar kamu dapat mengelola profesi affiliator secara
-                        efektif dan berjangka panjang.
-                    </p>
-                </div>
+                @include('funnel.partials.content-sections', ['sections' => $sections])
             </div>
 
             <p class="mt-10 text-center text-sm leading-relaxed text-teal-800/70">

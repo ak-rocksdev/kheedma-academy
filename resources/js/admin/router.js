@@ -51,6 +51,12 @@ const routes = [
                 meta: { permission: 'programs.manage' },
             },
             {
+                path: 'content',
+                name: 'content',
+                component: () => import('./views/Content.vue'),
+                meta: { permission: 'content.manage' },
+            },
+            {
                 path: 'community',
                 name: 'community',
                 component: () => import('./views/Community.vue'),
@@ -74,6 +80,12 @@ const routes = [
                 name: 'users',
                 component: () => import('./views/Users.vue'),
                 meta: { permission: 'users.manage' },
+            },
+            {
+                path: 'media',
+                name: 'media',
+                component: () => import('./views/Media.vue'),
+                meta: { permission: 'content.manage' },
             },
         ],
     },
