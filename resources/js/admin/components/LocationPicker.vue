@@ -77,8 +77,12 @@ onBeforeUnmount(() => {
 <template>
     <div :class="cn('space-y-2', props.class)">
         <template v-if="!manualMode">
-            <label class="text-xs text-muted-foreground">Cari tempat…</label>
-            <div ref="autocompleteHost" class="mt-1.5"></div>
+            <!-- Bordered like Input so the element reads as a field even in
+                 its bare idle state (it only paints its own box on focus). -->
+            <div
+                ref="autocompleteHost"
+                class="mt-1.5 rounded-md border border-input bg-background px-1 focus-within:ring-2 focus-within:ring-ring [&>gmp-place-autocomplete]:block [&>gmp-place-autocomplete]:w-full"
+            ></div>
 
             <div v-if="hasLocation" class="mt-2 rounded-md border border-border bg-accent/30 px-3 py-2 text-sm">
                 <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Lokasi terpilih</p>
