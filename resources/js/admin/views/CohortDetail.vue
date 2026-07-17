@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, Check, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, Check, ExternalLink, FileText, Trash2, UserMinus } from 'lucide-vue-next';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Dialog } from '@/components/ui/dialog';
 import { Alert } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuthStore } from '@/stores/auth';
+import { fmtDateTime } from '@/lib/format';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -186,6 +187,56 @@ watch(() => props.id, () => load());
                     </p>
                 </div>
                 <Button v-if="auth.can('enrollments.manage')" variant="accent" size="sm" @click="openAdd">Tambah Peserta</Button>
+            </div>
+
+            <!-- Logistik: jadwal, lokasi/link meeting, materi. -->
+            <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                    <p class="text-xs font-semibold tracking-wide text-muted-foreground uppercase">Jadwal</p>
+                    <p class="mt-1.5 font-medium text-foreground">{{ fmtDateTime(cohort.start_date) }}</p>
+                </div>
+                <div class="rounded-xl border border-border bg-card px-4 py-3 text-sm">
+                    <Badge :variant="cohort.type === 'online' ? 'secondary' : 'outline'">
+                        {{ cohort.type === 'online' ? 'Online' : 'Offline (tatap muka)' }}
+                    </Badge>
+
+                    <template v-if="cohort.type === 'offline'">
+                        <p v-if="cohort.location_name" class="mt-2 font-medium text-foreground">{{ cohort.location_name }}</p>
+                        <p v-if="cohort.location_address" class="text-muted-foreground">{{ cohort.location_address }}</p>
+                        <a
+                            v-if="cohort.maps_url"
+                            :href="cohort.maps_url"
+                            target="_blank"
+                            rel="noopener"
+                            class="mt-1.5 inline-flex items-center gap-1 text-teal-700 hover:underline"
+                        >
+                            <ExternalLink class="size-3.5" /> Lihat di Google Maps
+                        </a>
+                        <p v-if="!cohort.location_address" class="mt-2 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
+                    </template>
+                    <template v-else>
+                        <a
+                            v-if="cohort.meeting_url"
+                            :href="cohort.meeting_url"
+                            target="_blank"
+                            rel="noopener"
+                            class="mt-2 inline-flex items-center gap-1 text-teal-700 hover:underline"
+                        >
+                            <ExternalLink class="size-3.5" /> Buka link meeting
+                        </a>
+                        <p v-else class="mt-2 text-muted-foreground/60 italic">Link meeting belum diisi.</p>
+                    </template>
+
+                    <a
+                        v-if="cohort.materials_url"
+                        :href="cohort.materials_url"
+                        target="_blank"
+                        rel="noopener"
+                        class="mt-2 flex items-center gap-1 text-teal-700 hover:underline"
+                    >
+                        <FileText class="size-3.5" /> Materi kelas
+                    </a>
+                </div>
             </div>
 
             <!-- Daftar hadir: satu angkatan = satu pertemuan, satu tombol per peserta. -->
