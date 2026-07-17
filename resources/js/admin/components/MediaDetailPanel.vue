@@ -145,9 +145,15 @@ function formatDate(iso) {
         </div>
 
         <div v-if="usedIn && usedIn.length" class="mt-3 rounded-lg bg-accent px-3 py-2.5 text-xs leading-relaxed text-accent-foreground">
-            Dipakai di: <b>{{ usedIn.join(', ') }}</b>
+            <p class="font-semibold">File dipakai di:</p>
+            <ul class="mt-1 space-y-0.5">
+                <li v-for="label in usedIn" :key="label" class="flex gap-1.5">
+                    <span aria-hidden="true">•</span>
+                    <b>{{ label }}</b>
+                </li>
+            </ul>
         </div>
-        <p v-else-if="usedIn" class="mt-3 text-xs text-muted-foreground">Belum dipakai di konten mana pun.</p>
+        <p v-else-if="usedIn" class="mt-3 text-xs text-muted-foreground">File belum dipakai di konten mana pun.</p>
 
         <p v-if="error" class="mt-3 text-xs text-destructive">{{ error }}</p>
 
