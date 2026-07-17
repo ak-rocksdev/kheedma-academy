@@ -73,13 +73,11 @@ class MemberAreaController extends Controller
             });
 
         // Kelasmu: the member's own active enrollments, with cohort logistics.
-        // "Active" mirrors ProgramController::show() — a null latest status
-        // event reads as accepted; only an explicit 'dropped' excludes it.
         $enrolledClasses = $person
             ? $person->enrollments()
                 ->with(['cohort.program', 'latestStatusEvent'])
                 ->get()
-                ->filter(fn (Enrollment $e) => ($e->latestStatusEvent?->status ?? 'accepted') === 'accepted')
+                ->filter(fn (Enrollment $e) => $e->isActive())
                 ->values()
             : collect();
 

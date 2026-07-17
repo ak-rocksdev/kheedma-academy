@@ -19,6 +19,15 @@ export function fmtDateTime(iso) {
     return `${fmtDate(iso)}, ${date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}`;
 }
 
+/**
+ * Date part ('YYYY-MM-DD') of an ISO or datetime-local string; '' when empty.
+ * The one place day-precision truncation lives — calendar-day arithmetic must
+ * never diverge between call sites (start_date carries a time, end_date not).
+ */
+export function dateOnly(value) {
+    return value ? String(value).slice(0, 10) : '';
+}
+
 /** 'YYYY-MM-DDTHH:mm' in local time for <input type="datetime-local">; '' when empty. */
 export function toDatetimeLocal(iso) {
     if (!iso) return '';

@@ -49,7 +49,7 @@ class ProgramController extends Controller
             ->whereHas('cohort', fn ($q) => $q->where('program_id', $program->id))
             ->with('latestStatusEvent')
             ->get()
-            ->filter(fn (Enrollment $e) => ($e->latestStatusEvent?->status ?? 'accepted') === 'accepted')
+            ->filter(fn (Enrollment $e) => $e->isActive())
             ->count();
 
         return response()->json([

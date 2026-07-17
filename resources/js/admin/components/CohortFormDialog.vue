@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Alert } from '@/components/ui/alert';
-import { fmtDate, toDatetimeLocal } from '@/lib/format';
+import { dateOnly, fmtDate, toDatetimeLocal } from '@/lib/format';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import LocationPicker from '@/components/LocationPicker.vue';
 
@@ -55,7 +55,7 @@ const durationDays = computed(() => {
 // part feeds the calendar-day arithmetic below.
 const computedEndDate = computed(() => {
     if (!form.value.start_date) return '';
-    return parseDate(form.value.start_date.slice(0, 10)).add({ days: durationDays.value - 1 }).toString();
+    return parseDate(dateOnly(form.value.start_date)).add({ days: durationDays.value - 1 }).toString();
 });
 
 /** ToggleGroup can deselect to empty; duration is mandatory, so ignore that. */
@@ -109,8 +109,8 @@ watch(open, (isOpen) => {
     // start_date carries a time-of-day, end_date doesn't).
     let days = 1;
     if (props.cohort?.start_date && props.cohort?.end_date) {
-        const startDateOnly = new Date(props.cohort.start_date.slice(0, 10));
-        const endDateOnly = new Date(props.cohort.end_date.slice(0, 10));
+        const startDateOnly = new Date(dateOnly(props.cohort.start_date));
+        const endDateOnly = new Date(dateOnly(props.cohort.end_date));
         days = Math.max(1, Math.round((endDateOnly - startDateOnly) / 86400000) + 1);
     }
     duration.value = days <= 3 ? String(days) : 'custom';
