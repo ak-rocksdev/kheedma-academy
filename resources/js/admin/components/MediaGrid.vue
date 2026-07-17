@@ -74,7 +74,12 @@ async function onFilesChosen(fileList) {
     // show up alongside the error (load() clears error.value, so the upload
     // error is re-applied after the refresh).
     await load(1);
-    if (lastUploadedId) selectedId.value = lastUploadedId;
+    if (lastUploadedId) {
+        selectedId.value = lastUploadedId;
+        // In picker mode a fresh upload IS the user's choice — hand it to the
+        // dialog so "Sisipkan gambar" is ready without an extra click.
+        if (props.picker && selectedItem.value) emit('select', selectedItem.value);
+    }
     if (errorMessage) error.value = errorMessage;
 }
 
@@ -113,7 +118,7 @@ function formatSize(bytes) {
                     @change="onFilesChosen($event.target.files); $event.target.value = ''"
                 >
             </label>
-            <p class="text-sm text-foreground/80">atau <b>seret dan lepas</b> ke mana saja di halaman ini</p>
+            <p class="text-sm text-foreground/80">atau <b>seret dan lepas</b> {{ picker ? 'ke area dialog ini' : 'ke mana saja di halaman ini' }}</p>
             <p class="ml-auto text-xs text-muted-foreground">JPG · PNG · WebP · GIF{{ picker ? '' : ' · PDF' }} · maks 5 MB</p>
 
             <div
