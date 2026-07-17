@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Attendance;
 use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
@@ -208,6 +210,59 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Pendaftaranmu diterima');
+    }
+
+    public function test_kelas_card_names_the_mentor(): void
+    {
+        [$user, $person] = $this->member();
+        $mentor = User::factory()->create(['name' => 'Ustadz Mentor Uji']);
+        $mentor->assignRole('mentor');
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'mentor_id' => $mentor->id]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Ustadz Mentor Uji');
+    }
+
+    public function test_ended_class_becomes_a_personal_record(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->online()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->subDays(10)->setTime(9, 30),
+            'end_date' => now()->subDays(10),
+        ]);
+        $session = CohortSession::create(['cohort_id' => $cohort->id, 'title' => 'Pertemuan 1', 'scheduled_at' => $cohort->start_date, 'position' => 1]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        // Attended + ended: a record, not a stale invite — and the meeting
+        // button for a finished class must be gone.
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Selesai')
+            ->assertSee('Kamu hadir di kelas ini')
+            ->assertDontSee('Gabung meeting');
+    }
+
+    public function test_ended_class_without_attendance_shows_neutral_closure(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->subDays(10)->setTime(9, 30),
+            'end_date' => now()->subDays(10),
+        ]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas telah selesai')
+            ->assertDontSee('Kamu hadir di kelas ini');
     }
 
     public function test_enrolled_member_sees_kelasmu_with_location_and_maps_link(): void

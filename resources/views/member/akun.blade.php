@@ -111,12 +111,22 @@
                                         <p class="font-semibold text-teal-900">
                                             {{ $cohort->program?->name }}<span class="text-teal-800/60"> · {{ $cohort->name }}</span>
                                         </p>
-                                        <span @class([
-                                            'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
-                                            'bg-teal-100 text-teal-700' => ! $cohort->isOnline(),
-                                            'bg-sand-100 text-teal-800/70' => $cohort->isOnline(),
-                                        ])>{{ $cohort->isOnline() ? 'Online' : 'Tatap muka' }}</span>
+                                        @if ($cohort->status === 'ended')
+                                            <span class="shrink-0 rounded-full bg-sand-100 px-3 py-1 text-xs font-semibold text-teal-800/70">Selesai</span>
+                                        @else
+                                            <span @class([
+                                                'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                                                'bg-teal-100 text-teal-700' => ! $cohort->isOnline(),
+                                                'bg-sand-100 text-teal-800/70' => $cohort->isOnline(),
+                                            ])>{{ $cohort->isOnline() ? 'Online' : 'Tatap muka' }}</span>
+                                        @endif
                                     </div>
+                                    @if ($cohort->mentor)
+                                        <p class="mt-1 inline-flex items-center gap-1.5 text-sm text-teal-800/80">
+                                            <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3.5"/><path d="M5 19.5c1.2-3 3.8-4.5 7-4.5s5.8 1.5 7 4.5" stroke-linecap="round"/></svg>
+                                            Mentormu: <span class="font-semibold text-teal-900">{{ $cohort->mentor->name }}</span>
+                                        </p>
+                                    @endif
                                     @if ($cohort->startLabel())
                                         <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-teal-800/80">
                                             <span class="inline-flex items-center gap-1.5">
@@ -136,7 +146,17 @@
                                     @endif
 
                                     <div class="mt-4 space-y-2 text-sm text-teal-800/80">
-                                        @if ($cohort->isOnline())
+                                        @if ($cohort->status === 'ended')
+                                            {{-- Closure: the card turns into a personal record, never a stale invite. --}}
+                                            @if ($enrollment->attendances_count > 0)
+                                                <p class="inline-flex items-center gap-1.5 font-semibold text-teal-700">
+                                                    <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    Kamu hadir di kelas ini
+                                                </p>
+                                            @else
+                                                <p class="text-teal-800/60">Kelas telah selesai.</p>
+                                            @endif
+                                        @elseif ($cohort->isOnline())
                                             <p class="font-medium text-teal-900">Kelas online</p>
                                             @if ($cohort->meeting_url)
                                                 <a href="{{ $cohort->meeting_url }}" target="_blank" rel="noopener"
