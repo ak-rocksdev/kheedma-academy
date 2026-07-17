@@ -50,6 +50,13 @@ configurable passing threshold.
    schedule); a deadline column is a trivial later addition if reality demands it.
 7. Community *membership* (the free "Gabung Komunitas Affiliator" door,
    `community_memberships`) is untouched. The gate applies to the affiliate class ladder.
+8. **A student follows ONE class (cohort) of the 30-day program** — the program's classes
+   are alternatives (the poster reads "Jadwal & Pilihan Sesi"), not a sequence one student
+   takes in full. The average is therefore computed within that single enrollment, and
+   passing any qualifying general-program enrollment opens the ladder — the same
+   any-enrollment semantics eligibility uses today. *(Inferred, PO to confirm; if students
+   in fact take several classes and the average must span them, the average moves from
+   per-enrollment to per-person-per-program — a contained change in `AssignmentScoring`.)*
 
 ## Data model
 
@@ -97,8 +104,11 @@ Centralized in `App\Support\AssignmentScoring` (companion to `ProgramEligibility
 - **Effective score** = `score` of the latest graded submission, else null (counts as 0 in
   the average).
 - **Average for an enrollment** = mean of effective scores across all assignments of the
-  enrollment's cohort, missing = 0, rounded to 1 decimal for display. Enrollment with the
-  latest status `dropped` never qualifies (consistent with `Enrollment::isActive()`).
+  enrollment's cohort, missing = 0, **rounded half-up to 1 decimal — and the threshold
+  comparison uses this same rounded value**, so what the student sees and what the gate
+  decides can never disagree (74.95 must not display "75.0" yet fail a threshold of 75).
+  Only active enrollments qualify (`Enrollment::isActive()`: latest status `accepted` or
+  none).
 - **Qualifies** = cohort's program has `min_average_score` set AND the cohort has ≥1
   assignment AND average ≥ threshold.
 
@@ -120,10 +130,16 @@ No cached/denormalized average that can go stale.
 
 ## Authorization
 
-Follow the existing permission convention (`attendance.record` style), two new permissions:
+Follow the existing permission convention (`enrollments.manage` / `attendance.record`
+style), two new permissions added to `PermissionSeeder` (idempotent, granted to `admin` and
+`mentor` roles):
 
-- `assignments.manage` — create/edit assignment text (mentor of the cohort, admin).
-- `assignments.grade` — score + feedback (mentor of the cohort, admin).
+- `assignments.manage` — create/edit assignment text.
+- `assignments.grade` — score + feedback.
+
+Permissions are **role-wide, not per-cohort** — exactly like `attendance.record` today (a
+mentor can record attendance for any cohort; no ownership scoping exists anywhere in the
+app, and inventing it here would be new machinery the PO has not asked for).
 
 Member side: a student may submit only to an assignment of a session in a cohort where they
 hold a non-dropped enrollment, and may only ever see their own submissions.
@@ -139,20 +155,27 @@ Status chips are one shared vocabulary across admin and member (same semantics, 
 existing chip styling): *belum dikerjakan* = neutral/slate, *menunggu dinilai* = orange,
 *dinilai* = teal.
 
-1. **Assignment editor, inside each session block of `CohortDetail.vue`.** Per session: if
-   no assignment, a quiet "+ Tulis tugas" affordance (visible with `assignments.manage`);
-   if present, the assignment title with an edit action opening a dialog (title + body
+Reality anchor: `CohortDetail.vue` today assumes **one session per cohort** (`mainSession =
+sessionList[0]`; the roster is a single "Daftar hadir" table with one Kehadiran column —
+comment in the file: "satu angkatan = satu pertemuan"). The assignment UI anchors to that
+same reality; the *schema* stays per-session, so if multi-session cohorts ever appear only
+the UI iterates, nothing migrates.
+
+1. **Assignment card on the cohort detail** (for the main session): if no assignment, a
+   quiet "+ Tulis tugas" affordance (visible with `assignments.manage`); if present, the
+   assignment title + body preview with an edit action opening a dialog (title + body
    textarea), following the `CohortFormDialog` pattern. Show "diubah oleh {nama}" from
    `updated_by` in the dialog footer.
-2. **Score column in the roster.** The roster table (attendance) gains one column per the
-   session in focus: the student's effective score for that session's assignment, or its
-   status chip when ungraded/missing. Clicking opens the **grading panel**.
+2. **"Nilai" column in the roster.** The existing roster table gains one column: the
+   student's effective score for the assignment, or its status chip when ungraded/missing.
+   Clicking opens the **grading panel**. Column hidden while the cohort has no assignment.
 3. **Grading panel** (dialog or side panel, consistent with existing dialogs): student name,
    the assignment, submission history newest-first (each version: link opening in a new tab,
    student note, submitted time; previous versions collapsed), then the grading form: score
-   input (0–100) + feedback textarea + "Simpan nilai". Grading always targets the latest
-   submission.
-4. **Ungraded queue indicator.** Each session block shows a small count badge "N menunggu
+   input (0–100) + feedback textarea + "Simpan nilai". The grade targets the specific
+   submission row shown in the panel (by id) — never "the latest" blindly, so a resubmission
+   arriving mid-grading cannot steal the grade.
+4. **Ungraded queue indicator.** The assignment card shows a small count badge "N menunggu
    dinilai" so the mentor sees pending work without opening rows one by one. No separate
    queue page — the cohort detail IS the workspace (data volume does not justify more).
 5. **Recap strip on cohort detail.** Per student row (or a compact summary section):
@@ -171,7 +194,10 @@ white/70 cards, `font-display` uppercase eyebrow labels, warm "kamu" copy, no em
    body, then by state —
    - *belum dikerjakan*: submit form (URL input + optional note textarea + "Kirim jawaban").
    - *menunggu dinilai*: confirmation state showing the submitted link + time, copy
-     "Jawabanmu sudah terkirim, menunggu dinilai mentor."
+     "Jawabanmu sudah terkirim, menunggu dinilai mentor." — plus a modest "Perbaiki
+     kiriman" affordance (a student who pasted the wrong link must not be stuck waiting
+     for a grade before fixing it; append-only rows already support this, the mentor
+     simply grades the newest version).
    - *dinilai*: the score displayed prominently, mentor feedback in a quoted block, and a
      "Kirim ulang untuk perbaiki nilai" affordance reopening the submit form (new version).
    Own submission history shown compactly (versions with time + grade if any).
@@ -180,9 +206,11 @@ white/70 cards, `font-display` uppercase eyebrow labels, warm "kamu" copy, no em
    below — "Capai rata-rata Y untuk membuka kelas komunitas"; met — celebratory state with a
    CTA to `/daftar` ("Kamu memenuhi syarat! Lanjut ke kelas komunitas"). No progress card
    when the program has no threshold.
-3. **Chooser copy**: locked ladder cards' lock reason for the score case reads in terms of
-   nilai (e.g. "Selesaikan program dengan nilai minimum untuk membuka kelas ini"), sourced
-   from the same `lockReason` keys.
+3. **Chooser copy**: locked-card copy is already admin-authored per program
+   (`locked_message`, falling back to `config('kheedma.default_locked_message')`); the
+   reason key is only a data attribute. So no code change here — review the config default's
+   wording once (it should read naturally for both attendance- and score-gated
+   prerequisites) and let admins tailor per-program copy as they set thresholds.
 
 Validation copy is Indonesian, warm register; the URL field validates as a real URL with a
 helpful message ("Formatnya harus link, contoh: https://…").
