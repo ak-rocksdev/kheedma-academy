@@ -79,7 +79,7 @@ watch(segment, () => fetchPage(1));
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Orang</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Semua Orang</h1>
             </div>
-            <span class="text-sm text-muted-foreground">{{ meta.total }} orang</span>
+            <span class="shrink-0 whitespace-nowrap text-sm text-muted-foreground">{{ meta.total }} orang</span>
         </div>
 
         <!-- Filters -->

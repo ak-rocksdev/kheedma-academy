@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
+import { ChevronRight, Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { cohorts as cohortsApi } from '@/api';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -70,7 +70,7 @@ async function confirmRemove() {
 
 <template>
     <div>
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan / Kelas</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Daftar Angkatan / Kelas</h1>
@@ -80,8 +80,43 @@ async function confirmRemove() {
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
+        <!-- ≥md: tabel penuh. Mobile: kartu — 8 kolom teramputasi di layar sempit. -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
-            <table class="w-full text-sm">
+            <ul class="divide-y divide-border md:hidden">
+                <li v-if="loading" class="px-4 py-10 text-center text-sm text-muted-foreground">Memuat…</li>
+                <li v-else-if="!items.length" class="px-4 py-10 text-center text-sm text-muted-foreground">Belum ada angkatan / kelas.</li>
+                <li
+                    v-for="cohort in items"
+                    :key="`card-${cohort.id}`"
+                    class="cursor-pointer px-4 py-3.5 transition-colors active:bg-accent/50"
+                    @click="goDetail(cohort)"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-foreground">{{ cohort.name }}</p>
+                            <p class="truncate text-xs text-muted-foreground">{{ cohort.program?.name ?? '—' }}</p>
+                            <p class="mt-0.5 text-xs" :class="cohortPeriodLabel(cohort) ? 'text-muted-foreground' : 'text-muted-foreground/50 italic'">
+                                {{ cohortPeriodLabel(cohort) ?? 'Belum dijadwalkan' }}<template v-if="cohort.mentor"> · {{ cohort.mentor.name }}</template>
+                            </p>
+                        </div>
+                        <div class="flex shrink-0 items-center">
+                            <Button variant="ghost" size="icon" class="h-9 w-9" title="Ubah" aria-label="Ubah Angkatan / Kelas" @click.stop="openEdit(cohort)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <ChevronRight class="size-4 text-muted-foreground" />
+                        </div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge :variant="cohortStatusVariant(cohort.status)">{{ cohortStatusLabel(cohort.status) }}</Badge>
+                        <Badge :variant="cohort.registration_open ? 'success' : 'secondary'">
+                            Pendaftaran {{ cohort.registration_open ? 'buka' : 'tutup' }}
+                        </Badge>
+                        <span class="ml-auto text-[11px] text-muted-foreground">{{ cohort.enrollments_count }} peserta</span>
+                    </div>
+                </li>
+            </ul>
+
+            <table class="hidden w-full text-sm md:table">
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>

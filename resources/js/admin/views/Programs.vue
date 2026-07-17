@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { Eye, Pencil, Trash2 } from 'lucide-vue-next';
+import { ChevronRight, Eye, Pencil, Trash2 } from 'lucide-vue-next';
 import { programs as programsApi } from '@/api';
 import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -78,7 +78,7 @@ async function confirmRemove() {
 
 <template>
     <div>
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Program</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Katalog Program</h1>
@@ -88,8 +88,38 @@ async function confirmRemove() {
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
+        <!-- ≥md: tabel penuh. Mobile: kartu — 7 kolom teramputasi di layar sempit. -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
-            <table class="w-full text-sm">
+            <ul class="divide-y divide-border md:hidden">
+                <li v-if="loading" class="px-4 py-10 text-center text-sm text-muted-foreground">Memuat…</li>
+                <li v-else-if="!items.length" class="px-4 py-10 text-center text-sm text-muted-foreground">Belum ada program.</li>
+                <li
+                    v-for="program in items"
+                    :key="`card-${program.id}`"
+                    class="cursor-pointer px-4 py-3.5 transition-colors active:bg-accent/50"
+                    @click="goDetail(program)"
+                >
+                    <div class="flex items-start gap-3">
+                        <img v-if="program.thumbnail_url" :src="program.thumbnail_url" alt="" class="h-10 w-16 shrink-0 rounded object-cover" />
+                        <div class="min-w-0 flex-1">
+                            <p class="truncate font-medium text-foreground">{{ program.name }}</p>
+                            <code class="block truncate text-xs text-muted-foreground">/program/{{ program.slug }}</code>
+                        </div>
+                        <Button variant="ghost" size="icon" class="-mr-1 h-9 w-9 shrink-0" title="Ubah" aria-label="Ubah program" @click.stop="openEdit(program)">
+                            <Pencil class="size-4" />
+                        </Button>
+                        <ChevronRight class="mt-2.5 size-4 shrink-0 text-muted-foreground" />
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge :variant="programStatusVariant(program.status)">{{ programStatusLabel(program.status) }}</Badge>
+                        <Badge variant="secondary">{{ program.type === 'affiliate_community' ? 'Affiliate L' + program.level : 'Umum' }}</Badge>
+                        <Badge :variant="program.is_open ? 'success' : 'secondary'">{{ program.is_open ? 'Buka' : 'Tutup' }}</Badge>
+                        <span class="ml-auto text-[11px] text-muted-foreground">{{ program.cohorts_count }} kelas · {{ program.applications_count }} pendaftar</span>
+                    </div>
+                </li>
+            </ul>
+
+            <table class="hidden w-full text-sm md:table">
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>

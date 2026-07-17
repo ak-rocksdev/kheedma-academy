@@ -95,7 +95,7 @@ async function toggleActive(user) {
 
 <template>
     <div>
-        <div class="flex items-end justify-between gap-4">
+        <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Tim</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Akun Tim</h1>
@@ -105,8 +105,48 @@ async function toggleActive(user) {
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
+        <!-- ≥md: tabel. Mobile: kartu — kolom peran/status/aksi terpotong di layar sempit. -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
-            <table class="w-full text-sm">
+            <ul class="divide-y divide-border md:hidden">
+                <li v-if="loading" class="px-4 py-10 text-center text-sm text-muted-foreground">Memuat…</li>
+                <li v-else-if="!items.length" class="px-4 py-10 text-center text-sm text-muted-foreground">Belum ada akun.</li>
+                <li
+                    v-for="user in items"
+                    :key="`card-${user.id}`"
+                    class="cursor-pointer px-4 py-3.5 transition-colors active:bg-accent/50"
+                    @click="openEdit(user)"
+                >
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="min-w-0">
+                            <p class="truncate font-medium text-foreground">{{ user.name }}</p>
+                            <p class="truncate text-xs text-muted-foreground">{{ user.email }}</p>
+                            <p v-if="user.phone" class="truncate text-xs text-muted-foreground">{{ user.phone }}</p>
+                        </div>
+                        <div class="flex shrink-0 items-center">
+                            <Button variant="ghost" size="icon" class="h-9 w-9" title="Ubah" aria-label="Ubah akun" @click.stop="openEdit(user)">
+                                <Pencil class="size-4" />
+                            </Button>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                class="h-9 w-9"
+                                :class="user.is_active ? 'text-destructive hover:text-destructive' : 'text-teal-700 hover:text-teal-700'"
+                                :title="user.is_active ? 'Nonaktifkan' : 'Aktifkan'"
+                                :aria-label="user.is_active ? 'Nonaktifkan akun' : 'Aktifkan akun'"
+                                @click.stop="toggleActive(user)"
+                            >
+                                <Power class="size-4" />
+                            </Button>
+                        </div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary">{{ user.role }}</Badge>
+                        <Badge :variant="user.is_active ? 'success' : 'destructive'">{{ user.is_active ? 'Aktif' : 'Nonaktif' }}</Badge>
+                    </div>
+                </li>
+            </ul>
+
+            <table class="hidden w-full text-sm md:table">
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>

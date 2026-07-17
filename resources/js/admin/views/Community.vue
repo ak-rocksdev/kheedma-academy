@@ -1,5 +1,6 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
+import { Phone } from 'lucide-vue-next';
 import { communityMembers as communityApi } from '@/api';
 import { Alert } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -56,7 +57,7 @@ watch(q, () => {
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Komunitas</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Anggota Komunitas</h1>
             </div>
-            <span class="text-sm text-muted-foreground">{{ meta.total }} anggota</span>
+            <span class="shrink-0 whitespace-nowrap text-sm text-muted-foreground">{{ meta.total }} anggota</span>
         </div>
 
         <div class="mt-6">
@@ -65,8 +66,30 @@ watch(q, () => {
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
 
+        <!-- ≥md: tabel. Mobile: kartu — kolom sumber & tanggal terpotong di layar sempit. -->
         <div class="mt-5 overflow-hidden rounded-xl border border-border bg-card">
-            <table class="w-full text-sm">
+            <ul class="divide-y divide-border md:hidden">
+                <li v-if="loading" class="px-4 py-10 text-center text-sm text-muted-foreground">Memuat…</li>
+                <li v-else-if="!items.length" class="px-4 py-10 text-center text-sm text-muted-foreground">Belum ada anggota.</li>
+                <li v-for="member in items" :key="`card-${member.id}`" class="px-4 py-3.5">
+                    <p class="truncate font-medium text-foreground">{{ member.person.name }}</p>
+                    <!-- Di perangkat telepon, nomor adalah aksi — bukan teks. -->
+                    <a
+                        v-if="member.person.phone"
+                        :href="`tel:${member.person.phone}`"
+                        class="mt-0.5 inline-flex items-center gap-1.5 py-0.5 text-sm font-medium text-teal-700"
+                    >
+                        <Phone class="size-3.5" /> {{ member.person.phone }}
+                    </a>
+                    <p v-if="member.person.email" class="truncate text-xs text-muted-foreground">{{ member.person.email }}</p>
+                    <div class="mt-2 flex flex-wrap items-center gap-1.5">
+                        <Badge variant="secondary">{{ REFERRAL_LABELS[member.referral_source] ?? member.referral_source ?? '—' }}</Badge>
+                        <span class="ml-auto text-[11px] text-muted-foreground">Bergabung {{ fmtDate(member.joined_at) }}</span>
+                    </div>
+                </li>
+            </ul>
+
+            <table class="hidden w-full text-sm md:table">
                 <thead>
                     <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                         <th class="px-4 py-3 font-semibold">Nama</th>
