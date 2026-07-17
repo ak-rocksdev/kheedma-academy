@@ -160,6 +160,35 @@ class Cohort extends Model
     }
 
     /**
+     * "Hari ini" / "Besok" / "N hari lagi" inside the final week before the
+     * class starts; null outside that window. Anticipation sharpens as the
+     * one-shot class day nears (goal gradient).
+     */
+    public function startCountdownLabel(): ?string
+    {
+        if (! $this->start_date || $this->start_date->isPast()) {
+            return null;
+        }
+
+        $days = (int) now()->startOfDay()->diffInDays($this->start_date->copy()->startOfDay());
+
+        return match (true) {
+            $days === 0 => 'Hari ini',
+            $days === 1 => 'Besok',
+            $days <= 7 => "{$days} hari lagi",
+            default => null,
+        };
+    }
+
+    /** Class starts within the next N hours (false once it has started). */
+    public function startsWithinHours(int $hours): bool
+    {
+        return $this->start_date !== null
+            && $this->start_date->isFuture()
+            && now()->diffInHours($this->start_date) <= $hours;
+    }
+
+    /**
      * Prefilled Google Calendar event (assumed 2-hour session) — a template
      * URL, no API involved. Null without a real start time: legacy midnight
      * conversions carry no clock, and a 00.00 event would mislead.

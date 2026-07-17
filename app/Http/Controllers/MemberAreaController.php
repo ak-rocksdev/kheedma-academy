@@ -81,10 +81,25 @@ class MemberAreaController extends Controller
                 ->values()
             : collect();
 
-        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke tab pertama.
-        $activeTab = in_array($request->query('bagian'), ['pendaftaran', 'kelas'], true)
+        // Kelas tab: what to say when there is no enrolled class yet — an
+        // in-review or accepted-awaiting-placement member must never face a
+        // silent, unexplained gap.
+        $applicationsRaw = $person?->applications ?? collect();
+        $kelasNotice = null;
+        if ($enrolledClasses->isEmpty()) {
+            if ($applicationsRaw->contains(fn ($a) => $a->status === 'pending')) {
+                $kelasNotice = 'pending';
+            } elseif ($applicationsRaw->contains(fn ($a) => $a->status === 'accepted')) {
+                $kelasNotice = 'accepted';
+            }
+        }
+
+        // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke default.
+        // Smart default: member dengan kelas aktif datang untuk kelasnya —
+        // sambut langsung di tab kelas, bukan profil.
+        $activeTab = in_array($request->query('bagian'), ['profil', 'pendaftaran', 'kelas'], true)
             ? $request->query('bagian')
-            : 'profil';
+            : ($enrolledClasses->isNotEmpty() ? 'kelas' : 'profil');
 
         return view('member.akun', [
             'user' => $user,
@@ -94,6 +109,7 @@ class MemberAreaController extends Controller
             'affiliate' => $affiliate,
             'openClasses' => $openClasses,
             'enrolledClasses' => $enrolledClasses,
+            'kelasNotice' => $kelasNotice,
             'activeTab' => $activeTab,
         ]);
     }

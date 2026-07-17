@@ -61,6 +61,32 @@ class CohortModelTest extends TestCase
         $this->assertNull($bare->mapsUrl());
     }
 
+    public function test_countdown_label_covers_the_final_week_only(): void
+    {
+        $today = Cohort::factory()->create(['start_date' => now()->addHours(3)]);
+        $tomorrow = Cohort::factory()->create(['start_date' => now()->addDay()->setTime(9, 30)]);
+        $inFive = Cohort::factory()->create(['start_date' => now()->addDays(5)]);
+        $farAway = Cohort::factory()->create(['start_date' => now()->addDays(20)]);
+        $past = Cohort::factory()->create(['start_date' => now()->subDay()]);
+
+        $this->assertSame('Hari ini', $today->startCountdownLabel());
+        $this->assertSame('Besok', $tomorrow->startCountdownLabel());
+        $this->assertSame('5 hari lagi', $inFive->startCountdownLabel());
+        $this->assertNull($farAway->startCountdownLabel());
+        $this->assertNull($past->startCountdownLabel());
+    }
+
+    public function test_starts_within_hours_gates_on_the_future_side(): void
+    {
+        $soon = Cohort::factory()->create(['start_date' => now()->addHours(20)]);
+        $far = Cohort::factory()->create(['start_date' => now()->addDays(5)]);
+        $past = Cohort::factory()->create(['start_date' => now()->subHour()]);
+
+        $this->assertTrue($soon->startsWithinHours(48));
+        $this->assertFalse($far->startsWithinHours(48));
+        $this->assertFalse($past->startsWithinHours(48));
+    }
+
     public function test_google_calendar_url_needs_a_real_start_time(): void
     {
         $timed = Cohort::factory()->atLocation()->create(['start_date' => '2026-08-01 09:30:00']);

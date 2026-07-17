@@ -158,6 +158,58 @@ class MemberAreaTest extends TestCase
             ->assertDontSee('Catatan dari tim');
     }
 
+    public function test_enrolled_member_lands_on_kelas_tab_by_default(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['name' => 'Kelas Default Uji']);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        // No ?bagian: the enrolled member's destination is their class.
+        $this->actingAs($user)->get('/akun')
+            ->assertOk()
+            ->assertSee('Kelas Default Uji')
+            ->assertDontSee('Nomor HP');
+
+        // An explicit ?bagian always wins over the smart default.
+        $this->actingAs($user)->get('/akun?bagian=profil')
+            ->assertOk()
+            ->assertSee('Nomor HP');
+    }
+
+    public function test_countdown_and_auto_open_map_near_class_day(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->atLocation()->create([
+            'program_id' => $program->id,
+            'start_date' => now()->addDay()->setTime(9, 30),
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Besok')
+            ->assertSee('<details open', false);
+    }
+
+    public function test_kelas_tab_explains_pending_and_awaiting_placement_states(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+
+        $application = Application::create(['people_id' => $person->id, 'program_id' => $program->id, 'status' => 'pending']);
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('sedang ditinjau');
+
+        $application->update(['status' => 'accepted']);
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Pendaftaranmu diterima');
+    }
+
     public function test_enrolled_member_sees_kelasmu_with_location_and_maps_link(): void
     {
         [$user, $person] = $this->member();

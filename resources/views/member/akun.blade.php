@@ -34,7 +34,7 @@
             <!-- Tab bar (tablet/desktop); di mobile navigasinya pindah ke bawah layar -->
             <nav class="mt-8 hidden gap-2 md:flex" aria-label="Bagian akun">
                 @foreach ($tabs as $key => $label)
-                    <a href="{{ route('member.area', $key === 'profil' ? [] : ['bagian' => $key]) }}"
+                    <a href="{{ route('member.area', ['bagian' => $key]) }}"
                        @class([
                            'rounded-full px-5 py-2.5 text-sm font-semibold transition',
                            'bg-teal-800 text-white shadow-sm' => $activeTab === $key,
@@ -83,6 +83,23 @@
                     @endif
                 </div>
             @elseif ($activeTab === 'kelas')
+                @if ($kelasNotice)
+                    {{-- Waiting states must never read as an empty, broken page. --}}
+                    <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                        @if ($kelasNotice === 'accepted')
+                            <p class="font-semibold text-teal-900">Pendaftaranmu diterima! 🎉</p>
+                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
+                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini — pantau ya.
+                            </p>
+                        @else
+                            <p class="font-semibold text-teal-900">Pendaftaranmu sedang ditinjau.</p>
+                            <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
+                                Kami kabari begitu ada keputusan. Cek statusnya kapan saja di tab Pendaftaran.
+                            </p>
+                        @endif
+                    </div>
+                @endif
+
                 @if ($enrolledClasses->isNotEmpty())
                     <div class="mt-8">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/60">Kelas Saya</h2>
@@ -106,6 +123,9 @@
                                                 <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>
                                                 Dimulai {{ $cohort->startLabel() }}
                                             </span>
+                                            @if ($cohort->startCountdownLabel())
+                                                <span class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ $cohort->startCountdownLabel() }}</span>
+                                            @endif
                                             @if ($cohort->googleCalendarUrl())
                                                 <a href="{{ $cohort->googleCalendarUrl() }}" target="_blank" rel="noopener"
                                                    class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
@@ -131,7 +151,9 @@
                                             @if ($cohort->mapsEmbedUrl())
                                                 {{-- The collapsible IS the location object: venue name up top,
                                                      the live map one tap below. --}}
-                                                <details class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                                {{-- H-2: the map opens itself — the venue must not hide behind a
+                                                     tap when the (one-shot) class day is this close. --}}
+                                                <details {{ $cohort->startsWithinHours(48) ? 'open' : '' }} class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
                                                     <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
                                                         {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
                                                         <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
@@ -314,7 +336,7 @@
         <x-nav.bottom-nav-item :href="url('/')" label="Beranda">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m4 10.5 8-6.75 8 6.75"/><path d="M6 8.75V19a1 1 0 0 0 1 1h3.25v-4.5a1.75 1.75 0 0 1 3.5 0V20H17a1 1 0 0 0 1-1V8.75"/></svg>
         </x-nav.bottom-nav-item>
-        <x-nav.bottom-nav-item :href="route('member.area')" label="Profil" :active="$activeTab === 'profil'">
+        <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'profil'])" label="Profil" :active="$activeTab === 'profil'">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.5a6.5 6.5 0 0 1 13 0"/></svg>
         </x-nav.bottom-nav-item>
         <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'pendaftaran'])" label="Pendaftaran" :active="$activeTab === 'pendaftaran'">
