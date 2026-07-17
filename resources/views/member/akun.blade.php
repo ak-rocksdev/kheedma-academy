@@ -102,7 +102,8 @@
                                             <p class="font-medium text-teal-900">Kelas online</p>
                                             @if ($cohort->meeting_url)
                                                 <a href="{{ $cohort->meeting_url }}" target="_blank" rel="noopener"
-                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
+                                                   class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 5-3v10l-5-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                     Gabung meeting
                                                 </a>
                                             @else
@@ -116,7 +117,43 @@
                                             @if ($cohort->location_address)
                                                 <p class="text-teal-800/60">{{ $cohort->location_address }}</p>
                                             @endif
-                                            @if ($cohort->mapsUrl())
+
+                                            @if ($cohort->mapsEmbedUrl())
+                                                <details class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                                    <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
+                                                        {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
+                                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                                                            <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6-5.1-6-9.9a6 6 0 1 1 12 0C18 15.9 12 21 12 21Z"/><circle cx="12" cy="11" r="2.3"/></svg>
+                                                        </span>
+                                                        <span class="min-w-0 flex-1">
+                                                            <span class="block text-sm font-semibold text-teal-900">Lihat lokasi di peta</span>
+                                                            <span class="block text-xs text-teal-800/60">Peta langsung terbuka di sini</span>
+                                                        </span>
+                                                        <svg class="h-4 w-4 shrink-0 text-teal-700 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                    </summary>
+                                                    <div class="border-t border-teal-900/10">
+                                                        <iframe
+                                                            src="{{ $cohort->mapsEmbedUrl() }}"
+                                                            title="Peta lokasi kelas"
+                                                            class="h-56 w-full"
+                                                            loading="lazy"
+                                                            referrerpolicy="no-referrer-when-downgrade"
+                                                            allowfullscreen
+                                                        ></iframe>
+                                                        <div class="flex flex-wrap items-center gap-3 px-4 py-3">
+                                                            <a href="{{ $cohort->mapsDirectionsUrl() }}" target="_blank" rel="noopener"
+                                                               class="inline-flex items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-xs font-semibold text-white transition hover:bg-orange-600">
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M21.7 11.3 12.7 2.3a1 1 0 0 0-1.4 0l-9 9a1 1 0 0 0 0 1.4l9 9a1 1 0 0 0 1.4 0l9-9a1 1 0 0 0 0-1.4ZM13 14.5V12h-3v3H8v-4a1 1 0 0 1 1-1h4V7.5l3.5 3.5-3.5 3.5Z"/></svg>
+                                                                Petunjuk arah
+                                                            </a>
+                                                            <a href="{{ $cohort->mapsUrl() }}" target="_blank" rel="noopener"
+                                                               class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
+                                                                Buka di Google Maps
+                                                            </a>
+                                                        </div>
+                                                    </div>
+                                                </details>
+                                            @elseif ($cohort->mapsUrl())
                                                 <a href="{{ $cohort->mapsUrl() }}" target="_blank" rel="noopener"
                                                    class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
                                                     Lihat di Google Maps
@@ -125,9 +162,10 @@
                                         @endif
 
                                         @if ($cohort->materials_url)
-                                            <div>
+                                            <div class="pt-1">
                                                 <a href="{{ $cohort->materials_url }}" target="_blank" rel="noopener"
-                                                   class="inline-flex items-center text-sm font-semibold text-orange-600 underline-offset-4 hover:underline">
+                                                   class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">
+                                                    <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3.5 7A2.5 2.5 0 0 1 6 4.5h3.2c.6 0 1.2.25 1.7.7l1.1 1.1c.2.2.5.2.7.2H18A2.5 2.5 0 0 1 20.5 9v8A2.5 2.5 0 0 1 18 19.5H6A2.5 2.5 0 0 1 3.5 17V7Z" stroke-linejoin="round"/></svg>
                                                     Buka materi kelas
                                                 </a>
                                             </div>

@@ -61,6 +61,17 @@ class CohortModelTest extends TestCase
         $this->assertNull($bare->mapsUrl());
     }
 
+    public function test_maps_embed_and_directions_urls_follow_the_coordinates(): void
+    {
+        $located = Cohort::factory()->atLocation()->create();
+        $bare = Cohort::factory()->create();
+
+        $this->assertStringContainsString('output=embed', $located->mapsEmbedUrl());
+        $this->assertStringContainsString('maps/dir/?api=1&destination=', $located->mapsDirectionsUrl());
+        $this->assertNull($bare->mapsEmbedUrl());
+        $this->assertNull($bare->mapsDirectionsUrl());
+    }
+
     public function test_is_online_by_type(): void
     {
         $this->assertTrue(Cohort::factory()->online()->create()->isOnline());

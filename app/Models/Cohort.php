@@ -139,6 +139,26 @@ class Cohort extends Model
         return "https://www.google.com/maps/search/?api=1&query={$this->location_lat},{$this->location_lng}";
     }
 
+    /** Keyless Google Maps iframe embed for the member area's collapsible map. */
+    public function mapsEmbedUrl(): ?string
+    {
+        if ($this->location_lat === null || $this->location_lng === null) {
+            return null;
+        }
+
+        return "https://maps.google.com/maps?q={$this->location_lat},{$this->location_lng}&z=16&output=embed";
+    }
+
+    /** Universal directions link — opens the Google Maps app with a route on mobile. */
+    public function mapsDirectionsUrl(): ?string
+    {
+        if ($this->location_lat === null || $this->location_lng === null) {
+            return null;
+        }
+
+        return "https://www.google.com/maps/dir/?api=1&destination={$this->location_lat},{$this->location_lng}";
+    }
+
     /**
      * Human start date/time for member-facing surfaces. Legacy date→datetime
      * conversion left `00:00` times behind, so the clock is shown only when

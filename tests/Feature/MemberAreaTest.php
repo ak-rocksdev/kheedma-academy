@@ -179,7 +179,10 @@ class MemberAreaTest extends TestCase
             ->assertSee('1 Agustus 2026 pukul 09.00 WIB')
             ->assertSee($cohort->location_name)
             ->assertSee($cohort->location_address)
-            ->assertSee('Lihat di Google Maps')
+            ->assertSee('Lihat lokasi di peta')
+            ->assertSee('Petunjuk arah')
+            ->assertSee($cohort->mapsEmbedUrl())
+            ->assertSee($cohort->mapsDirectionsUrl())
             ->assertSee($cohort->mapsUrl());
     }
 
