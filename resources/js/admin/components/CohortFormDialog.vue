@@ -134,8 +134,8 @@ async function save() {
             type: form.value.type,
             location_name: form.value.location.name || null,
             location_address: form.value.location.address || null,
-            location_lat: form.value.location.lat ?? null,
-            location_lng: form.value.location.lng ?? null,
+            location_lat: form.value.location.lat === '' ? null : form.value.location.lat ?? null,
+            location_lng: form.value.location.lng === '' ? null : form.value.location.lng ?? null,
             meeting_url: form.value.meeting_url || null,
             materials_url: form.value.materials_url || null,
         };

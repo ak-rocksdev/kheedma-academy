@@ -8,7 +8,12 @@
     <link rel="icon" href="{{ asset('favicon.ico') }}" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('favicon-32x32.png') }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('apple-touch-icon.png') }}">
-    <meta name="google-maps-key" content="{{ config('services.google_maps.key') }}">
+    {{-- Staff only: the SPA shell is also served to guests (it shows its own
+         login), so gate the key to shrink the exposure surface. The key is
+         additionally referrer-restricted in Google Cloud Console. --}}
+    @auth
+        <meta name="google-maps-key" content="{{ config('services.google_maps.key') }}">
+    @endauth
     @fonts
     @vite(['resources/js/admin/main.js'])
 </head>
