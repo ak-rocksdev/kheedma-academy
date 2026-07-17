@@ -87,12 +87,9 @@ class Cohort extends Model
             return false;
         }
 
-        // The class start is a hard ceiling: once the class begins, registration
-        // is closed no matter the manual window.
-        if ($this->start_date && $this->start_date->isPast()) {
-            return false;
-        }
-
+        // ONLY the registration window governs (PO decision 2026-07-17):
+        // a class that has already started stays open for late joiners as
+        // long as its window says so.
         return true;
     }
 
@@ -102,8 +99,7 @@ class Cohort extends Model
         return $query
             ->where(fn (Builder $q) => $q->whereNotNull('registration_opens_at')->orWhereNotNull('registration_closes_at'))
             ->where(fn (Builder $q) => $q->whereNull('registration_opens_at')->orWhere('registration_opens_at', '<=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('registration_closes_at')->orWhere('registration_closes_at', '>=', now()))
-            ->where(fn (Builder $q) => $q->whereNull('start_date')->orWhere('start_date', '>', now()));
+            ->where(fn (Builder $q) => $q->whereNull('registration_closes_at')->orWhere('registration_closes_at', '>=', now()));
     }
 
     /**

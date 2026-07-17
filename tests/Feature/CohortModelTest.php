@@ -10,16 +10,19 @@ class CohortModelTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_registration_closes_when_class_start_time_passes(): void
+    public function test_registration_follows_the_window_even_after_class_start(): void
     {
+        // PO decision 2026-07-17: ONLY the registration window governs.
+        // A class that has already started stays open for registration as
+        // long as its window says so (late joiners are welcome).
         $cohort = Cohort::factory()->create([
             'registration_opens_at' => now()->subDay(),
             'registration_closes_at' => now()->addDay(),
             'start_date' => now()->subMinute(),
         ]);
 
-        $this->assertFalse($cohort->isOpenForRegistration());
-        $this->assertSame(0, Cohort::openForRegistration()->count());
+        $this->assertTrue($cohort->isOpenForRegistration());
+        $this->assertSame(1, Cohort::openForRegistration()->count());
     }
 
     public function test_registration_open_before_class_starts(): void
