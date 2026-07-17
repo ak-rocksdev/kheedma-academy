@@ -91,6 +91,35 @@ class MediaAdminTest extends TestCase
         $this->assertSame('Suasana kelas offline', $media->fresh()->alt_text);
     }
 
+    public function test_show_lists_sections_using_the_file(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $media = Media::factory()->create(['path' => 'media/dipakai.jpg']);
+        ContentSection::factory()->create([
+            'heading' => 'Belajar daring dan luring.',
+            'body' => '<img src="/storage/media/dipakai.jpg" alt="">',
+        ]);
+        ContentSection::factory()->forProgram()->create([
+            'heading' => null,
+            'body' => '<p>Unduh: <a href="/storage/media/dipakai.jpg">foto</a></p>',
+        ]);
+
+        $this->actingAs($admin)->getJson("/api/admin/media/{$media->id}")
+            ->assertOk()
+            ->assertJsonPath('media.id', $media->id)
+            ->assertJsonPath('media.used_in', ['Belajar daring dan luring.', 'Program']);
+    }
+
+    public function test_show_returns_empty_used_in_for_unreferenced_file(): void
+    {
+        $admin = User::factory()->admin()->create();
+        $media = Media::factory()->create();
+
+        $this->actingAs($admin)->getJson("/api/admin/media/{$media->id}")
+            ->assertOk()
+            ->assertJsonPath('media.used_in', []);
+    }
+
     public function test_delete_blocked_while_referenced_by_a_section(): void
     {
         $admin = User::factory()->admin()->create();

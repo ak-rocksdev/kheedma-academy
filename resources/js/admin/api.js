@@ -242,6 +242,9 @@ export const media = {
     list(query = '') {
         return api(`/admin/media${query}`);
     },
+    show(id) {
+        return api(`/admin/media/${id}`);
+    },
     upload(file) {
         const formData = new FormData();
         formData.append('file', file);

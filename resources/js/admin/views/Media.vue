@@ -7,7 +7,7 @@ import MediaGrid from '@/components/MediaGrid.vue';
         <div class="mb-6">
             <h1 class="text-2xl font-bold tracking-tight">Media</h1>
             <p class="text-sm text-muted-foreground">
-                Kelola foto dan file untuk konten halaman. Salin link untuk dipakai di tempat lain.
+                Rumah untuk semua foto dan berkas halamanmu. Klik salah satu, semua yang kamu butuhkan ada di panel kanan.
             </p>
         </div>
         <MediaGrid />

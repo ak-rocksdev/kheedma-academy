@@ -73,6 +73,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
             Route::delete('/content-sections/{section}', [ContentSectionController::class, 'destroy']);
 
             Route::get('/media', [MediaController::class, 'index']);
+            Route::get('/media/{media}', [MediaController::class, 'show']);
             Route::post('/media', [MediaController::class, 'store']);
             Route::patch('/media/{media}', [MediaController::class, 'update']);
             Route::delete('/media/{media}', [MediaController::class, 'destroy']);
