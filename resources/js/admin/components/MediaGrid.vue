@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert } from '@/components/ui/alert';
 import MediaDetailPanel from '@/components/MediaDetailPanel.vue';
+import { useMediaUpload } from '@/composables/useMediaUpload';
 
 /**
  * Media manager, gallery + detail-panel layout: the grid is for finding a
@@ -24,9 +25,10 @@ const items = ref([]);
 const meta = ref(null);
 const search = ref('');
 const loading = ref(false);
-const uploading = ref(false);
 const error = ref('');
 const selectedId = ref(null);
+
+const { uploading, progress: uploadProgress, uploadFiles } = useMediaUpload();
 
 const selectedItem = computed(() => items.value.find((m) => m.id === selectedId.value) ?? null);
 
@@ -67,25 +69,13 @@ function selectItem(item) {
 
 async function onFilesChosen(fileList) {
     error.value = '';
-    uploading.value = true;
-    let uploadError = '';
-    let lastUploadedId = null;
-    try {
-        for (const file of fileList) {
-            const { media: uploaded } = await mediaApi.upload(file);
-            lastUploadedId = uploaded.id;
-        }
-    } catch (e) {
-        if (!e.sessionExpired) uploadError = e.errors?.file?.[0] ?? e.message ?? 'Gagal mengunggah file.';
-    } finally {
-        uploading.value = false;
-        // Refresh even after a mid-batch failure so the files that did make
-        // it show up alongside the error (load() clears error.value, so the
-        // upload error is re-applied after the refresh).
-        await load(1);
-        if (lastUploadedId) selectedId.value = lastUploadedId;
-        if (uploadError) error.value = uploadError;
-    }
+    const { lastUploadedId, errorMessage } = await uploadFiles(fileList);
+    // Refresh even after a mid-batch failure so the files that did make it
+    // show up alongside the error (load() clears error.value, so the upload
+    // error is re-applied after the refresh).
+    await load(1);
+    if (lastUploadedId) selectedId.value = lastUploadedId;
+    if (errorMessage) error.value = errorMessage;
 }
 
 function onDrop(event) {
@@ -125,6 +115,28 @@ function formatSize(bytes) {
             </label>
             <p class="text-sm text-foreground/80">atau <b>seret dan lepas</b> ke mana saja di halaman ini</p>
             <p class="ml-auto text-xs text-muted-foreground">JPG · PNG · WebP · GIF{{ picker ? '' : ' · PDF' }} · maks 5 MB</p>
+
+            <div
+                v-if="uploadProgress"
+                class="flex basis-full items-center gap-3 pt-1"
+                role="progressbar"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                :aria-valuenow="uploadProgress.percent"
+                :aria-label="`Mengunggah ${uploadProgress.name}`"
+            >
+                <p class="min-w-0 flex-1 truncate text-xs text-muted-foreground">
+                    Mengunggah <b class="text-foreground">{{ uploadProgress.name }}</b>
+                    <template v-if="uploadProgress.count > 1"> (file {{ uploadProgress.index }} dari {{ uploadProgress.count }})</template>
+                </p>
+                <div class="h-2 w-40 overflow-hidden rounded-full bg-secondary sm:w-64">
+                    <div
+                        class="h-full rounded-full bg-orange-500 transition-[width] duration-150"
+                        :style="{ width: uploadProgress.percent + '%' }"
+                    ></div>
+                </div>
+                <span class="w-11 text-right text-sm font-bold tabular-nums text-foreground">{{ uploadProgress.percent }}%</span>
+            </div>
         </div>
 
         <div class="mt-3 max-w-xs">
