@@ -90,10 +90,28 @@ session_confirmations (new)
 └─ created_at / updated_at    UNIQUE (cohort_session_id, enrollment_id)
 ```
 
-Migration order: add session columns → copy venue values from each cohort to its sessions →
-drop `cohorts.type/location_*/meeting_url`. The venue helpers on `Cohort` (`isOnline()`,
-`mapsUrl()`, `mapsEmbedUrl()`, `mapsDirectionsUrl()`, `googleCalendarUrl()`'s location part)
-move to `CohortSession`; callers (member area, admin) re-point per class.
+Migration order: add session columns → copy venue values from each cohort to **all of its
+sessions** (venue was cohort-wide truth until now, so stamping every session preserves what
+members already see; most cohorts have exactly the one auto-seeded session) → drop
+`cohorts.type/location_*/meeting_url`. The venue helpers on `Cohort` (`isOnline()`,
+`mapsUrl()`, `mapsEmbedUrl()`, `mapsDirectionsUrl()`, `googleCalendarUrl()`,
+`startCountdownLabel()`, `startLabel()` where venue/schedule-of-the-meeting is meant) move
+to `CohortSession`.
+
+Every current consumer of the cohort venue fields is touched (verified by grep 2026-07-18):
+`CohortController` (API row + validation), `Cohort` model, `CohortFormDialog.vue` (venue
+inputs move OUT of the cohort form into the class dialog), `CohortDetail.vue`,
+`member/akun.blade.php`, `CohortFactory`, and tests `CohortManagementTest` /
+`CohortModelTest` / `MemberAreaTest`. The funnel views never read venue fields — nothing
+leaks to guests today, and that stays true.
+
+Session endpoints (`CohortSessionController` store/update) extend their validation with the
+venue fields, reusing the same rules the cohort endpoints carry today (`type`
+in:offline,online; location fields with coordinates; `meeting_url` URL). Class CRUD stays
+under the existing `cohorts.manage` permission (admin — matching the field reality that
+admins, not mentors, create classes); the confirmation recap is visible with
+`cohorts.view`. The class dialog does not expose `position`: ordering falls back to
+`scheduled_at` (`position` remains a dormant tiebreaker, default 0).
 
 Models: `SessionConfirmation` (belongsTo session/enrollment). `CohortSession` gains
 `hasMany(SessionConfirmation)` + `hasOne` per-enrollment accessor as needed; `Enrollment`
@@ -102,7 +120,9 @@ gains `hasMany(SessionConfirmation)`.
 Confirmation rules:
 
 - A student may set or change their confirmation **until the class starts**
-  (`scheduled_at`); after that the row freezes (attendance takes over as the fact).
+  (`scheduled_at`); after that the row freezes (attendance takes over as the fact). A class
+  with no `scheduled_at` yet has nothing to freeze against — the confirmation stays
+  editable until a start time exists and passes.
 - States are derived per (class, student): *belum konfirmasi* (no row) / *hadir* /
   *berhalangan*. No deadline mechanics beyond the start time.
 - Authorization mirrors submissions (Spec 1): only for one's own active enrollment in the
@@ -113,12 +133,14 @@ Confirmation rules:
 The cohort detail becomes a batch cockpit: a **class list** replaces the single hidden
 mainSession assumption. Same shadcn-vue kit, same dialog patterns.
 
-1. **Class blocks.** One block per class, ordered by `position`/schedule: title, date-time,
-   venue chip (offline → location name, online → "Online"), and the block's tools. A
-   "+ Tambah kelas" button opens the class dialog: title, datetime picker, type toggle
-   revealing either the existing `LocationPicker` (offline) or a meeting-URL input
-   (online). Edit/delete reuse the dormant session endpoints (delete guarded by existing
-   attendance/assignment data — confirm dialog states what exists).
+1. **Class blocks.** One block per class, ordered by schedule: title, date-time, venue chip
+   (offline → location name, online → "Online"), and the block's tools. A "+ Tambah kelas"
+   button opens the class dialog: title, datetime picker, type toggle revealing either the
+   existing `LocationPicker` (offline) or a meeting-URL input (online). Edit/delete reuse
+   the dormant session endpoints; deleting cascades attendances, confirmations, and the
+   assignment with its submissions, so the confirm dialog states what exists before the
+   admin proceeds. A fresh batch with no classes shows an empty state ("Belum ada kelas")
+   with the add-class CTA; the roster/attendance area appears once a class exists.
 2. **Confirmation recap per class block**: "12 hadir · 3 berhalangan · 8 belum konfirmasi",
    expandable to the list of names with notes (the mentor's signal for arranging
    solutions). Read-only for admins — the row belongs to the student.
