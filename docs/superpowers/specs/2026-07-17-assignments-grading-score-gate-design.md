@@ -50,13 +50,15 @@ configurable passing threshold.
    schedule); a deadline column is a trivial later addition if reality demands it.
 7. Community *membership* (the free "Gabung Komunitas Affiliator" door,
    `community_memberships`) is untouched. The gate applies to the affiliate class ladder.
-8. **A student follows ONE class (cohort) of the 30-day program** — the program's classes
-   are alternatives (the poster reads "Jadwal & Pilihan Sesi"), not a sequence one student
-   takes in full. The average is therefore computed within that single enrollment, and
-   passing any qualifying general-program enrollment opens the ladder — the same
-   any-enrollment semantics eligibility uses today. *(Inferred, PO to confirm; if students
-   in fact take several classes and the average must span them, the average moves from
-   per-enrollment to per-person-per-program — a contained change in `AssignmentScoring`.)*
+8. **A student follows ALL classes of the 30-day program** (PO-confirmed 2026-07-18). Since
+   the launch decision of 2026-07-15 ("one cohort = one meeting", the single session seeded
+   invisibly in `CohortController::store`), each of the program's ~4 classes is its own
+   cohort, so one student holds several enrollments in the same program. **The average is
+   therefore per person per program**: mean of effective scores over all assignments in the
+   program's cohorts where the person holds an *active* enrollment (missing = 0). Dropped
+   enrollments are excluded — which is also the retake-a-batch escape hatch: a student
+   redoing the program in a new batch gets their old enrollments dropped by the admin, and
+   the old zeros stop dragging the average.
 
 ## Data model
 
@@ -91,6 +93,12 @@ programs
 Indexes: `assignment_submissions (assignment_id, enrollment_id)` — every read is "this
 student's submissions for this assignment, newest first".
 
+Note on the session FK: since the launch decision "one cohort = one meeting", every cohort
+auto-seeds exactly one invisible session (`CohortController::store`). The assignment simply
+hangs off that auto-seeded session — admins never see or manage sessions; effectively
+1 kelas = 1 tugas. The per-session FK is kept (rather than a cohort FK) so the schema stays
+correct if multi-session cohorts ever return.
+
 Models: `Assignment` (belongsTo session/creator, hasMany submissions), `AssignmentSubmission`
 (belongsTo assignment/enrollment/grader). `CohortSession` gains `hasOne(Assignment)`;
 `Enrollment` gains `hasMany(AssignmentSubmission)`.
@@ -103,24 +111,25 @@ Centralized in `App\Support\AssignmentScoring` (companion to `ProgramEligibility
   ungraded → `menunggu_dinilai`; latest row graded → `dinilai`. No status column.
 - **Effective score** = `score` of the latest graded submission, else null (counts as 0 in
   the average).
-- **Average for an enrollment** = mean of effective scores across all assignments of the
-  enrollment's cohort, missing = 0, **rounded half-up to 1 decimal — and the threshold
-  comparison uses this same rounded value**, so what the student sees and what the gate
-  decides can never disagree (74.95 must not display "75.0" yet fail a threshold of 75).
-  Only active enrollments qualify (`Enrollment::isActive()`: latest status `accepted` or
-  none).
-- **Qualifies** = cohort's program has `min_average_score` set AND the cohort has ≥1
-  assignment AND average ≥ threshold.
+- **Average per person per program** = mean of effective scores across all assignments in
+  the program's cohorts where the person holds an active enrollment
+  (`Enrollment::isActive()`: latest status `accepted` or none), missing = 0. The
+  denominator is the number of assignments that exist in those cohorts (a cohort whose
+  assignment is not yet written contributes nothing until it is). The value is **rounded
+  half-up to 1 decimal — and the threshold comparison uses this same rounded value**, so
+  what the student sees and what the gate decides can never disagree (74.95 must not
+  display "75.0" yet fail a threshold of 75).
+- **Qualifies** = the program has `min_average_score` set AND ≥1 assignment exists across
+  the person's actively-enrolled cohorts of it AND average ≥ threshold.
 
 `ProgramEligibility` change (the single point of rework): `hasAttended(...)` is replaced by
-"has a non-dropped enrollment in a qualifying prerequisite program that *passes*", where
-*passes* means:
+"the person *passes* a qualifying prerequisite program", where *passes* means:
 
-- prerequisite program has `min_average_score` **and** that enrollment's cohort has ≥1
-  assignment → score rule (average ≥ threshold);
-- otherwise → legacy attendance rule (≥1 attendance). This is both the null-threshold
-  fallback and the misconfiguration guard (threshold set but no assignments written yet must
-  not lock everyone out).
+- prerequisite program has `min_average_score` **and** ≥1 assignment exists across the
+  person's actively-enrolled cohorts of it → score rule (per-person average ≥ threshold);
+- otherwise → legacy attendance rule (≥1 attendance in any enrollment of that program).
+  This is both the null-threshold fallback and the misconfiguration guard (threshold set
+  but no assignments written yet must not lock everyone out).
 
 Lock reasons keep the same keys (`guest`, `needs_general`, `needs_previous_level`) so the
 chooser/teaser rendering is untouched; only the human copy for the score case is new.
@@ -178,10 +187,11 @@ the UI iterates, nothing migrates.
 4. **Ungraded queue indicator.** The assignment card shows a small count badge "N menunggu
    dinilai" so the mentor sees pending work without opening rows one by one. No separate
    queue page — the cohort detail IS the workspace (data volume does not justify more).
-5. **Recap strip on cohort detail.** Per student row (or a compact summary section):
-   running average and a qualification chip against the program's `min_average_score`
-   ("Rata-rata 78 · Memenuhi syarat" / "Belum memenuhi"). Hidden when the program has no
-   threshold.
+5. **Recap strip on cohort detail.** Per student row (or a compact summary section): the
+   student's **program-wide** running average (it spans their other classes of the same
+   program, not just this cohort) and a qualification chip against the program's
+   `min_average_score` ("Rata-rata 78 · Memenuhi syarat" / "Belum memenuhi"). Hidden when
+   the program has no threshold.
 6. **Program form** (`ProgramFormDialog`): one new optional field "Nilai rata-rata minimum"
    with helper text "Kosongkan jika kelulusan tidak diukur dengan nilai".
 
@@ -201,8 +211,10 @@ white/70 cards, `font-display` uppercase eyebrow labels, warm "kamu" copy, no em
    - *dinilai*: the score displayed prominently, mentor feedback in a quoted block, and a
      "Kirim ulang untuk perbaiki nilai" affordance reopening the submit form (new version).
    Own submission history shown compactly (versions with time + grade if any).
-2. **Progress card per enrolled program with a threshold**: "Rata-ratamu X dari minimum Y",
-   a simple progress bar toward the threshold, and the consequence stated plainly:
+2. **Progress card per enrolled program with a threshold** (one card per program, since the
+   average spans the student's classes): "Rata-ratamu X dari minimum Y", a per-class
+   breakdown (each class with its effective score or status chip), a simple progress bar
+   toward the threshold, and the consequence stated plainly:
    below — "Capai rata-rata Y untuk membuka kelas komunitas"; met — celebratory state with a
    CTA to `/daftar` ("Kamu memenuhi syarat! Lanjut ke kelas komunitas"). No progress card
    when the program has no threshold.
@@ -219,8 +231,9 @@ helpful message ("Formatnya harus link, contoh: https://…").
 
 1. **Phase 1 — Data & rules.** Migrations, models/relations, `AssignmentScoring`,
    `ProgramEligibility` rework with fallback. Feature tests: state derivation, effective
-   score (latest-graded wins), average with missing=0, dropped exclusion, gate fallback
-   matrix (null threshold / threshold without assignments / threshold met / not met).
+   score (latest-graded wins), per-person average across multiple enrollments of one
+   program with missing=0, dropped exclusion, gate fallback matrix (null threshold /
+   threshold without assignments / threshold met / not met).
    Nothing user-visible changes yet (no thresholds set in data).
 2. **Phase 2 — Admin: write & grade.** API endpoints + permissions, assignment editor,
    grading panel, roster score column, ungraded badges, recap strip, program form field.
