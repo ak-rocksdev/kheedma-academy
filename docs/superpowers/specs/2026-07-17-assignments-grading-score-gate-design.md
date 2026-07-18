@@ -50,15 +50,14 @@ configurable passing threshold.
    schedule); a deadline column is a trivial later addition if reality demands it.
 7. Community *membership* (the free "Gabung Komunitas Affiliator" door,
    `community_memberships`) is untouched. The gate applies to the affiliate class ladder.
-8. **A student follows ALL classes of the 30-day program** (PO-confirmed 2026-07-18). Since
-   the launch decision of 2026-07-15 ("one cohort = one meeting", the single session seeded
-   invisibly in `CohortController::store`), each of the program's ~4 classes is its own
-   cohort, so one student holds several enrollments in the same program. **The average is
-   therefore per person per program**: mean of effective scores over all assignments in the
-   program's cohorts where the person holds an *active* enrollment (missing = 0). Dropped
-   enrollments are excluded — which is also the retake-a-batch escape hatch: a student
-   redoing the program in a new batch gets their old enrollments dropped by the admin, and
-   the old zeros stop dragging the average.
+8. **A student follows ALL classes of the 30-day program** (PO-confirmed 2026-07-18). **The
+   average is per person per program**: mean of effective scores over all assignments in
+   the program's cohorts where the person holds an *active* enrollment (missing = 0). This
+   one formula covers both cohort shapes: the new Spec-2 shape (one batch enrollment × ~4
+   class assignments) and the legacy July-batch shape (several single-class enrollments ×
+   1 assignment each). Dropped enrollments are excluded — which is also the retake-a-batch
+   escape hatch: a student redoing the program in a new batch gets their old enrollment
+   dropped by the admin, and the old zeros stop dragging the average.
 
 ## Data model
 
@@ -93,11 +92,10 @@ programs
 Indexes: `assignment_submissions (assignment_id, enrollment_id)` — every read is "this
 student's submissions for this assignment, newest first".
 
-Note on the session FK: since the launch decision "one cohort = one meeting", every cohort
-auto-seeds exactly one invisible session (`CohortController::store`). The assignment simply
-hangs off that auto-seeded session — admins never see or manage sessions; effectively
-1 kelas = 1 tugas. The per-session FK is kept (rather than a cohort FK) so the schema stays
-correct if multi-session cohorts ever return.
+Note on the session FK (amended 2026-07-18): Spec 2 revives multi-session cohorts (cohort =
+batch, session = kelas), so the per-session FK is exactly right: one assignment per kelas.
+Legacy single-session cohorts (July batch) keep working unchanged — their assignment hangs
+off the auto-seeded session.
 
 Models: `Assignment` (belongsTo session/creator, hasMany submissions), `AssignmentSubmission`
 (belongsTo assignment/enrollment/grader). `CohortSession` gains `hasOne(Assignment)`;
@@ -164,20 +162,21 @@ Status chips are one shared vocabulary across admin and member (same semantics, 
 existing chip styling): *belum dikerjakan* = neutral/slate, *menunggu dinilai* = orange,
 *dinilai* = teal.
 
-Reality anchor: `CohortDetail.vue` today assumes **one session per cohort** (`mainSession =
-sessionList[0]`; the roster is a single "Daftar hadir" table with one Kehadiran column —
-comment in the file: "satu angkatan = satu pertemuan"). The assignment UI anchors to that
-same reality; the *schema* stays per-session, so if multi-session cohorts ever appear only
-the UI iterates, nothing migrates.
+Reality anchor (amended 2026-07-18): Spec 2
+(`2026-07-18-batch-cohorts-class-revival-rsvp-design.md`) revives multi-session cohorts —
+cohort = batch, session = kelas — and reworks `CohortDetail.vue` into per-class blocks.
+Spec 2's Phase A must land before this UI phase; the assignment surfaces below mount inside
+those class blocks. The schema here was per-session all along, so nothing migrates.
 
-1. **Assignment card on the cohort detail** (for the main session): if no assignment, a
-   quiet "+ Tulis tugas" affordance (visible with `assignments.manage`); if present, the
-   assignment title + body preview with an edit action opening a dialog (title + body
-   textarea), following the `CohortFormDialog` pattern. Show "diubah oleh {nama}" from
-   `updated_by` in the dialog footer.
-2. **"Nilai" column in the roster.** The existing roster table gains one column: the
-   student's effective score for the assignment, or its status chip when ungraded/missing.
-   Clicking opens the **grading panel**. Column hidden while the cohort has no assignment.
+1. **Assignment card inside each class block**: if no assignment, a quiet "+ Tulis tugas"
+   affordance (visible with `assignments.manage`); if present, the assignment title + body
+   preview with an edit action opening a dialog (title + body textarea), following the
+   `CohortFormDialog` pattern. Show "diubah oleh {nama}" from `updated_by` in the dialog
+   footer.
+2. **"Nilai" column in the roster.** The roster table (scoped to the selected class, per
+   Spec 2) gains one column: the student's effective score for that class's assignment, or
+   its status chip when ungraded/missing. Clicking opens the **grading panel**. Column
+   hidden while the selected class has no assignment.
 3. **Grading panel** (dialog or side panel, consistent with existing dialogs): student name,
    the assignment, submission history newest-first (each version: link opening in a new tab,
    student note, submitted time; previous versions collapsed), then the grading form: score
