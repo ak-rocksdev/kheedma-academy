@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
@@ -127,5 +129,60 @@ class ProgramEligibilityTest extends TestCase
 
         $this->assertFalse($eligibility->canAccess($person, $level1));
         $this->assertSame('needs_general', $eligibility->lockReason($person, $level1));
+    }
+
+    public function test_meeting_the_score_bar_unlocks_level_1(): void
+    {
+        $general = Program::factory()->active()->create(['min_average_score' => 75]);
+        $level1 = Program::factory()->affiliate(1)->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $person = $this->makePerson();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $assignment = Assignment::factory()->for(CohortSession::factory()->for($cohort)->create(), 'session')->create();
+        AssignmentSubmission::factory()->graded(80)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level1));
+    }
+
+    public function test_below_the_score_bar_stays_locked_even_with_attendance(): void
+    {
+        $general = Program::factory()->active()->create(['min_average_score' => 75]);
+        $level1 = Program::factory()->affiliate(1)->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $person = $this->makePerson();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+        AssignmentSubmission::factory()->graded(60)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertSame('needs_general', app(ProgramEligibility::class)->lockReason($person, $level1));
+    }
+
+    public function test_threshold_without_assignments_falls_back_to_attendance(): void
+    {
+        $general = Program::factory()->active()->create(['min_average_score' => 75]);
+        $level1 = Program::factory()->affiliate(1)->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $person = $this->makePerson();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        // Misconfiguration guard: bar set but no soal written yet must not lock everyone out.
+        $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level1));
+    }
+
+    public function test_score_gate_applies_between_community_levels(): void
+    {
+        $level1 = Program::factory()->affiliate(1)->active()->create(['min_average_score' => 70]);
+        $level2 = Program::factory()->affiliate(2)->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $level1->id]);
+        $person = $this->makePerson();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $assignment = Assignment::factory()->for(CohortSession::factory()->for($cohort)->create(), 'session')->create();
+        AssignmentSubmission::factory()->graded(72)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level2));
     }
 }
