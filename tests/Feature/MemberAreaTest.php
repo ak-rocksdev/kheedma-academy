@@ -179,7 +179,7 @@ class MemberAreaTest extends TestCase
             ->assertSee('Nomor HP');
     }
 
-    public function test_countdown_and_auto_open_map_near_class_day(): void
+    public function test_countdown_shows_and_map_stays_collapsed_near_class_day(): void
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create();
@@ -190,10 +190,12 @@ class MemberAreaTest extends TestCase
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
 
+        // PO decision 2026-07-20: the map never auto-opens, even on class day.
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Besok')
-            ->assertSee('<details open', false);
+            ->assertSee('<details class="group', false)
+            ->assertDontSee('<details open', false);
     }
 
     public function test_kelas_tab_explains_pending_and_awaiting_placement_states(): void
