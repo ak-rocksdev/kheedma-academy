@@ -5,7 +5,7 @@ import { useAuthStore } from '../stores/auth';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
+import PinInput from '@/components/PinInput.vue';
 
 const router = useRouter();
 const auth = useAuthStore();
@@ -67,8 +67,8 @@ async function submit() {
                         <Input ref="emailInput" v-model="email" type="email" autocomplete="username" required placeholder="admin@kheedma.id" class="mt-1.5" />
                     </div>
                     <div>
-                        <label class="text-xs text-muted-foreground">Kata sandi</label>
-                        <PasswordInput v-model="password" autocomplete="current-password" required placeholder="••••••••" class="mt-1.5" />
+                        <label class="text-xs text-muted-foreground">PIN (6 digit)</label>
+                        <PinInput v-model="password" class="mt-1.5" />
                     </div>
                     <Button type="submit" :disabled="loading" class="w-full transition-transform active:scale-[0.99]">
                         {{ loading ? 'Memproses…' : 'Masuk' }}

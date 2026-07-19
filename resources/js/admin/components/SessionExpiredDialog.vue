@@ -3,7 +3,7 @@ import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import { PasswordInput } from '@/components/ui/password-input';
+import PinInput from '@/components/PinInput.vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -87,7 +87,7 @@ async function switchAccount() {
                         </Alert>
 
                         <form v-if="!deactivated" class="mt-4 space-y-3" @submit.prevent="submit">
-                            <PasswordInput v-model="password" autofocus required placeholder="Kata sandi" />
+                            <PinInput v-model="password" />
                             <Button type="submit" variant="accent" class="w-full" :disabled="loading || !password">
                                 {{ loading ? 'Memproses…' : 'Lanjutkan bekerja' }}
                             </Button>

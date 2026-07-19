@@ -7,7 +7,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -38,7 +37,7 @@ class UserController extends Controller
         return response()->json(['data' => $users]);
     }
 
-    /** Create a staff account; auto-generates a password when none is supplied. */
+    /** Create a staff account; auto-generates a 6-digit PIN when none is supplied. */
     public function store(Request $request): JsonResponse
     {
         $data = $request->validate([
@@ -46,11 +45,11 @@ class UserController extends Controller
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:30'],
             'role' => ['required', 'in:admin,mentor'],
-            'password' => ['nullable', 'string', 'min:8'],
+            'password' => ['nullable', 'digits:6'],
         ]);
 
         $supplied = filled($data['password'] ?? null);
-        $plain = $supplied ? $data['password'] : Str::password(12);
+        $plain = $supplied ? $data['password'] : str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
         $user = User::create([
             'name' => $data['name'],
@@ -75,7 +74,7 @@ class UserController extends Controller
             'email' => ['sometimes', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
             'role' => ['sometimes', 'in:admin,mentor'],
-            'password' => ['sometimes', 'nullable', 'string', 'min:8'],
+            'password' => ['sometimes', 'nullable', 'digits:6'],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 

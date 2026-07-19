@@ -8,7 +8,7 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
-import { PasswordInput } from '@/components/ui/password-input';
+import PinInput from '@/components/PinInput.vue';
 
 const items = ref([]);
 const loading = ref(false);
@@ -199,8 +199,8 @@ async function toggleActive(user) {
 
         <Dialog v-model:open="dialogOpen" :title="editing ? 'Ubah Akun' : 'Tambah Akun'">
             <div v-if="generatedPassword" class="space-y-3">
-                <p class="text-sm text-foreground">Akun dibuat. Catat kata sandi ini, hanya ditampilkan sekali:</p>
-                <code class="block rounded-md border border-border bg-background px-3 py-2 text-sm">{{ generatedPassword }}</code>
+                <p class="text-sm text-foreground">Akun dibuat. Catat PIN ini, hanya ditampilkan sekali:</p>
+                <code class="block rounded-md border border-border bg-background px-3 py-2 text-center text-lg font-semibold tracking-[0.4em]">{{ generatedPassword }}</code>
                 <div class="flex justify-end">
                     <Button size="sm" @click="dialogOpen = false">Selesai</Button>
                 </div>
@@ -220,7 +220,9 @@ async function toggleActive(user) {
                     <option value="admin">Admin</option>
                 </NativeSelect>
                 <div>
-                    <PasswordInput v-model="form.password" autocomplete="new-password" :placeholder="editing ? 'Kata sandi baru (opsional)' : 'Kata sandi (kosongkan untuk generate)'" />
+                    <label class="text-xs text-muted-foreground">PIN (6 digit)</label>
+                    <PinInput v-model="form.password" class="mt-1.5" />
+                    <p class="mt-1.5 text-xs text-muted-foreground">{{ editing ? 'Kosongkan jika PIN tidak diganti.' : 'Kosongkan untuk membuat PIN acak.' }}</p>
                     <p v-if="formErrors.password" class="mt-1 text-xs text-destructive">{{ formErrors.password[0] }}</p>
                     <p v-if="formErrors.role" class="mt-1 text-xs text-destructive">{{ formErrors.role[0] }}</p>
                     <p v-if="formErrors.is_active" class="mt-1 text-xs text-destructive">{{ formErrors.is_active[0] }}</p>

@@ -36,7 +36,7 @@ class UserManagementTest extends TestCase
             ->assertCreated()
             ->assertJsonPath('user.role', 'mentor')
             ->assertJsonPath('user.is_active', true)
-            ->assertJsonPath('generated_password', fn ($p) => is_string($p) && strlen($p) >= 8);
+            ->assertJsonPath('generated_password', fn ($p) => is_string($p) && preg_match('/^\d{6}$/', $p) === 1);
 
         $this->assertTrue(User::where('email', 'budi@kheedma.id')->first()->hasRole('mentor'));
     }
