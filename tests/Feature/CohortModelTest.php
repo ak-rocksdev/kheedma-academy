@@ -57,6 +57,10 @@ class CohortModelTest extends TestCase
 
     public function test_countdown_label_covers_the_final_week_only(): void
     {
+        // Frozen mid-morning: run after 21.00 and "+3 hours" crosses midnight,
+        // turning the expected 'Hari ini' into 'Besok'.
+        $this->travelTo(now()->setTime(10, 0));
+
         $today = Cohort::factory()->create(['start_date' => now()->addHours(3)]);
         $tomorrow = Cohort::factory()->create(['start_date' => now()->addDay()->setTime(9, 30)]);
         $inFive = Cohort::factory()->create(['start_date' => now()->addDays(5)]);
