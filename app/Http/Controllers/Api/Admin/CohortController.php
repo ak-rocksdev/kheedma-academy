@@ -183,7 +183,7 @@ class CohortController extends Controller
     }
 
     /**
-     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool,type:string,location_name:?string,location_address:?string,location_lat:?float,location_lng:?float,meeting_url:?string,materials_url:?string,maps_url:?string}
+     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool,type:string,location_name:?string,location_address:?string,location_lat:?float,location_lng:?float,meeting_url:?string,materials_url:?string}
      */
     private function row(Cohort $c): array
     {
@@ -199,6 +199,9 @@ class CohortController extends Controller
             'registration_opens_at' => $c->registration_opens_at?->toIso8601String(),
             'registration_closes_at' => $c->registration_closes_at?->toIso8601String(),
             'registration_open' => $c->isOpenForRegistration(),
+            // NOTE: type/location_*/meeting_url/maps_url are gone from Cohort as of
+            // the venue-to-session move (2026-07-19) — venue now lives on
+            // CohortSession. Re-exposing it here is deferred to the API rework task.
             'type' => $c->type,
             'location_name' => $c->location_name,
             'location_address' => $c->location_address,
@@ -206,7 +209,6 @@ class CohortController extends Controller
             'location_lng' => $c->location_lng,
             'meeting_url' => $c->meeting_url,
             'materials_url' => $c->materials_url,
-            'maps_url' => $c->mapsUrl(),
         ];
     }
 }

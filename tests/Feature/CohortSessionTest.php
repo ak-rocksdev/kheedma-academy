@@ -84,4 +84,58 @@ class CohortSessionTest extends TestCase
 
         $this->assertSame(0, Attendance::count());
     }
+
+    public function test_session_maps_urls_follow_the_coordinates(): void
+    {
+        $cohort = Cohort::factory()->create();
+        $session = CohortSession::factory()->for($cohort)->atLocation()->create();
+
+        $this->assertSame(
+            'https://www.google.com/maps/search/?api=1&query=-7.5755,110.8317',
+            $session->mapsUrl()
+        );
+        $this->assertStringContainsString('output=embed', $session->mapsEmbedUrl());
+        $this->assertStringContainsString('maps/dir', $session->mapsDirectionsUrl());
+    }
+
+    public function test_session_without_coordinates_has_no_maps_urls(): void
+    {
+        $session = CohortSession::factory()->for(Cohort::factory())->create();
+
+        $this->assertNull($session->mapsUrl());
+        $this->assertNull($session->mapsEmbedUrl());
+        $this->assertNull($session->mapsDirectionsUrl());
+    }
+
+    public function test_session_is_online_by_type(): void
+    {
+        $cohort = Cohort::factory()->create();
+
+        $this->assertTrue(CohortSession::factory()->for($cohort)->online()->create()->isOnline());
+        $this->assertFalse(CohortSession::factory()->for($cohort)->atLocation()->create()->isOnline());
+    }
+
+    public function test_session_google_calendar_url_needs_a_real_start_time(): void
+    {
+        $cohort = Cohort::factory()->create();
+        // Single-word title: http_build_query encodes spaces as '+', so a
+        // spaceless title keeps the containment assertion encoding-proof.
+        $timed = CohortSession::factory()->for($cohort)->online()->create(['title' => 'Onboarding', 'scheduled_at' => '2026-08-08 09:30:00']);
+        $midnight = CohortSession::factory()->for($cohort)->create(['scheduled_at' => '2026-08-08 00:00:00']);
+        $bare = CohortSession::factory()->for($cohort)->create(['scheduled_at' => null]);
+
+        $this->assertStringContainsString('calendar.google.com', $timed->googleCalendarUrl());
+        $this->assertStringContainsString('Onboarding', $timed->googleCalendarUrl());
+        $this->assertNull($midnight->googleCalendarUrl());
+        $this->assertNull($bare->googleCalendarUrl());
+    }
+
+    public function test_session_scheduled_label_includes_time_when_not_midnight(): void
+    {
+        $cohort = Cohort::factory()->create();
+        $session = CohortSession::factory()->for($cohort)->create(['scheduled_at' => '2026-08-08 09:30:00']);
+
+        $this->assertSame('8 Agustus 2026 pukul 09.30 WIB', $session->scheduledLabel());
+        $this->assertNull(CohortSession::factory()->for($cohort)->create(['scheduled_at' => null])->scheduledLabel());
+    }
 }

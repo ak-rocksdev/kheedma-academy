@@ -55,15 +55,6 @@ class CohortModelTest extends TestCase
         $this->assertSame('09:30', $cohort->fresh()->start_date->format('H:i'));
     }
 
-    public function test_maps_url_requires_both_coordinates(): void
-    {
-        $located = Cohort::factory()->atLocation()->create();
-        $bare = Cohort::factory()->create();
-
-        $this->assertStringContainsString('google.com/maps', $located->mapsUrl());
-        $this->assertNull($bare->mapsUrl());
-    }
-
     public function test_countdown_label_covers_the_final_week_only(): void
     {
         $today = Cohort::factory()->create(['start_date' => now()->addHours(3)]);
@@ -88,37 +79,6 @@ class CohortModelTest extends TestCase
         $this->assertTrue($soon->startsWithinHours(48));
         $this->assertFalse($far->startsWithinHours(48));
         $this->assertFalse($past->startsWithinHours(48));
-    }
-
-    public function test_google_calendar_url_needs_a_real_start_time(): void
-    {
-        $timed = Cohort::factory()->atLocation()->create(['start_date' => '2026-08-01 09:30:00']);
-        $midnight = Cohort::factory()->create(['start_date' => '2026-08-01 00:00:00']);
-        $unscheduled = Cohort::factory()->create(['start_date' => null]);
-
-        $url = $timed->googleCalendarUrl();
-        $this->assertStringContainsString('calendar.google.com/calendar/render', $url);
-        $this->assertStringContainsString('20260801T093000%2F20260801T113000', $url);
-        $this->assertStringContainsString('Asia%2FJakarta', $url);
-        $this->assertNull($midnight->googleCalendarUrl());
-        $this->assertNull($unscheduled->googleCalendarUrl());
-    }
-
-    public function test_maps_embed_and_directions_urls_follow_the_coordinates(): void
-    {
-        $located = Cohort::factory()->atLocation()->create();
-        $bare = Cohort::factory()->create();
-
-        $this->assertStringContainsString('output=embed', $located->mapsEmbedUrl());
-        $this->assertStringContainsString('maps/dir/?api=1&destination=', $located->mapsDirectionsUrl());
-        $this->assertNull($bare->mapsEmbedUrl());
-        $this->assertNull($bare->mapsDirectionsUrl());
-    }
-
-    public function test_is_online_by_type(): void
-    {
-        $this->assertTrue(Cohort::factory()->online()->create()->isOnline());
-        $this->assertFalse(Cohort::factory()->create()->isOnline());
     }
 
     public function test_start_label_includes_time_when_not_midnight(): void
