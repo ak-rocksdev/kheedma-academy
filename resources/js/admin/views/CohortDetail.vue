@@ -111,7 +111,7 @@ async function copyClassInfo() {
     const c = cohort.value;
     const s = selectedSession.value;
     const lines = [
-        [`${c.program?.name ?? ''} · ${c.name}`.replace(/^ · /, ''), s?.title].filter(Boolean).join(' — '),
+        [`${c.program?.name ?? ''} · ${c.name}`.replace(/^ · /, ''), s?.title].filter(Boolean).join(' · '),
     ];
     if (s?.scheduled_at) lines.push(`Jadwal: ${fmtDateTime(s.scheduled_at)} WIB`);
     if (s?.type === 'offline') {
@@ -374,45 +374,45 @@ watch(() => props.id, () => load());
                 </div>
 
                 <div v-else class="mt-3 grid gap-2 md:grid-cols-2">
-                    <button
+                    <div
                         v-for="session in sessionList"
                         :key="session.id"
-                        type="button"
-                        class="rounded-xl border px-4 py-3 text-left transition"
+                        class="rounded-xl border px-4 py-3 transition"
                         :class="session.id === selectedSessionId
                             ? 'border-teal-600 bg-teal-600/5 ring-1 ring-teal-600'
                             : 'border-border bg-card hover:border-teal-600/50'"
-                        @click="selectedSessionId = session.id"
                     >
-                        <div class="flex items-start justify-between gap-2">
-                            <p class="min-w-0 truncate text-sm font-semibold text-foreground">{{ session.title }}</p>
-                            <Badge variant="secondary" class="shrink-0">
-                                {{ session.type === 'online' ? 'Online' : 'Offline' }}
-                            </Badge>
-                        </div>
-                        <p class="mt-1 text-xs text-muted-foreground">
-                            {{ session.scheduled_at ? fmtDateTime(session.scheduled_at) + ' WIB' : 'Jadwal belum diatur' }}
-                            · {{ session.attendances_count }} hadir
-                        </p>
-                        <p v-if="session.type === 'offline' && session.location_name" class="mt-0.5 truncate text-xs text-muted-foreground">
-                            {{ session.location_name }}
-                        </p>
+                        <button type="button" class="w-full text-left" @click="selectedSessionId = session.id">
+                            <div class="flex items-start justify-between gap-2">
+                                <p class="min-w-0 truncate text-sm font-semibold text-foreground">{{ session.title }}</p>
+                                <Badge variant="secondary" class="shrink-0">
+                                    {{ session.type === 'online' ? 'Online' : 'Offline' }}
+                                </Badge>
+                            </div>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                {{ session.scheduled_at ? fmtDateTime(session.scheduled_at) + ' WIB' : 'Jadwal belum diatur' }}
+                                · {{ session.attendances_count }} hadir
+                            </p>
+                            <p v-if="session.type === 'offline' && session.location_name" class="mt-0.5 truncate text-xs text-muted-foreground">
+                                {{ session.location_name }}
+                            </p>
+                        </button>
                         <div v-if="auth.can('cohorts.manage')" class="mt-2 flex gap-1.5">
-                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="openEditSession(session)">
+                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click="openEditSession(session)">
                                 <Pencil class="mr-1 h-3 w-3" /> Ubah
                             </Button>
-                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-destructive" @click.stop="deleteTarget = session; deleteError = ''">
+                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-destructive" @click="deleteTarget = session; deleteError = ''">
                                 <Trash2 class="mr-1 h-3 w-3" /> Hapus
                             </Button>
                         </div>
-                    </button>
+                    </div>
                 </div>
             </div>
 
             <!-- Daftar hadir: kehadiran dicatat per kelas terpilih di atas. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
                 <div v-if="selectedSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Daftar hadir — {{ selectedSession.title }}</p>
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Daftar hadir · {{ selectedSession.title }}</p>
                     <!-- Progres yang terlihat mendorong pencatatan sampai tuntas;
                          setelah kelas usai ia menjadi rekap. -->
                     <div class="flex items-center gap-2.5">
