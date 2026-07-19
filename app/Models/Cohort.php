@@ -57,9 +57,16 @@ class Cohort extends Model
         return $this->hasMany(Application::class);
     }
 
+    /**
+     * `chaperone()` hydrates each loaded session's `cohort` inverse from this
+     * already-loaded parent instead of lazy-loading it. The member area's
+     * per-class timeline walks session->cohort->program per session
+     * (via CohortSession::googleCalendarUrl()), so without it every session
+     * in a batch would re-query its cohort and program (N+1).
+     */
     public function sessions(): HasMany
     {
-        return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at');
+        return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at')->chaperone();
     }
 
     /**
