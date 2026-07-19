@@ -75,7 +75,7 @@ class MemberAreaController extends Controller
         // Kelasmu: the member's own active enrollments, with cohort logistics.
         $enrolledClasses = $person
             ? $person->enrollments()
-                ->with(['cohort.program', 'cohort.mentor:id,name', 'latestStatusEvent'])
+                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions', 'latestStatusEvent'])
                 ->withCount('attendances')
                 ->get()
                 ->filter(fn (Enrollment $e) => $e->isActive())

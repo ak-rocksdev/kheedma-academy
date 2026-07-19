@@ -183,9 +183,9 @@ class MemberAreaTest extends TestCase
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create();
-        $cohort = Cohort::factory()->atLocation()->create([
-            'program_id' => $program->id,
-            'start_date' => now()->addDay()->setTime(9, 30),
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->atLocation()->create([
+            'scheduled_at' => now()->addDay()->setTime(9, 30),
         ]);
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
@@ -230,7 +230,7 @@ class MemberAreaTest extends TestCase
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create();
-        $cohort = Cohort::factory()->online()->create([
+        $cohort = Cohort::factory()->create([
             'program_id' => $program->id,
             'start_date' => now()->subDays(10)->setTime(9, 30),
             'end_date' => now()->subDays(10),
@@ -269,10 +269,14 @@ class MemberAreaTest extends TestCase
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create(['name' => 'Kelas Offline Uji']);
-        $cohort = Cohort::factory()->atLocation()->create([
+        $cohort = Cohort::factory()->create([
             'program_id' => $program->id,
             'name' => 'Angkatan Offline 1',
             'start_date' => '2026-08-01 09:00:00',
+        ]);
+        $session = CohortSession::factory()->for($cohort)->atLocation()->create([
+            'title' => 'Kelas 1: Riset Produk',
+            'scheduled_at' => '2026-08-01 09:00:00',
         ]);
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
@@ -284,21 +288,22 @@ class MemberAreaTest extends TestCase
             ->assertSee('Kelas Offline Uji')
             ->assertSee('Angkatan Offline 1')
             ->assertSee('1 Agustus 2026 pukul 09.00 WIB')
-            ->assertSee($cohort->location_name)
-            ->assertSee($cohort->location_address)
+            ->assertSee($session->location_name)
+            ->assertSee($session->location_address)
             ->assertSee('Tatap muka')
             ->assertSee('Tambahkan ke Google Calendar')
             ->assertSee('Petunjuk arah')
-            ->assertSee($cohort->mapsEmbedUrl())
-            ->assertSee($cohort->mapsDirectionsUrl())
-            ->assertSee($cohort->mapsUrl());
+            ->assertSee($session->mapsEmbedUrl())
+            ->assertSee($session->mapsDirectionsUrl())
+            ->assertSee($session->mapsUrl());
     }
 
     public function test_enrolled_member_sees_meeting_link_for_online_cohort(): void
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create();
-        $cohort = Cohort::factory()->online()->create(['program_id' => $program->id]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->online()->create();
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
 
@@ -307,14 +312,15 @@ class MemberAreaTest extends TestCase
             ->assertOk()
             ->assertSee('Kelas online')
             ->assertSee('Gabung meeting')
-            ->assertSee($cohort->meeting_url, false);
+            ->assertSee($session->meeting_url, false);
     }
 
     public function test_enrolled_online_cohort_without_meeting_url_shows_placeholder(): void
     {
         [$user, $person] = $this->member();
         $program = Program::factory()->active()->create();
-        $cohort = Cohort::factory()->create(['program_id' => $program->id, 'type' => 'online', 'meeting_url' => null]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create(['type' => 'online', 'meeting_url' => null]);
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
 
@@ -324,6 +330,20 @@ class MemberAreaTest extends TestCase
             ->assertSee('Kelas online')
             ->assertSee('Link meeting akan dibagikan sebelum kelas dimulai.')
             ->assertDontSee('Gabung meeting');
+    }
+
+    public function test_enrolled_member_sees_each_class_of_the_batch(): void
+    {
+        [$user, $person] = $this->member();
+        $cohort = Cohort::factory()->create(['program_id' => Program::factory()->active()->create()->id]);
+        CohortSession::factory()->for($cohort)->atLocation()->create(['title' => 'Kelas 1: Riset Produk']);
+        CohortSession::factory()->for($cohort)->online()->create(['title' => 'Kelas 2: Konten']);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas 1: Riset Produk')
+            ->assertSee('Kelas 2: Konten');
     }
 
     public function test_enrolled_cohort_with_materials_shows_materials_link(): void
