@@ -306,3 +306,55 @@
         animation: none;
     }
 }
+
+/*
+ | Duet Date Picker (public funnel, birth-date field) — themed to the brand
+ | tokens above. Every --duet-* variable must be defined: the component ships
+ | no fallbacks and we deliberately skip its default theme so these values
+ | are the single source of truth.
+ */
+:root {
+    --duet-color-primary: var(--color-teal-600);
+    --duet-color-text: var(--color-teal-900);
+    --duet-color-text-active: #ffffff;
+    --duet-color-placeholder: color-mix(in srgb, var(--color-teal-900) 30%, transparent);
+    --duet-color-button: var(--color-sand-100);
+    --duet-color-surface: #ffffff;
+    --duet-color-overlay: color-mix(in srgb, var(--color-teal-900) 55%, transparent);
+    --duet-color-border: color-mix(in srgb, var(--color-teal-900) 15%, transparent);
+    --duet-font: var(--font-sans);
+    --duet-font-normal: 400;
+    --duet-font-bold: 600;
+    --duet-radius: 0.5rem; /* rounded-lg, same as the other form fields */
+    --duet-z-index: 600;
+}
+
+/* The text input mirrors the funnel's shared field styling ($field). */
+.duet-date__input {
+    padding: 0.625rem 0.875rem; /* py-2.5 px-3.5 */
+    font-size: 0.875rem;
+    background: #ffffff;
+    color: var(--color-teal-900);
+    border: 1px solid color-mix(in srgb, var(--color-teal-900) 15%, transparent);
+    transition:
+        border-color 0.15s,
+        box-shadow 0.15s;
+}
+.duet-date__input:focus {
+    outline: none;
+    border-color: var(--color-teal-600);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--color-teal-600) 20%, transparent);
+}
+.duet-field-invalid .duet-date__input {
+    border-color: #f87171; /* red-400, same treatment as other invalid fields */
+}
+.duet-date__toggle {
+    color: var(--color-teal-700);
+}
+
+/* The calendar popup reads as one of the funnel's white rounded cards. */
+.duet-date__dialog-content {
+    border: 1px solid color-mix(in srgb, var(--color-teal-900) 10%, transparent);
+    border-radius: 1rem; /* rounded-2xl */
+    box-shadow: 0 20px 45px -15px color-mix(in srgb, var(--color-teal-900) 35%, transparent);
+}

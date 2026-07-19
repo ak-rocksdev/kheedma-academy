@@ -5,6 +5,7 @@
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
 import { createValidator } from 'laravel-precognition';
+import { defineCustomElements as registerDuetDatePicker } from '@duetds/date-picker/dist/loader';
 
 /** Turn a native select into a searchable single-value combobox. */
 function makeSearchable(el, placeholder) {
@@ -79,6 +80,65 @@ function initRegionSelects() {
     if (province.getValue()) {
         loadCities(province.getValue(), cityEl.dataset.old || '');
     }
+}
+
+/**
+ * Birth-date field (application form): Duet Date Picker, type-first — the
+ * field accepts typed dd-mm-yyyy (also / and . separators) with the calendar
+ * as an optional assist. Duet's own input never submits; the hidden
+ * #birth_date_value input carries the ISO date, so server-side validation is
+ * untouched.
+ */
+const ID_DAY_NAMES = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+const ID_MONTH_NAMES = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+const ID_MONTH_NAMES_SHORT = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+function initBirthDatePicker() {
+    const picker = document.querySelector('duet-date-picker[identifier="birth_date"]');
+    const hidden = document.getElementById('birth_date_value');
+    if (!picker || !hidden) {
+        return;
+    }
+
+    registerDuetDatePicker(window);
+
+    picker.localization = {
+        buttonLabel: 'Buka kalender',
+        placeholder: '17-08-1998',
+        selectedDateMessage: 'Tanggal terpilih',
+        prevMonthLabel: 'Bulan sebelumnya',
+        nextMonthLabel: 'Bulan berikutnya',
+        monthSelectLabel: 'Bulan',
+        yearSelectLabel: 'Tahun',
+        closeLabel: 'Tutup',
+        calendarHeading: 'Pilih tanggal lahir',
+        dayNames: ID_DAY_NAMES,
+        monthNames: ID_MONTH_NAMES,
+        monthNamesShort: ID_MONTH_NAMES_SHORT,
+        locale: 'id-ID',
+    };
+
+    picker.dateAdapter = {
+        parse(value = '', createDate) {
+            const matches = value.match(/^(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})$/);
+            if (matches) {
+                return createDate(matches[3], matches[2], matches[1]);
+            }
+        },
+        format(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+
+            return `${day}-${month}-${date.getFullYear()}`;
+        },
+    };
+
+    picker.addEventListener('duetChange', (event) => {
+        hidden.value = event.detail.value ?? '';
+        // Feed the live (Precognition) layer, which no longer sees a native
+        // date input for this field.
+        hidden.form?.precognitionValidator?.validate('birth_date', hidden.value);
+    });
 }
 
 /**
@@ -370,6 +430,7 @@ function initLockModal() {
 }
 
 initRegionSelects();
+initBirthDatePicker();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

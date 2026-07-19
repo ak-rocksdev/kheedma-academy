@@ -224,9 +224,18 @@
 
                 <div>
                     <label for="birth_date" class="block text-sm font-medium text-teal-800">Tanggal lahir</label>
-                    <input id="birth_date" name="birth_date" type="date" max="{{ now()->subDay()->toDateString() }}"
-                           value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
-                           class="{{ $field }} @error('birth_date') border border-red-400 @else border border-teal-900/15 @enderror">
+                    {{-- Duet renders its own input (id = identifier, so the label keeps
+                         working) but never submits it; the hidden field below carries the
+                         ISO value the server validates. Wiring lives in initBirthDatePicker(). --}}
+                    <duet-date-picker
+                        identifier="birth_date"
+                        value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
+                        max="{{ now()->subDay()->toDateString() }}"
+                        class="mt-1.5 block @error('birth_date') duet-field-invalid @enderror"
+                    ></duet-date-picker>
+                    <input type="hidden" name="birth_date" id="birth_date_value"
+                           value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}">
+                    <p class="mt-1.5 text-xs text-teal-800/60">Ketik langsung (contoh: 17-08-1998) atau buka kalender.</p>
                     @error('birth_date') <p data-server-error-for="birth_date" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
