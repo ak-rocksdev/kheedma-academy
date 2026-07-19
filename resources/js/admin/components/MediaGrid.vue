@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, onMounted, computed } from 'vue';
-import { UploadCloud, FileText } from 'lucide-vue-next';
+import { UploadCloud, FileText, ImagePlus } from 'lucide-vue-next';
 import { media as mediaApi } from '@/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -172,9 +172,20 @@ function formatSize(bytes) {
                     </button>
                 </div>
 
-                <p v-if="!loading && items.length === 0" class="mt-8 text-center text-sm text-muted-foreground">
-                    Belum ada file. Unggah yang pertama lewat tombol di atas, atau seret file ke halaman ini.
-                </p>
+                <!-- Empty state: a bounded card that doubles as an obvious drop
+                     target (the whole page already accepts drops). -->
+                <div
+                    v-if="!loading && items.length === 0"
+                    class="mt-6 flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 py-14 text-center"
+                >
+                    <span class="flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                        <ImagePlus class="size-7 text-teal-700" />
+                    </span>
+                    <p class="mt-4 text-sm font-semibold text-foreground">Belum ada file media</p>
+                    <p class="mt-1 max-w-xs text-sm text-muted-foreground">
+                        Unggah lewat tombol di atas, atau seret dan lepas file langsung ke sini.
+                    </p>
+                </div>
 
                 <div v-if="meta && meta.current < meta.last" class="mt-4 text-center">
                     <Button variant="outline" :disabled="loading" @click="load(meta.current + 1)">Muat lebih banyak</Button>
