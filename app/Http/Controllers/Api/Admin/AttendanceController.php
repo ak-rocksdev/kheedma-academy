@@ -28,7 +28,7 @@ class AttendanceController extends Controller
 
         $validIds = Enrollment::where('cohort_id', $session->cohort_id)->pluck('id');
         if ($wanted->diff($validIds)->isNotEmpty()) {
-            throw ValidationException::withMessages(['enrollment_ids' => 'Ada peserta yang bukan anggota Angkatan / Kelas ini.']);
+            throw ValidationException::withMessages(['enrollment_ids' => 'Ada peserta yang bukan anggota angkatan ini.']);
         }
 
         $current = $session->attendances()->pluck('enrollment_id');

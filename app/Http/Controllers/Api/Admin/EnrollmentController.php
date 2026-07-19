@@ -30,17 +30,17 @@ class EnrollmentController extends Controller
 
         if ($application !== null) {
             if ($application->status !== 'accepted') {
-                throw ValidationException::withMessages(['application_id' => 'Hanya pelamar berstatus diterima yang bisa dimasukkan ke Angkatan / Kelas.']);
+                throw ValidationException::withMessages(['application_id' => 'Hanya pelamar berstatus diterima yang bisa dimasukkan ke angkatan.']);
             }
             if ($application->program_id !== null && $application->program_id !== $cohort->program_id) {
-                throw ValidationException::withMessages(['cohort_id' => 'Angkatan / Kelas ini bukan milik program yang dilamar.']);
+                throw ValidationException::withMessages(['cohort_id' => 'Angkatan ini bukan milik program yang dilamar.']);
             }
         }
 
         $personId = $application?->people_id ?? $data['people_id'];
 
         if (Enrollment::where('people_id', $personId)->where('cohort_id', $cohort->id)->exists()) {
-            throw ValidationException::withMessages(['people_id' => 'Peserta sudah terdaftar di Angkatan / Kelas ini.']);
+            throw ValidationException::withMessages(['people_id' => 'Peserta sudah terdaftar di angkatan ini.']);
         }
 
         $enrollment = Enrollment::create([

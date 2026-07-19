@@ -114,7 +114,7 @@ async function accept(app) {
         const name = app.person?.name ?? 'Pendaftar';
         reviewSuccess.value = res.application.enrollment
             ? `${name} diterima dan ditempatkan di ${res.application.enrollment.cohort_name}.`
-            : `${name} diterima. Tempatkan ke angkatan / kelas lewat halaman profilnya.`;
+            : `${name} diterima. Tempatkan ke angkatan lewat halaman profilnya.`;
         await load();
     } catch (e) {
         if (e.sessionExpired) return; // the global re-login dialog takes over
@@ -213,8 +213,8 @@ function goPerson(app) {
 
             <!-- Angkatan -->
             <div class="mt-8 flex items-end justify-between gap-4">
-                <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan / Kelas</h2>
-                <Button v-if="auth.can('cohorts.manage')" variant="accent" size="sm" @click="openCohortCreate">Tambah Angkatan / Kelas</Button>
+                <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Angkatan</h2>
+                <Button v-if="auth.can('cohorts.manage')" variant="accent" size="sm" @click="openCohortCreate">Tambah Angkatan</Button>
             </div>
             <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                 <table class="w-full text-sm">
@@ -233,7 +233,7 @@ function goPerson(app) {
                         <tr v-if="!cohorts.length">
                             <td colspan="7" class="px-4 py-10 text-center">
                                 <p class="text-sm text-muted-foreground">
-                                    Belum ada angkatan / kelas. Program belum bisa menerima pendaftar sampai angkatan / kelas pertama dibuka.
+                                    Belum ada angkatan. Program belum bisa menerima pendaftar sampai angkatan pertama dibuka.
                                 </p>
                                 <Button
                                     v-if="auth.can('cohorts.manage')"
@@ -242,7 +242,7 @@ function goPerson(app) {
                                     class="mt-4"
                                     @click="openCohortCreate"
                                 >
-                                    Tambah Angkatan / Kelas Pertama
+                                    Tambah Angkatan Pertama
                                 </Button>
                             </td>
                         </tr>
@@ -269,7 +269,7 @@ function goPerson(app) {
                                 </Badge>
                             </td>
                             <td class="px-4 py-3 text-right whitespace-nowrap">
-                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan / Kelas" @click.stop="goCohort(cohort)">
+                                <Button variant="ghost" size="icon" class="h-8 w-8" title="Lihat detail" aria-label="Lihat detail Angkatan" @click.stop="goCohort(cohort)">
                                     <Eye class="size-4" />
                                 </Button>
                                 <Button
@@ -278,7 +278,7 @@ function goPerson(app) {
                                     size="icon"
                                     class="h-8 w-8"
                                     title="Ubah"
-                                    aria-label="Ubah Angkatan / Kelas"
+                                    aria-label="Ubah Angkatan"
                                     @click.stop="openCohortEdit(cohort)"
                                 >
                                     <Pencil class="size-4" />
@@ -295,20 +295,20 @@ function goPerson(app) {
             <Alert v-if="reviewSuccess" variant="success" class="mt-3">{{ reviewSuccess }}</Alert>
             <div v-if="selectedCohortId === ''" class="mt-3 rounded-xl border border-border bg-card px-5 py-10 text-center">
                 <template v-if="cohorts.length || hasUnlinked">
-                    <p class="text-sm text-muted-foreground">Pilih Angkatan / Kelas untuk melihat pendaftarnya.</p>
-                    <NativeSelect v-model="selectedCohortId" class="mx-auto mt-3 w-64 max-w-full" aria-label="Pilih Angkatan / Kelas">
-                        <option value="">Pilih Angkatan / Kelas…</option>
+                    <p class="text-sm text-muted-foreground">Pilih angkatan untuk melihat pendaftarnya.</p>
+                    <NativeSelect v-model="selectedCohortId" class="mx-auto mt-3 w-64 max-w-full" aria-label="Pilih Angkatan">
+                        <option value="">Pilih Angkatan…</option>
                         <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
-                        <option v-if="hasUnlinked" value="none">Tanpa angkatan / kelas</option>
+                        <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
                     </NativeSelect>
                 </template>
-                <p v-else class="text-sm text-muted-foreground">Belum ada pendaftar. Buka angkatan / kelas dulu agar kelas ini bisa didaftari.</p>
+                <p v-else class="text-sm text-muted-foreground">Belum ada pendaftar. Buka angkatan dulu agar program ini bisa didaftari.</p>
             </div>
             <template v-else>
-                <NativeSelect v-model="selectedCohortId" class="mt-3 w-64 max-w-full" aria-label="Pilih Angkatan / Kelas">
-                    <option value="">Pilih Angkatan / Kelas…</option>
+                <NativeSelect v-model="selectedCohortId" class="mt-3 w-64 max-w-full" aria-label="Pilih Angkatan">
+                    <option value="">Pilih Angkatan…</option>
                     <option v-for="cohort in cohorts" :key="cohort.id" :value="String(cohort.id)">{{ cohort.name }}</option>
-                    <option v-if="hasUnlinked" value="none">Tanpa angkatan / kelas</option>
+                    <option v-if="hasUnlinked" value="none">Tanpa angkatan</option>
                 </NativeSelect>
                 <div class="mt-3 overflow-hidden rounded-xl border border-border bg-card">
                     <table class="w-full text-sm">
@@ -320,7 +320,7 @@ function goPerson(app) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-if="!filteredApplications.length"><td colspan="3" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar di angkatan / kelas ini.</td></tr>
+                            <tr v-if="!filteredApplications.length"><td colspan="3" class="px-4 py-8 text-center text-muted-foreground">Belum ada pendaftar di angkatan ini.</td></tr>
                             <tr
                                 v-for="app in filteredApplications"
                                 :key="app.id"
@@ -366,7 +366,7 @@ function goPerson(app) {
             <RejectApplicationDialog
                 :target="rejectTarget"
                 :person-name="rejectTarget?.person?.name ?? ''"
-                :warning="rejectTarget?.enrollment ? `Penempatannya di ${rejectTarget.enrollment.cohort_name} tidak ikut terhapus; kelola dari halaman Angkatan / Kelas bila perlu.` : ''"
+                :warning="rejectTarget?.enrollment ? `Penempatannya di ${rejectTarget.enrollment.cohort_name} tidak ikut terhapus; kelola dari halaman Angkatan bila perlu.` : ''"
                 @close="rejectTarget = null"
                 @confirm="confirmReject"
             />

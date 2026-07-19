@@ -132,7 +132,7 @@ async function save() {
 </script>
 
 <template>
-    <Dialog v-model:open="open" wide :title="isEditing ? 'Ubah Angkatan / Kelas' : 'Tambah Angkatan / Kelas'">
+    <Dialog v-model:open="open" wide :title="isEditing ? 'Ubah Angkatan' : 'Tambah Angkatan'">
         <form @submit.prevent="save">
             <Alert v-if="optionsError" class="mb-3 px-3.5 py-2.5">{{ optionsError }}</Alert>
             <!-- Two columns on desktop (schedule | logistics); single column
@@ -140,8 +140,8 @@ async function save() {
             <div class="md:grid md:grid-cols-2 md:gap-x-8">
             <div class="space-y-3">
             <div>
-                <label class="text-xs text-muted-foreground">Nama angkatan / kelas</label>
-                <Input v-model="form.name" placeholder="Nama angkatan / kelas" class="mt-1.5" />
+                <label class="text-xs text-muted-foreground">Nama angkatan</label>
+                <Input v-model="form.name" placeholder="Nama angkatan" class="mt-1.5" />
                 <p v-if="formErrors.name" class="mt-1 text-xs text-destructive">{{ formErrors.name[0] }}</p>
             </div>
             <div>

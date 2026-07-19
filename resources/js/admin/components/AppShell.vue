@@ -19,7 +19,7 @@ const nav = computed(() =>
         { to: { name: 'people' }, match: '/people', label: 'Orang', short: 'Orang', icon: BookUser, mobilePrimary: true, show: auth.can('people.view') },
         { to: { name: 'programs' }, match: '/programs', label: 'Program', short: 'Program', icon: BookOpen, mobilePrimary: true, show: auth.can('programs.manage') },
         { to: { name: 'community' }, match: '/community', label: 'Komunitas', short: 'Komunitas', icon: HeartHandshake, mobilePrimary: false, show: auth.can('community.view') },
-        { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan / Kelas', short: 'Kelas', icon: GraduationCap, mobilePrimary: true, show: auth.can('cohorts.view') },
+        { to: { name: 'cohorts' }, match: '/cohorts', label: 'Angkatan', short: 'Angkatan', icon: GraduationCap, mobilePrimary: true, show: auth.can('cohorts.view') },
         { to: { name: 'users' }, match: '/users', label: 'Tim', short: 'Tim', icon: UserCog, mobilePrimary: false, show: auth.can('users.manage') },
         { to: { name: 'content' }, match: '/content', label: 'Konten Halaman', short: 'Konten', icon: LayoutTemplate, mobilePrimary: false, show: auth.can('content.manage') },
         { to: { name: 'media' }, match: '/media', label: 'Media', short: 'Media', icon: Images, mobilePrimary: false, show: auth.can('content.manage') },

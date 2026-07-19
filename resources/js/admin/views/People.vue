@@ -17,7 +17,7 @@ function journeyBadges(item) {
             label: `Melamar ${item.applications_count}×${item.pending_applications_count ? ' · menunggu' : ''}`,
             variant: item.pending_applications_count ? 'warning' : 'secondary',
         },
-        item.enrollments_count && { label: `${item.enrollments_count} Angkatan / Kelas`, variant: 'success' },
+        item.enrollments_count && { label: `${item.enrollments_count} Angkatan`, variant: 'success' },
         item.is_community_member && { label: 'Komunitas', variant: 'secondary' },
         item.has_account && { label: 'Akun', variant: 'outline' },
     ].filter(Boolean);

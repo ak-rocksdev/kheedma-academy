@@ -49,10 +49,10 @@ async function enrollInto(cohort) {
 </script>
 
 <template>
-    <Dialog :open="application !== null" title="Masukkan ke Angkatan / Kelas" @update:open="emit('close')">
-        <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih Angkatan / Kelas untuk mendaftarkannya sekarang, atau lewati untuk melakukannya nanti dari halaman Angkatan / Kelas.</p>
+    <Dialog :open="application !== null" title="Masukkan ke Angkatan" @update:open="emit('close')">
+        <p class="text-sm text-muted-foreground">Pelamar diterima. Pilih angkatan untuk mendaftarkannya sekarang, atau lewati untuk melakukannya nanti dari halaman Angkatan.</p>
         <Alert v-if="error" class="mt-3 px-3.5 py-2.5">{{ error }}</Alert>
-        <p v-if="!cohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada Angkatan / Kelas untuk program ini.</p>
+        <p v-if="!cohorts.length" class="mt-3 text-sm text-muted-foreground">Belum ada angkatan untuk program ini.</p>
         <div v-else class="mt-3 space-y-2">
             <div v-for="c in cohorts" :key="c.id" class="flex items-center justify-between gap-3 rounded-lg border border-border px-3 py-2 text-sm">
                 <div>
