@@ -5,7 +5,6 @@
 import TomSelect from 'tom-select';
 import 'tom-select/dist/css/tom-select.css';
 import { createValidator } from 'laravel-precognition';
-import { defineCustomElements as registerDuetDatePicker } from '@duetds/date-picker/dist/loader';
 
 /** Turn a native select into a searchable single-value combobox. */
 function makeSearchable(el, placeholder) {
@@ -100,8 +99,20 @@ function initBirthDatePicker() {
         return;
     }
 
-    registerDuetDatePicker(window);
+    // The component is registered by the static module script on the apply
+    // page (public/vendor/duet — see the Blade comment there); configuring
+    // after whenDefined avoids pre-upgrade property shadowing.
+    customElements.whenDefined('duet-date-picker').then(() => configureBirthDatePicker(picker));
 
+    picker.addEventListener('duetChange', (event) => {
+        hidden.value = event.detail.value ?? '';
+        // Feed the live (Precognition) layer, which no longer sees a native
+        // date input for this field.
+        hidden.form?.precognitionValidator?.validate('birth_date', hidden.value);
+    });
+}
+
+function configureBirthDatePicker(picker) {
     picker.localization = {
         buttonLabel: 'Buka kalender',
         placeholder: '17-08-1998',
@@ -132,13 +143,6 @@ function initBirthDatePicker() {
             return `${day}-${month}-${date.getFullYear()}`;
         },
     };
-
-    picker.addEventListener('duetChange', (event) => {
-        hidden.value = event.detail.value ?? '';
-        // Feed the live (Precognition) layer, which no longer sees a native
-        // date input for this field.
-        hidden.form?.precognitionValidator?.validate('birth_date', hidden.value);
-    });
 }
 
 /**

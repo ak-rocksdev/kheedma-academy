@@ -226,10 +226,17 @@
                     <label for="birth_date" class="block text-sm font-medium text-teal-800">Tanggal lahir</label>
                     {{-- Duet renders its own input (id = identifier, so the label keeps
                          working) but never submits it; the hidden field below carries the
-                         ISO value the server validates. Wiring lives in initBirthDatePicker(). --}}
+                         ISO value the server validates. Wiring lives in initBirthDatePicker().
+                         Loaded as a static module (public/vendor/duet, copied from the npm
+                         package): Duet's Stencil loader fetches its chunks by runtime URL,
+                         which does not survive Vite bundling. --}}
+                    <script type="module" src="{{ asset('vendor/duet/duet.esm.js') }}"></script>
                     <duet-date-picker
                         identifier="birth_date"
                         value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}"
+                        {{-- min bounds the year dropdown: without it Duet only lists the
+                             last 10 years, unusable for a birth year. --}}
+                        min="1940-01-01"
                         max="{{ now()->subDay()->toDateString() }}"
                         class="mt-1.5 block @error('birth_date') duet-field-invalid @enderror"
                     ></duet-date-picker>
