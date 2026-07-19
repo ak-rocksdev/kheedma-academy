@@ -1,14 +1,17 @@
 <script setup>
-// 6-digit member PIN entry for admin forms — the SPA sibling of the public
-// <x-pin-input> component: auto-advance, backspace steps back, paste
-// distributes. Emits the composed digit string (may be partial while typing).
+// 6-digit PIN entry for admin forms — the SPA sibling of the public
+// <x-pin-input> component: masked dots with one eye toggle, auto-advance,
+// backspace steps back, paste distributes. Emits the composed digit string
+// (may be partial while typing).
 import { ref } from 'vue';
+import { Eye, EyeOff } from 'lucide-vue-next';
 
 const model = defineModel({ type: String, default: '' });
 
 const BOX_COUNT = 6;
 const boxes = ref([]);
 const digits = ref(Array(BOX_COUNT).fill(''));
+const masked = ref(true);
 
 function sync() {
     model.value = digits.value.join('');
@@ -64,7 +67,7 @@ function onPaste(event) {
             :key="index"
             :ref="(el) => (boxes[index - 1] = el)"
             :value="digits[index - 1]"
-            type="text"
+            :type="masked ? 'password' : 'text'"
             inputmode="numeric"
             maxlength="6"
             autocomplete="off"
@@ -75,5 +78,14 @@ function onPaste(event) {
             @keydown="onKeydown(index - 1, $event)"
             @paste="onPaste"
         />
+        <button
+            type="button"
+            :aria-label="masked ? 'Tampilkan PIN' : 'Sembunyikan PIN'"
+            class="flex h-11 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
+            @click="masked = !masked"
+        >
+            <Eye v-if="masked" class="size-4" />
+            <EyeOff v-else class="size-4" />
+        </button>
     </div>
 </template>
