@@ -60,9 +60,10 @@ class ProgramEligibility
             ->get();
 
         foreach ($programs as $prerequisite) {
-            if ($prerequisite->min_average_score !== null
-                && $this->scoring->averageFor($person, $prerequisite) !== null) {
-                if ($this->scoring->passes($person, $prerequisite)) {
+            $average = $this->scoring->averageFor($person, $prerequisite);
+
+            if ($prerequisite->min_average_score !== null && $average !== null) {
+                if ($average >= $prerequisite->min_average_score) {
                     return true;
                 }
 
