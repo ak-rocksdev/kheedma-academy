@@ -35,7 +35,7 @@
 
 **Interfaces:**
 - Consumes: existing `Cohort` venue columns/helpers.
-- Produces: `CohortSession` with fillable `type, location_name, location_address, location_lat, location_lng, meeting_url` and methods `isOnline(): bool`, `mapsUrl(): ?string`, `mapsEmbedUrl(): ?string`, `mapsDirectionsUrl(): ?string`, `googleCalendarUrl(): ?string`, `scheduledLabel(): ?string`, `startsWithinHours(int $hours): bool`. `Cohort` KEEPS `start_date` schedule helpers (`startLabel`, `startCountdownLabel`, `startsWithinHours`) and `materials_url`; LOSES `type`, location fields, `meeting_url`, `isOnline()`, all maps helpers, `googleCalendarUrl()`.
+- Produces: `CohortSession` with fillable `type, location_name, location_address, location_lat, location_lng, meeting_url` and methods `isOnline(): bool`, `mapsUrl(): ?string`, `mapsEmbedUrl(): ?string`, `mapsDirectionsUrl(): ?string`, `googleCalendarUrl(): ?string`, `scheduledLabel(): ?string`, `countdownLabel(): ?string`, `startsWithinHours(int $hours): bool`. `Cohort` KEEPS `start_date` schedule helpers (`startLabel`, `startCountdownLabel`, `startsWithinHours`) and `materials_url`; LOSES `type`, location fields, `meeting_url`, `isOnline()`, all maps helpers, `googleCalendarUrl()`.
 
 - [ ] **Step 1: Write failing session model tests** — append to `tests/Feature/CohortSessionTest.php`:
 
@@ -319,6 +319,27 @@ class CohortSession extends Model
 
         return $date.' pukul '.$this->scheduled_at->format('H.i').' WIB';
     }
+
+    /**
+     * "Hari ini" / "Besok" / "N hari lagi" inside the final week before the
+     * class; null outside that window (goal gradient, mirrors the old
+     * cohort-level countdown).
+     */
+    public function countdownLabel(): ?string
+    {
+        if (! $this->scheduled_at || $this->scheduled_at->isPast()) {
+            return null;
+        }
+
+        $days = (int) now()->startOfDay()->diffInDays($this->scheduled_at->copy()->startOfDay());
+
+        return match (true) {
+            $days === 0 => 'Hari ini',
+            $days === 1 => 'Besok',
+            $days <= 7 => "{$days} hari lagi",
+            default => null,
+        };
+    }
 }
 ```
 
@@ -372,14 +393,14 @@ git add -A && git commit -m "feat: venue moves from cohorts to cohort_sessions (
 **Interfaces:**
 - Produces: session API row `{id, title, scheduled_at, position, type, location_name, location_address, location_lat, location_lng, meeting_url, maps_url}`; cohort API row loses `type/location_*/meeting_url/maps_url` (keeps `materials_url`); `POST /admin/cohorts` no longer creates a session.
 
-- [ ] **Step 1: Write failing API tests** — append to `tests/Feature/CohortSessionTest.php` (this file already has an admin-authenticated helper pattern — follow the existing `actingAs` setup used by its current tests):
+- [ ] **Step 1: Write failing API tests** — append to `tests/Feature/CohortSessionTest.php`. The file already seeds Role+Permission seeders in `setUp()` and has an `admin()` helper — every request below MUST go through `$this->actingAs($this->admin())` like its existing tests. ALSO adapt the existing `test_admin_can_manage_sessions`: its create payload gains `'type' => 'online'` (type becomes required on create in Step 3).
 
 ```php
 public function test_offline_session_requires_location_fields(): void
 {
     $cohort = Cohort::factory()->create();
 
-    $this->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+    $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
         'title' => 'Kelas 1: Riset Produk',
         'type' => 'offline',
     ])->assertUnprocessable()->assertJsonValidationErrors(['location_address', 'location_lat', 'location_lng']);
@@ -389,7 +410,7 @@ public function test_online_session_stores_venue_and_returns_it(): void
 {
     $cohort = Cohort::factory()->create();
 
-    $res = $this->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+    $res = $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
         'title' => 'Kelas 2: Konten',
         'scheduled_at' => '2026-08-15T09:30',
         'type' => 'online',
@@ -404,7 +425,7 @@ public function test_session_meeting_url_must_be_https(): void
 {
     $cohort = Cohort::factory()->create();
 
-    $this->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+    $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
         'title' => 'Kelas',
         'type' => 'online',
         'meeting_url' => 'http://insecure.example',
@@ -416,15 +437,14 @@ public function test_legacy_session_without_location_can_update_title_alone(): v
     $cohort = Cohort::factory()->create();
     $session = CohortSession::factory()->for($cohort)->create(['type' => 'offline']);
 
-    $this->patchJson("/api/admin/sessions/{$session->id}", ['title' => 'Judul Baru'])
+    $this->actingAs($this->admin())->patchJson("/api/admin/sessions/{$session->id}", ['title' => 'Judul Baru'])
         ->assertOk()->assertJsonPath('session.title', 'Judul Baru');
 }
 
 public function test_mentor_cannot_manage_classes(): void
 {
     // Class CRUD sits under cohorts.manage (admin); mentors only record
-    // attendance (spec 2026-07-18). Build the mentor exactly as
-    // AuthPermissionsTest does (User::factory() + assignRole('mentor')).
+    // attendance (spec 2026-07-18). Roles are already seeded by setUp().
     $mentor = User::factory()->create();
     $mentor->assignRole('mentor');
     $cohort = Cohort::factory()->create();
@@ -822,7 +842,39 @@ async function copyClassInfo() {
 
 5. Add imports: `Plus` to the lucide import list, and `import SessionFormDialog from '@/components/SessionFormDialog.vue';`.
 
-- [ ] **Step 2: Rework the template** — replace the middle segment of the "Tiket kelas" card (the whole `div` containing the Video/MapPin tile — the venue segment) with a registration-only two-segment card (keep Jadwal and Pendaftaran segments; the venue now lives per class). Then insert the class list between the ticket card and the roster card:
+- [ ] **Step 2: Rework the template** — the middle segment of the "Tiket kelas" card (the `div` with the Video/MapPin tile) stops showing venue (that now lives per class) and becomes a "Materi & info" segment, so the materials link and the copy button keep their home and the `md:grid-cols-[1fr_1.35fr_1fr]` grid stays intact. Replace that middle segment's inner content with:
+
+```html
+<span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+    <FileText class="size-5 text-teal-700" />
+</span>
+<div class="min-w-0 flex-1 text-sm">
+    <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Materi & info</p>
+    <a
+        v-if="cohort.materials_url"
+        :href="cohort.materials_url"
+        target="_blank"
+        rel="noopener"
+        class="mt-0.5 inline-flex items-center gap-1 font-semibold text-teal-700 hover:underline"
+    >
+        <FileText class="size-3.5" /> Materi kelas
+    </a>
+    <p v-else class="mt-0.5 text-muted-foreground/60 italic">Materi belum diisi.</p>
+    <div class="mt-2">
+        <button
+            type="button"
+            class="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-semibold text-teal-700 transition hover:border-teal-600/50 hover:bg-accent"
+            @click="copyClassInfo"
+        >
+            <Check v-if="copiedInfo" class="size-3.5" />
+            <Copy v-else class="size-3.5" />
+            {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas terpilih' }}
+        </button>
+    </div>
+</div>
+```
+
+(`Video`/`MapPin`/`ExternalLink` imports drop from the lucide list if now unused.) Then insert the class list between the ticket card and the roster card:
 
 ```html
 <!-- Daftar kelas: satu blok per pertemuan; blok terpilih memegang absensi. -->
@@ -947,6 +999,9 @@ and its venue assertions switch source: `$cohort->location_name` → `$session->
 schedule assertion `'1 Agustus 2026 pukul 09.00 WIB'` now comes from the session's
 `scheduled_at`. Apply the same source-swap to the online/placeholder/countdown tests
 (`->online()` state; placeholder test uses `->create(['type' => 'online', 'meeting_url' => null])`).
+In the countdown/auto-open test, the session's `scheduled_at` (set it to `now()->addDay()`)
+now drives BOTH the "Besok" chip (`countdownLabel()`) and the auto-open map
+(`startsWithinHours(48)`) — the assertions themselves stay.
 Add `use App\Models\CohortSession;`. Every assertion string stays — only the model carrying
 the venue changes. Add one new test:
 
@@ -999,6 +1054,9 @@ Expected: FAIL — factories/states no longer exist on Cohort; new test finds no
             @if ($session->scheduledLabel())
                 <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-teal-800/80">
                     <span>{{ $session->scheduledLabel() }}</span>
+                    @if ($session->countdownLabel())
+                        <span class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ $session->countdownLabel() }}</span>
+                    @endif
                     @if ($session->googleCalendarUrl())
                         <a href="{{ $session->googleCalendarUrl() }}" target="_blank" rel="noopener"
                            class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
