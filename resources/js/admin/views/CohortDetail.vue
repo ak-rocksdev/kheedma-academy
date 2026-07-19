@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, CalendarDays, Check, Copy, ExternalLink, FileText, MapPin, Pencil, Ticket, Trash2, UserMinus, Video } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, Copy, FileText, Pencil, Plus, Ticket, Trash2, UserMinus } from 'lucide-vue-next';
 import { copyText } from '@/lib/clipboard';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +14,7 @@ import { useAuthStore } from '@/stores/auth';
 import { fmtDateTime } from '@/lib/format';
 import { cohortStatusLabel, cohortStatusVariant } from '@/lib/status';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
+import SessionFormDialog from '@/components/SessionFormDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -23,9 +24,47 @@ const cohort = ref(null);
 const sessionList = ref([]);
 const roster = ref([]);
 
-// Mode peluncuran: satu angkatan = satu pertemuan. Sesi bawaan dibuat otomatis
-// oleh server; UI cukup menunjuk sesi pertama untuk seluruh pencatatan hadir.
-const mainSession = computed(() => sessionList.value[0] ?? null);
+// Spec 2026-07-18: cohort = batch, each session = one class. Attendance and
+// the info-copy toolset operate on the selected class.
+const selectedSessionId = ref(null);
+const selectedSession = computed(
+    () => sessionList.value.find((s) => s.id === selectedSessionId.value) ?? null
+);
+
+/** First upcoming class, else the last one — the most actionable default. */
+function defaultSessionId() {
+    const now = new Date();
+    const upcoming = sessionList.value.find((s) => s.scheduled_at && new Date(s.scheduled_at) >= now);
+    return (upcoming ?? sessionList.value[sessionList.value.length - 1])?.id ?? null;
+}
+
+// Class dialog state
+const sessionFormOpen = ref(false);
+const sessionBeingEdited = ref(null);
+const deleteTarget = ref(null);
+const deleteError = ref('');
+
+function openCreateSession() {
+    sessionBeingEdited.value = null;
+    sessionFormOpen.value = true;
+}
+
+function openEditSession(session) {
+    sessionBeingEdited.value = session;
+    sessionFormOpen.value = true;
+}
+
+async function confirmDeleteSession() {
+    deleteError.value = '';
+    try {
+        await sessionsApi.remove(deleteTarget.value.id);
+        deleteTarget.value = null;
+        await load();
+    } catch (e) {
+        if (!e.sessionExpired) deleteError.value = e.message ?? 'Gagal menghapus kelas.';
+    }
+}
+
 const loading = ref(true);
 const error = ref('');
 
@@ -49,7 +88,7 @@ const editOpen = ref(false);
 // Ringkasan kehadiran: dropped tidak dihitung sebagai target hadir.
 const activeRosterCount = computed(() => roster.value.filter((r) => r.latest_status !== 'dropped').length);
 const hadirCount = computed(() =>
-    mainSession.value ? roster.value.filter((r) => isHadir(r, mainSession.value)).length : 0
+    selectedSession.value ? roster.value.filter((r) => isHadir(r, selectedSession.value)).length : 0
 );
 
 
@@ -70,13 +109,17 @@ const countdownLabel = computed(() => {
 const copiedInfo = ref(false);
 async function copyClassInfo() {
     const c = cohort.value;
-    const lines = [`${c.program?.name ?? ''} · ${c.name}`.replace(/^ · /, ''), `Jadwal: ${fmtDateTime(c.start_date)} WIB`];
-    if (c.type === 'offline') {
-        const place = [c.location_name, c.location_address].filter(Boolean).join(', ');
+    const s = selectedSession.value;
+    const lines = [
+        [`${c.program?.name ?? ''} · ${c.name}`.replace(/^ · /, ''), s?.title].filter(Boolean).join(' — '),
+    ];
+    if (s?.scheduled_at) lines.push(`Jadwal: ${fmtDateTime(s.scheduled_at)} WIB`);
+    if (s?.type === 'offline') {
+        const place = [s.location_name, s.location_address].filter(Boolean).join(', ');
         if (place) lines.push(`Lokasi: ${place}`);
-        if (c.maps_url) lines.push(`Peta: ${c.maps_url}`);
-    } else if (c.meeting_url) {
-        lines.push(`Link meeting: ${c.meeting_url}`);
+        if (s.maps_url) lines.push(`Peta: ${s.maps_url}`);
+    } else if (s?.meeting_url) {
+        lines.push(`Link meeting: ${s.meeting_url}`);
     }
     if (c.materials_url) lines.push(`Materi: ${c.materials_url}`);
 
@@ -95,6 +138,9 @@ async function load() {
         cohort.value = res.cohort;
         sessionList.value = res.sessions;
         roster.value = res.roster;
+        if (!sessionList.value.some((s) => s.id === selectedSessionId.value)) {
+            selectedSessionId.value = defaultSessionId();
+        }
     } catch (e) {
         if (e.sessionExpired) return;
         error.value = e.message ?? 'Gagal memuat data.';
@@ -263,51 +309,21 @@ watch(() => props.id, () => load());
 
                 <div class="flex gap-3 px-5 py-4">
                     <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
-                        <Video v-if="cohort.type === 'online'" class="size-5 text-teal-700" />
-                        <MapPin v-else class="size-5 text-teal-700" />
+                        <FileText class="size-5 text-teal-700" />
                     </span>
                     <div class="min-w-0 flex-1 text-sm">
-                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
-                            {{ cohort.type === 'online' ? 'Kelas Online' : 'Lokasi' }}
-                        </p>
-
-                        <template v-if="cohort.type === 'offline'">
-                            <p v-if="cohort.location_name" class="mt-0.5 font-semibold text-foreground">{{ cohort.location_name }}</p>
-                            <p v-if="cohort.location_address" class="text-muted-foreground">{{ cohort.location_address }}</p>
-                            <p v-if="!cohort.location_name && !cohort.location_address" class="mt-0.5 text-muted-foreground/60 italic">Lokasi belum diisi.</p>
-                        </template>
-                        <template v-else>
-                            <a
-                                v-if="cohort.meeting_url"
-                                :href="cohort.meeting_url"
-                                target="_blank"
-                                rel="noopener"
-                                class="mt-0.5 inline-flex items-center gap-1 font-semibold text-teal-700 hover:underline"
-                            >
-                                <ExternalLink class="size-3.5" /> Buka link meeting
-                            </a>
-                            <p v-else class="mt-0.5 text-muted-foreground/60 italic">Link meeting belum diisi.</p>
-                        </template>
-
-                        <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5">
-                            <a
-                                v-if="cohort.type === 'offline' && cohort.maps_url"
-                                :href="cohort.maps_url"
-                                target="_blank"
-                                rel="noopener"
-                                class="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
-                            >
-                                <ExternalLink class="size-3.5" /> Google Maps
-                            </a>
-                            <a
-                                v-if="cohort.materials_url"
-                                :href="cohort.materials_url"
-                                target="_blank"
-                                rel="noopener"
-                                class="inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline"
-                            >
-                                <FileText class="size-3.5" /> Materi kelas
-                            </a>
+                        <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Materi & info</p>
+                        <a
+                            v-if="cohort.materials_url"
+                            :href="cohort.materials_url"
+                            target="_blank"
+                            rel="noopener"
+                            class="mt-0.5 inline-flex items-center gap-1 font-semibold text-teal-700 hover:underline"
+                        >
+                            <FileText class="size-3.5" /> Materi kelas
+                        </a>
+                        <p v-else class="mt-0.5 text-muted-foreground/60 italic">Materi belum diisi.</p>
+                        <div class="mt-2">
                             <button
                                 type="button"
                                 class="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1 text-xs font-semibold text-teal-700 transition hover:border-teal-600/50 hover:bg-accent"
@@ -315,7 +331,7 @@ watch(() => props.id, () => load());
                             >
                                 <Check v-if="copiedInfo" class="size-3.5" />
                                 <Copy v-else class="size-3.5" />
-                                {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas' }}
+                                {{ copiedInfo ? 'Tersalin!' : 'Salin info kelas terpilih' }}
                             </button>
                         </div>
                     </div>
@@ -344,10 +360,59 @@ watch(() => props.id, () => load());
                 </div>
             </div>
 
-            <!-- Daftar hadir: satu angkatan = satu pertemuan, satu tombol per peserta. -->
+            <!-- Daftar kelas: satu blok per pertemuan; blok terpilih memegang absensi. -->
+            <div class="mt-6">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Kelas</p>
+                    <Button v-if="auth.can('cohorts.manage')" variant="outline" size="sm" @click="openCreateSession">
+                        <Plus class="mr-1 h-3.5 w-3.5" /> Tambah kelas
+                    </Button>
+                </div>
+
+                <div v-if="!sessionList.length" class="mt-3 rounded-xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
+                    Belum ada kelas. Tambahkan kelas pertama untuk mulai mencatat kehadiran.
+                </div>
+
+                <div v-else class="mt-3 grid gap-2 md:grid-cols-2">
+                    <button
+                        v-for="session in sessionList"
+                        :key="session.id"
+                        type="button"
+                        class="rounded-xl border px-4 py-3 text-left transition"
+                        :class="session.id === selectedSessionId
+                            ? 'border-teal-600 bg-teal-600/5 ring-1 ring-teal-600'
+                            : 'border-border bg-card hover:border-teal-600/50'"
+                        @click="selectedSessionId = session.id"
+                    >
+                        <div class="flex items-start justify-between gap-2">
+                            <p class="min-w-0 truncate text-sm font-semibold text-foreground">{{ session.title }}</p>
+                            <Badge variant="secondary" class="shrink-0">
+                                {{ session.type === 'online' ? 'Online' : 'Offline' }}
+                            </Badge>
+                        </div>
+                        <p class="mt-1 text-xs text-muted-foreground">
+                            {{ session.scheduled_at ? fmtDateTime(session.scheduled_at) + ' WIB' : 'Jadwal belum diatur' }}
+                            · {{ session.attendances_count }} hadir
+                        </p>
+                        <p v-if="session.type === 'offline' && session.location_name" class="mt-0.5 truncate text-xs text-muted-foreground">
+                            {{ session.location_name }}
+                        </p>
+                        <div v-if="auth.can('cohorts.manage')" class="mt-2 flex gap-1.5">
+                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs" @click.stop="openEditSession(session)">
+                                <Pencil class="mr-1 h-3 w-3" /> Ubah
+                            </Button>
+                            <Button variant="ghost" size="sm" class="h-7 px-2 text-xs text-destructive" @click.stop="deleteTarget = session; deleteError = ''">
+                                <Trash2 class="mr-1 h-3 w-3" /> Hapus
+                            </Button>
+                        </div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Daftar hadir: kehadiran dicatat per kelas terpilih di atas. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
-                <div v-if="mainSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
-                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Daftar hadir</p>
+                <div v-if="selectedSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
+                    <p class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Daftar hadir — {{ selectedSession.title }}</p>
                     <!-- Progres yang terlihat mendorong pencatatan sampai tuntas;
                          setelah kelas usai ia menjadi rekap. -->
                     <div class="flex items-center gap-2.5">
@@ -391,17 +456,17 @@ watch(() => props.id, () => load());
                             </td>
                             <td class="px-2 py-3 text-center sm:px-3">
                                 <button
-                                    v-if="mainSession"
+                                    v-if="selectedSession"
                                     type="button"
                                     :disabled="!canToggle(row)"
                                     class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed sm:px-3.5"
-                                    :class="isHadir(row, mainSession)
+                                    :class="isHadir(row, selectedSession)
                                         ? 'border-teal-600 bg-teal-600 text-white'
                                         : 'border-border text-muted-foreground hover:border-teal-600/50 hover:text-foreground'"
-                                    @click="toggleAttendance(row, mainSession)"
+                                    @click="toggleAttendance(row, selectedSession)"
                                 >
-                                    <Check v-if="isHadir(row, mainSession)" class="size-3.5" />
-                                    {{ isHadir(row, mainSession) ? 'Hadir' : 'Tandai hadir' }}
+                                    <Check v-if="isHadir(row, selectedSession)" class="size-3.5" />
+                                    {{ isHadir(row, selectedSession) ? 'Hadir' : 'Tandai hadir' }}
                                 </button>
                             </td>
                             <td class="hidden px-3 py-3 sm:table-cell">
@@ -477,6 +542,25 @@ watch(() => props.id, () => load());
         </Dialog>
 
         <CohortFormDialog v-model:open="editOpen" :cohort="cohort" @saved="load" />
+
+        <SessionFormDialog
+            v-model:open="sessionFormOpen"
+            :cohort-id="cohort?.id"
+            :session="sessionBeingEdited"
+            @saved="load"
+        />
+
+        <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
+            <p class="text-sm text-muted-foreground">
+                Menghapus "{{ deleteTarget?.title }}" juga menghapus {{ deleteTarget?.attendances_count ?? 0 }}
+                catatan kehadiran kelas ini. Tindakan ini tidak bisa dibatalkan.
+            </p>
+            <Alert v-if="deleteError" class="mt-3">{{ deleteError }}</Alert>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="deleteTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" @click="confirmDeleteSession">Hapus</Button>
+            </div>
+        </Dialog>
 
     </div>
 </template>
