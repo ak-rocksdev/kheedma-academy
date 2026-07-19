@@ -10,12 +10,6 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Alert } from '@/components/ui/alert';
 import { dateOnly, fmtDate, toDatetimeLocal } from '@/lib/format';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
-import LocationPicker from '@/components/LocationPicker.vue';
-
-const TYPE_OPTIONS = [
-    { value: 'offline', label: 'Offline (tatap muka)' },
-    { value: 'online', label: 'Online' },
-];
 
 const props = defineProps({
     /** Cohort row (API shape) to edit; null opens the dialog in create mode. */
@@ -64,11 +58,6 @@ function setDuration(value) {
     if (value) duration.value = value;
 }
 
-/** ToggleGroup can deselect to empty; class type is mandatory, so ignore that. */
-function setType(value) {
-    if (value) form.value.type = value;
-}
-
 async function loadOptions() {
     optionsError.value = '';
     try {
@@ -95,14 +84,6 @@ watch(open, (isOpen) => {
         mentor_id: props.cohort?.mentor?.id ?? '',
         registration_opens_at: toDatetimeLocal(props.cohort?.registration_opens_at),
         registration_closes_at: toDatetimeLocal(props.cohort?.registration_closes_at),
-        type: props.cohort?.type ?? 'offline',
-        location: {
-            name: props.cohort?.location_name ?? '',
-            address: props.cohort?.location_address ?? '',
-            lat: props.cohort?.location_lat ?? null,
-            lng: props.cohort?.location_lng ?? null,
-        },
-        meeting_url: props.cohort?.meeting_url ?? '',
         materials_url: props.cohort?.materials_url ?? '',
     };
 
@@ -132,12 +113,6 @@ async function save() {
             mentor_id: form.value.mentor_id || null,
             registration_opens_at: form.value.registration_opens_at || null,
             registration_closes_at: form.value.registration_closes_at || null,
-            type: form.value.type,
-            location_name: form.value.location.name || null,
-            location_address: form.value.location.address || null,
-            location_lat: form.value.location.lat === '' ? null : form.value.location.lat ?? null,
-            location_lng: form.value.location.lng === '' ? null : form.value.location.lng ?? null,
-            meeting_url: form.value.meeting_url || null,
             materials_url: form.value.materials_url || null,
         };
         if (payload.program_id === '') payload.program_id = null;
@@ -229,34 +204,6 @@ async function save() {
             <p v-if="formErrors.registration_closes_at" class="text-xs text-destructive">{{ formErrors.registration_closes_at[0] }}</p>
             </div>
             <div class="mt-3 space-y-3 md:mt-0">
-            <div>
-                <label class="text-xs text-muted-foreground">Tipe kelas</label>
-                <ToggleGroup
-                    type="single"
-                    variant="outline"
-                    class="mt-1.5 w-full"
-                    :model-value="form.type"
-                    @update:model-value="setType"
-                >
-                    <ToggleGroupItem v-for="option in TYPE_OPTIONS" :key="option.value" :value="option.value" class="flex-1">
-                        {{ option.label }}
-                    </ToggleGroupItem>
-                </ToggleGroup>
-                <p v-if="formErrors.type" class="mt-1 text-xs text-destructive">{{ formErrors.type[0] }}</p>
-            </div>
-            <div v-if="form.type === 'offline'">
-                <label class="text-xs text-muted-foreground">Lokasi kelas</label>
-                <LocationPicker v-model="form.location" class="mt-1.5" />
-                <p v-if="formErrors.location_address" class="mt-1 text-xs text-destructive">{{ formErrors.location_address[0] }}</p>
-                <p v-if="formErrors.location_lat" class="mt-1 text-xs text-destructive">{{ formErrors.location_lat[0] }}</p>
-                <p v-if="formErrors.location_lng" class="mt-1 text-xs text-destructive">{{ formErrors.location_lng[0] }}</p>
-            </div>
-            <div v-else>
-                <label class="text-xs text-muted-foreground">Link meeting (Google Meet / Zoom)</label>
-                <Input v-model="form.meeting_url" placeholder="https://meet.google.com/…" class="mt-1.5" />
-                <p class="mt-1 text-xs text-muted-foreground">Opsional. Bisa kamu isi atau ubah kapan saja.</p>
-                <p v-if="formErrors.meeting_url" class="mt-1 text-xs text-destructive">{{ formErrors.meeting_url[0] }}</p>
-            </div>
             <div>
                 <label class="text-xs text-muted-foreground">Link materi (Google Drive)</label>
                 <Input v-model="form.materials_url" placeholder="https://drive.google.com/…" class="mt-1.5" />
