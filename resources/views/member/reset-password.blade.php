@@ -1,5 +1,5 @@
-<x-layouts.public title="Atur Ulang Kata Sandi"
-    description="Atur ulang kata sandi akun Kheedma Academy kamu.">
+<x-layouts.public title="Atur Ulang PIN"
+    description="Atur ulang PIN akun Kheedma Academy kamu.">
 
     @php
         $field = 'mt-1.5 w-full rounded-lg bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
@@ -12,7 +12,7 @@
             <div class="text-center">
                 <x-logo variant="stacked" class="mx-auto h-20" />
                 <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Akun</p>
-                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Atur ulang kata sandi.</h1>
+                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Atur ulang PIN.</h1>
             </div>
 
             <form method="POST" action="{{ route('member.password.update') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
@@ -28,22 +28,19 @@
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-teal-800">Kata sandi baru <span class="text-teal-800/50">(minimal 8 karakter)</span></label>
-                    <input id="password" name="password" type="password" autocomplete="new-password" required
-                           class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
-                           placeholder="••••••••">
+                    <span class="block text-sm font-medium text-teal-800">PIN baru <span class="text-teal-800/50">(6 digit angka)</span></span>
+                    <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
                     @error('password') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
                 <div>
-                    <label for="password_confirmation" class="block text-sm font-medium text-teal-800">Ulangi kata sandi baru</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" required
-                           class="{{ $field }} border border-teal-900/15" placeholder="••••••••">
+                    <span class="block text-sm font-medium text-teal-800">Ulangi PIN baru</span>
+                    <x-pin-input name="password_confirmation" autocomplete="new-password" />
                 </div>
 
                 <button type="submit"
                         class="inline-flex w-full items-center justify-center rounded-full bg-teal-700 px-7 py-3 text-sm font-semibold text-white shadow-md transition hover:bg-teal-800">
-                    Simpan Kata Sandi
+                    Simpan PIN Baru
                 </button>
             </form>
         </div>

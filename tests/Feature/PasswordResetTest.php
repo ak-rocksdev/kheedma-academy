@@ -45,11 +45,11 @@ class PasswordResetTest extends TestCase
         $this->post('/reset-password', [
             'token' => $token,
             'email' => $user->email,
-            'password' => 'sandi-baru-aman',
-            'password_confirmation' => 'sandi-baru-aman',
+            'password' => '135790',
+            'password_confirmation' => '135790',
         ])->assertRedirect('/masuk');
 
-        $this->assertTrue(Hash::check('sandi-baru-aman', $user->fresh()->password));
+        $this->assertTrue(Hash::check('135790', $user->fresh()->password));
     }
 
     public function test_invalid_token_is_rejected(): void
@@ -60,8 +60,8 @@ class PasswordResetTest extends TestCase
             ->post('/reset-password', [
                 'token' => 'token-palsu',
                 'email' => $user->email,
-                'password' => 'sandi-baru-aman',
-                'password_confirmation' => 'sandi-baru-aman',
+                'password' => '135790',
+                'password_confirmation' => '135790',
             ])->assertSessionHasErrors('email');
     }
 

@@ -7,7 +7,6 @@ use App\Models\Person;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class PersonController extends Controller
@@ -139,15 +138,19 @@ class PersonController extends Controller
 
     /**
      * Manage the person's participant login: deactivate/reactivate and reset
-     * the password (generated when none is supplied, shown once). Staff
-     * accounts are defensively unreachable here — they belong to Tim.
+     * the PIN (generated when none is supplied, shown once). Members use a
+     * 6-digit PIN stored in the ordinary password column; staff accounts are
+     * defensively unreachable here — they belong to Tim and keep real
+     * passwords.
      */
     public function updateAccount(Request $request, Person $person): JsonResponse
     {
         $data = $request->validate([
             'is_active' => ['sometimes', 'boolean'],
             'reset_password' => ['sometimes', 'boolean'],
-            'password' => ['sometimes', 'nullable', 'string', 'min:8'],
+            'password' => ['sometimes', 'nullable', 'digits:6'],
+        ], [
+            'password.digits' => 'PIN harus 6 digit angka.',
         ]);
 
         $user = $person->user;
@@ -165,7 +168,9 @@ class PersonController extends Controller
         $generated = null;
         if ($data['reset_password'] ?? false) {
             $supplied = filled($data['password'] ?? null);
-            $plain = $supplied ? $data['password'] : Str::password(12);
+            $plain = $supplied
+                ? $data['password']
+                : str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
             $user->password = Hash::make($plain);
             $generated = $supplied ? null : $plain;
         }

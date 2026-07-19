@@ -70,7 +70,7 @@ class PersonAccountTest extends TestCase
         $response = $this->actingAs($this->admin())
             ->patchJson("/api/admin/people/{$person->id}/account", ['reset_password' => true])
             ->assertOk()
-            ->assertJsonPath('generated_password', fn ($p) => is_string($p) && strlen($p) >= 8);
+            ->assertJsonPath('generated_password', fn ($p) => is_string($p) && preg_match('/^\d{6}$/', $p) === 1);
 
         $this->assertTrue(Hash::check($response->json('generated_password'), $user->fresh()->password));
     }
@@ -83,12 +83,12 @@ class PersonAccountTest extends TestCase
         $this->actingAs($this->admin())
             ->patchJson("/api/admin/people/{$person->id}/account", [
                 'reset_password' => true,
-                'password' => 'sandi-baru-aman',
+                'password' => '135790',
             ])
             ->assertOk()
             ->assertJsonPath('generated_password', null);
 
-        $this->assertTrue(Hash::check('sandi-baru-aman', $user->fresh()->password));
+        $this->assertTrue(Hash::check('135790', $user->fresh()->password));
     }
 
     public function test_short_manual_password_is_rejected(): void

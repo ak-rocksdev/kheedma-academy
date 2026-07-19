@@ -30,7 +30,7 @@ class CommunityJoinTest extends TestCase
             'name' => 'Siti Aminah',
             'phone' => '081298765432',
             'email' => 'siti@example.test',
-            'password' => 'rahasia-kuat',
+            'password' => '246810',
             'birth_date' => '2000-01-15',
             'gender' => 'male',
             'motivation' => 'Ingin serius belajar affiliate.',
@@ -172,7 +172,7 @@ class CommunityJoinTest extends TestCase
     /** A logged-in participant with a full intake profile (used by the confirmation tests). */
     private function participantWithProfile(array $personOverrides = []): User
     {
-        $user = User::factory()->create(['password' => Hash::make('rahasia-kuat')]);
+        $user = User::factory()->create(['password' => Hash::make('246810')]);
         $user->assignRole('participant');
         $person = Person::create([...[
             'name' => $user->name,

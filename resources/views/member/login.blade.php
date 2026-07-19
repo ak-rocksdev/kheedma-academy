@@ -33,9 +33,8 @@
                 </div>
 
                 <div>
-                    <label for="password" class="block text-sm font-medium text-teal-800">Kata sandi</label>
-                    <input id="password" name="password" type="password" autocomplete="current-password" required
-                           class="{{ $field }} border border-teal-900/15" placeholder="••••••••">
+                    <span class="block text-sm font-medium text-teal-800">PIN <span class="text-teal-800/50">(6 digit)</span></span>
+                    <x-pin-input name="password" autocomplete="current-password" :invalid="$errors->has('password')" />
                 </div>
 
                 <div class="flex items-center justify-between text-sm">
@@ -43,7 +42,7 @@
                         <input type="checkbox" name="remember" value="1" class="rounded border-teal-900/20 text-teal-700 focus:ring-teal-600/30">
                         Ingat saya
                     </label>
-                    <a href="{{ route('member.password.request') }}" class="font-medium text-teal-700 hover:text-orange-600">Lupa kata sandi?</a>
+                    <a href="{{ route('member.password.request') }}" class="font-medium text-teal-700 hover:text-orange-600">Lupa PIN?</a>
                 </div>
 
                 <button type="submit"

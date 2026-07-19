@@ -42,10 +42,10 @@ class MemberPasswordController extends Controller
         $data = $request->validate([
             'token' => ['required', 'string'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => ['required', 'digits:6', 'confirmed'],
         ], [
-            'password.min' => 'Kata sandi minimal 8 karakter.',
-            'password.confirmed' => 'Konfirmasi kata sandi tidak cocok.',
+            'password.digits' => 'PIN harus 6 digit angka.',
+            'password.confirmed' => 'Konfirmasi PIN tidak cocok.',
         ]);
 
         $status = Password::reset(

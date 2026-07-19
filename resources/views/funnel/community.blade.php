@@ -227,10 +227,9 @@
 
                 @guest
                     <div>
-                        <label for="password" class="block text-sm font-medium text-teal-800">Kata sandi <span class="text-teal-800/50">(minimal 8 karakter)</span></label>
-                        <input id="password" name="password" type="password" autocomplete="new-password"
-                               class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
-                               placeholder="••••••••">
+                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/50">(6 digit angka)</span></span>
+                        <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
+                        <p class="mt-1.5 text-xs text-teal-800/50">PIN dipakai untuk masuk ke akunmu. Jangan bagikan ke siapa pun.</p>
                         @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest

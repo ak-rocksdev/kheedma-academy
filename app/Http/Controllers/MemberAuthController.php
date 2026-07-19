@@ -36,7 +36,7 @@ class MemberAuthController extends Controller
 
         if (! Auth::attempt($credentials, $request->boolean('remember'))) {
             throw ValidationException::withMessages([
-                'email' => 'Email atau kata sandi salah.',
+                'email' => 'Email atau PIN salah.',
             ]);
         }
 

@@ -47,7 +47,7 @@ class PublicApplyTest extends TestCase
             'name' => 'Budi Santoso',
             'phone' => '081234567890',
             'email' => 'budi@example.test',
-            'password' => 'rahasia-kuat',
+            'password' => '246810',
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',

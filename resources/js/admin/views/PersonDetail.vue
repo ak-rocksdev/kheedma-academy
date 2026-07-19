@@ -7,7 +7,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Dialog } from '@/components/ui/dialog';
-import { PasswordInput } from '@/components/ui/password-input';
+import PinInput from '@/components/PinInput.vue';
 import { useAuthStore } from '@/stores/auth';
 import { statusVariant, statusLabel } from '@/lib/status';
 import { fmtDate } from '@/lib/format';
@@ -324,18 +324,21 @@ async function submitReset() {
                 @confirm="confirmReject"
             />
 
-            <!-- Reset password dialog (generated password is shown once) -->
-            <Dialog v-model:open="resetDialogOpen" title="Reset Kata Sandi">
+            <!-- Reset PIN dialog (generated PIN is shown once). "PIN" is UI
+                 vocabulary only — the payload still travels as `password`. -->
+            <Dialog v-model:open="resetDialogOpen" title="Reset PIN">
                 <div v-if="generatedPassword" class="space-y-3">
-                    <p class="text-sm text-foreground">Kata sandi direset. Catat, hanya ditampilkan sekali:</p>
-                    <code class="block rounded-md border border-border bg-background px-3 py-2 text-sm">{{ generatedPassword }}</code>
+                    <p class="text-sm text-foreground">PIN direset. Catat dan sampaikan ke peserta, hanya ditampilkan sekali:</p>
+                    <code class="block rounded-md border border-border bg-background px-3 py-2 text-center text-lg font-semibold tracking-[0.4em]">{{ generatedPassword }}</code>
                     <div class="flex justify-end">
                         <Button size="sm" @click="resetDialogOpen = false">Selesai</Button>
                     </div>
                 </div>
                 <form v-else class="space-y-3" @submit.prevent="submitReset">
                     <div>
-                        <PasswordInput v-model="resetPassword" autocomplete="new-password" placeholder="Kata sandi baru (kosongkan untuk generate)" />
+                        <label class="text-xs text-muted-foreground">PIN baru (6 digit)</label>
+                        <PinInput v-model="resetPassword" class="mt-1.5" />
+                        <p class="mt-1.5 text-xs text-muted-foreground">Kosongkan untuk membuat PIN acak.</p>
                         <p v-if="resetErrors.password" class="mt-1 text-xs text-destructive">{{ resetErrors.password[0] }}</p>
                         <p v-if="resetErrors.account" class="mt-1 text-xs text-destructive">{{ resetErrors.account[0] }}</p>
                     </div>

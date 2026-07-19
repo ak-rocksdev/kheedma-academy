@@ -106,10 +106,36 @@ function initBirthDatePicker() {
 
     picker.addEventListener('duetChange', (event) => {
         hidden.value = event.detail.value ?? '';
+        syncBirthDateEcho(hidden.value);
         // Feed the live (Precognition) layer, which no longer sees a native
         // date input for this field.
         hidden.form?.precognitionValidator?.validate('birth_date', hidden.value);
     });
+
+    syncBirthDateEcho(hidden.value);
+}
+
+/**
+ * Helper line under the birth-date field: echoes a valid date back in words
+ * ("25 Januari 1986") so a day/month mix-up is caught at a glance; falls back
+ * to the instruction text while empty.
+ */
+function syncBirthDateEcho(isoValue) {
+    const echo = document.querySelector('[data-birth-date-echo]');
+    if (!echo) {
+        return;
+    }
+
+    const matches = (isoValue ?? '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (matches) {
+        echo.textContent = `${parseInt(matches[3], 10)} ${ID_MONTH_NAMES[parseInt(matches[2], 10) - 1]} ${matches[1]}`;
+        echo.classList.add('font-medium', 'text-teal-700');
+        echo.classList.remove('text-teal-800/60');
+    } else {
+        echo.textContent = echo.dataset.defaultText;
+        echo.classList.remove('font-medium', 'text-teal-700');
+        echo.classList.add('text-teal-800/60');
+    }
 }
 
 function configureBirthDatePicker(picker) {
@@ -172,7 +198,8 @@ const EYE_OFF_ICON =
     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.4 10.4 0 0 1 12 5c6.5 0 10 7 10 7a13.2 13.2 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.5 13.5 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>';
 
 function initPasswordToggles() {
-    document.querySelectorAll('input[type="password"]').forEach((input) => {
+    // PIN boxes ([data-pin-box]) carry their own shared toggle.
+    document.querySelectorAll('input[type="password"]:not([data-pin-box])').forEach((input) => {
         const wrapper = document.createElement('div');
         wrapper.className = 'password-field';
         // The input's own top margin (label spacing) must move to the wrapper,
@@ -195,6 +222,85 @@ function initPasswordToggles() {
             toggle.setAttribute('aria-label', show ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi');
         });
         wrapper.appendChild(toggle);
+    });
+}
+
+/**
+ * 6-digit PIN boxes (<x-pin-input>): auto-advance, backspace steps back,
+ * paste distributes, arrows navigate, one eye toggle reveals all boxes. The
+ * composed value lives in the component's hidden input (name="password"), so
+ * the server never knows the difference. Live validation fires only when the
+ * PIN is complete or fully cleared — no noisy errors mid-entry.
+ */
+function initPinInputs() {
+    document.querySelectorAll('[data-pin-input]').forEach((root) => {
+        const boxes = [...root.querySelectorAll('[data-pin-box]')];
+        const hidden = root.querySelector('input[type="hidden"]');
+        const toggle = root.querySelector('[data-pin-toggle]');
+
+        function sync() {
+            hidden.value = boxes.map((box) => box.value).join('');
+            if (hidden.value.length === 6 || hidden.value.length === 0) {
+                hidden.form?.precognitionValidator?.validate(hidden.name, hidden.value);
+            }
+        }
+
+        /** Write a digit string into the boxes starting at `from`. */
+        function fill(digits, from) {
+            digits.split('').forEach((digit, offset) => {
+                const box = boxes[from + offset];
+                if (box) box.value = digit;
+            });
+            const next = Math.min(from + digits.length, boxes.length - 1);
+            boxes[next].focus();
+            sync();
+        }
+
+        boxes.forEach((box, index) => {
+            box.addEventListener('input', () => {
+                const digits = box.value.replace(/\D/g, '');
+                box.value = '';
+                if (digits) {
+                    fill(digits.slice(0, boxes.length - index), index);
+                } else {
+                    sync();
+                }
+            });
+
+            box.addEventListener('keydown', (event) => {
+                if (event.key === 'Backspace' && box.value === '' && index > 0) {
+                    boxes[index - 1].value = '';
+                    boxes[index - 1].focus();
+                    sync();
+                    event.preventDefault();
+                } else if (event.key === 'ArrowLeft' && index > 0) {
+                    boxes[index - 1].focus();
+                    event.preventDefault();
+                } else if (event.key === 'ArrowRight' && index < boxes.length - 1) {
+                    boxes[index + 1].focus();
+                    event.preventDefault();
+                }
+            });
+
+            box.addEventListener('paste', (event) => {
+                const digits = (event.clipboardData?.getData('text') ?? '').replace(/\D/g, '');
+                if (digits) {
+                    fill(digits.slice(0, boxes.length), 0);
+                }
+                event.preventDefault();
+            });
+
+            // Focusing a box selects its digit so typing overwrites it.
+            box.addEventListener('focus', () => box.select());
+        });
+
+        toggle?.addEventListener('click', () => {
+            const show = boxes[0].type === 'password';
+            boxes.forEach((box) => (box.type = show ? 'tel' : 'password'));
+            toggle.querySelector('[data-pin-eye]').classList.toggle('hidden', show);
+            toggle.querySelector('[data-pin-eye-off]').classList.toggle('hidden', !show);
+            toggle.setAttribute('aria-label', show ? 'Sembunyikan PIN' : 'Tampilkan PIN');
+        });
     });
 }
 
@@ -343,8 +449,8 @@ function initLiveValidation() {
 
         const textLike = 'input[type="text"], input[type="tel"], input[type="email"], input[type="date"], input[type="number"], input[type="password"], textarea';
         form.querySelectorAll(textLike).forEach((input) => {
-            if (input.name === 'website') {
-                return; // honeypot — never validated
+            if (input.name === 'website' || !input.name) {
+                return; // honeypot — never validated; nameless = PIN boxes (their hidden field validates)
             }
             // The current value must be passed along: the validator dedupes on
             // it, and a bare validate(name) never fires a request.
@@ -435,6 +541,7 @@ function initLockModal() {
 
 initRegionSelects();
 initBirthDatePicker();
+initPinInputs();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

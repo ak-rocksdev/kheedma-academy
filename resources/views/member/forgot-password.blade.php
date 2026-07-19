@@ -1,5 +1,5 @@
-<x-layouts.public title="Lupa Kata Sandi"
-    description="Atur ulang kata sandi akun Kheedma Academy kamu.">
+<x-layouts.public title="Lupa PIN"
+    description="Atur ulang PIN akun Kheedma Academy kamu.">
 
     @php
         $field = 'mt-1.5 w-full rounded-lg bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20';
@@ -12,9 +12,9 @@
             <div class="text-center">
                 <x-logo variant="stacked" class="mx-auto h-20" />
                 <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Akun</p>
-                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Lupa kata sandi?</h1>
+                <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900">Lupa PIN?</h1>
                 <p class="mx-auto mt-4 text-sm leading-relaxed text-teal-800/70">
-                    Masukkan emailmu. Kami kirimkan tautan untuk mengatur ulang kata sandi.
+                    Masukkan emailmu. Kami kirimkan tautan untuk mengatur ulang PIN.
                 </p>
             </div>
 
@@ -42,7 +42,7 @@
             </form>
 
             <p class="mt-6 text-center text-sm text-teal-800/60">
-                Ingat kata sandimu? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk</a>
+                Ingat PIN-mu? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk</a>
             </p>
         </div>
     </section>

@@ -47,7 +47,7 @@ class AccountAtApplicationTest extends TestCase
             'name' => 'Budi Santoso',
             'phone' => '081234567890',
             'email' => 'budi@example.test',
-            'password' => 'rahasia-kuat',
+            'password' => '246810',
             'province_code' => '32',
             'city_code' => '3273',
             'birth_date' => '2000-01-15',
@@ -227,7 +227,7 @@ class AccountAtApplicationTest extends TestCase
         $this->get("/program/{$program->slug}/daftar?baru=1")
             ->assertOk()
             ->assertSee('Kirim Pendaftaran')
-            ->assertSee('Buat kata sandi');
+            ->assertSee('Buat PIN');
     }
 
     public function test_login_from_the_gate_returns_to_the_apply_form(): void
@@ -239,7 +239,7 @@ class AccountAtApplicationTest extends TestCase
         $applyUrl = "/program/{$program->slug}/daftar";
         $this->get("/masuk?redirect={$applyUrl}");
 
-        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => 'rahasia-kuat'])
+        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => '246810'])
             ->assertRedirect($applyUrl);
     }
 
@@ -251,7 +251,7 @@ class AccountAtApplicationTest extends TestCase
 
         $this->get('/masuk?redirect=https://evil.example');
 
-        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => 'rahasia-kuat'])
+        $this->post('/masuk', ['email' => 'budi@example.test', 'password' => '246810'])
             ->assertRedirect('/akun');
     }
 

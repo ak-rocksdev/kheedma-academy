@@ -242,7 +242,10 @@
                     ></duet-date-picker>
                     <input type="hidden" name="birth_date" id="birth_date_value"
                            value="{{ old('birth_date', $person?->birth_date?->toDateString()) }}">
-                    <p class="mt-1.5 text-xs text-teal-800/60">Ketik langsung (contoh: 17-08-1998) atau buka kalender.</p>
+                    {{-- Helper doubles as a humanized echo ("25 Januari 1986") once a
+                         valid date is in — catches day/month mix-ups at a glance. --}}
+                    <p data-birth-date-echo data-default-text="Ketik langsung (contoh: 17-08-1998) atau buka kalender."
+                       class="mt-1.5 text-xs text-teal-800/60">Ketik langsung (contoh: 17-08-1998) atau buka kalender.</p>
                     @error('birth_date') <p data-server-error-for="birth_date" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -264,11 +267,9 @@
 
                 @guest
                     <div>
-                        <label for="password" class="block text-sm font-medium text-teal-800">Buat kata sandi <span class="text-teal-800/50">(minimal 8 karakter)</span></label>
-                        <input id="password" name="password" type="password" autocomplete="new-password"
-                               class="{{ $field }} @error('password') border border-red-400 @else border border-teal-900/15 @enderror"
-                               placeholder="••••••••">
-                        <p class="mt-1.5 text-xs text-teal-800/50">Akunmu dibuat otomatis untuk memantau status pendaftaran dan mengubah datamu nanti.</p>
+                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/50">(6 digit angka)</span></span>
+                        <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
+                        <p class="mt-1.5 text-xs text-teal-800/50">PIN dipakai untuk masuk memantau status pendaftaran dan mengubah datamu nanti. Jangan bagikan ke siapa pun.</p>
                         @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest
