@@ -22,12 +22,20 @@ class Program extends Model
         'thumbnail_path',
         'status',
         'selection_mode',
+        'min_average_score',
     ];
 
     /** Route-model binding uses the slug (public URLs never expose ids). */
     public function getRouteKeyName(): string
     {
         return 'slug';
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'min_average_score' => 'integer',
+        ];
     }
 
     public function isAffiliate(): bool
