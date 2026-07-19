@@ -109,14 +109,32 @@ class AssignmentScoringTest extends TestCase
     public function test_average_rounds_half_up_to_one_decimal(): void
     {
         [$program, $cohort, $person, $enrollment] = $this->programWithEnrollment();
-        foreach ([74, 75, 76] as $score) {
+        foreach ([74, 75, 75, 75] as $score) {
             $assignment = $this->assignmentIn($cohort);
             AssignmentSubmission::factory()->graded($score)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
         }
 
-        // 225 / 3 = 75.0 exactly; and 74+75 = 149/2 = 74.5 stays 74.5.
-        $this->assertSame(75.0, $this->scoring->averageFor($person, $program));
-        $this->assertTrue($this->scoring->passes($person, $program));
+        // (74 + 75 + 75 + 75) / 4 = 74.75, which rounds half-up to 74.8 -
+        // and must still fall short of a 75 gate.
+        $this->assertSame(74.8, $this->scoring->averageFor($person, $program));
+        $this->assertFalse($this->scoring->passes($person, $program));
+    }
+
+    public function test_below_threshold_average_does_not_pass(): void
+    {
+        [$program, $cohort, $person, $enrollment] = $this->programWithEnrollment(threshold: 75);
+        $assignment = $this->assignmentIn($cohort);
+        AssignmentSubmission::factory()->graded(74)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertSame(74.0, $this->scoring->averageFor($person, $program));
+        $this->assertFalse($this->scoring->passes($person, $program));
+
+        // Exactly at the threshold does pass.
+        [$programAtBar, $cohortAtBar, $personAtBar, $enrollmentAtBar] = $this->programWithEnrollment(threshold: 75);
+        $assignmentAtBar = $this->assignmentIn($cohortAtBar);
+        AssignmentSubmission::factory()->graded(75)->create(['assignment_id' => $assignmentAtBar->id, 'enrollment_id' => $enrollmentAtBar->id]);
+
+        $this->assertTrue($this->scoring->passes($personAtBar, $programAtBar));
     }
 
     public function test_dropped_enrollment_is_excluded(): void

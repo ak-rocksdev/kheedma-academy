@@ -15,6 +15,9 @@ use App\Models\Program;
  */
 class AssignmentScoring
 {
+    /**
+     * Score of the latest GRADED submission; null when never graded.
+     */
     public function effectiveScore(Assignment $assignment, Enrollment $enrollment): ?int
     {
         return $assignment->submissions()
@@ -24,6 +27,9 @@ class AssignmentScoring
             ->value('score');
     }
 
+    /**
+     * 'belum_dikerjakan' | 'menunggu_dinilai' | 'dinilai'
+     */
     public function submissionState(Assignment $assignment, Enrollment $enrollment): string
     {
         $latest = $assignment->submissions()
@@ -38,6 +44,13 @@ class AssignmentScoring
         return $latest->score === null ? 'menunggu_dinilai' : 'dinilai';
     }
 
+    /**
+     * One submissions query per enrollment: fetches all of the enrollment's
+     * graded submissions in a single call, groups them by assignment, and
+     * keeps the last (highest id) submission per assignment as the
+     * effective score — instead of calling effectiveScore() once per
+     * assignment.
+     */
     public function averageFor(Person $person, Program $program): ?float
     {
         $enrollments = $person->enrollments()
@@ -48,9 +61,16 @@ class AssignmentScoring
 
         $scores = [];
         foreach ($enrollments as $enrollment) {
+            $effectiveScores = $enrollment->assignmentSubmissions()
+                ->whereNotNull('score')
+                ->orderBy('id')
+                ->get()
+                ->groupBy('assignment_id')
+                ->map(fn ($submissions) => $submissions->last()->score);
+
             foreach ($enrollment->cohort->sessions as $session) {
                 if ($session->assignment !== null) {
-                    $scores[] = $this->effectiveScore($session->assignment, $enrollment) ?? 0;
+                    $scores[] = $effectiveScores->get($session->assignment->id, 0);
                 }
             }
         }
@@ -62,6 +82,9 @@ class AssignmentScoring
         return round(array_sum($scores) / count($scores), 1);
     }
 
+    /**
+     * Threshold set AND average non-null AND average >= threshold (same rounded value).
+     */
     public function passes(Person $person, Program $program): bool
     {
         if ($program->min_average_score === null) {
