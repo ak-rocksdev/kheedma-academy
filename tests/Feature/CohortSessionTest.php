@@ -48,7 +48,7 @@ class CohortSessionTest extends TestCase
         [$cohort] = $this->cohortWithEnrollment();
 
         $created = $this->actingAs($this->admin())
-            ->postJson("/api/admin/cohorts/{$cohort->id}/sessions", ['title' => 'Sesi 1: Dasar', 'position' => 1])
+            ->postJson("/api/admin/cohorts/{$cohort->id}/sessions", ['title' => 'Sesi 1: Dasar', 'position' => 1, 'type' => 'online'])
             ->assertCreated()
             ->json('session.id');
 
@@ -137,5 +137,63 @@ class CohortSessionTest extends TestCase
 
         $this->assertSame('8 Agustus 2026 pukul 09.30 WIB', $session->scheduledLabel());
         $this->assertNull(CohortSession::factory()->for($cohort)->create(['scheduled_at' => null])->scheduledLabel());
+    }
+
+    public function test_offline_session_requires_location_fields(): void
+    {
+        $cohort = Cohort::factory()->create();
+
+        $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+            'title' => 'Kelas 1: Riset Produk',
+            'type' => 'offline',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['location_address', 'location_lat', 'location_lng']);
+    }
+
+    public function test_online_session_stores_venue_and_returns_it(): void
+    {
+        $cohort = Cohort::factory()->create();
+
+        $res = $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+            'title' => 'Kelas 2: Konten',
+            'scheduled_at' => '2026-08-15T09:30',
+            'type' => 'online',
+            'meeting_url' => 'https://meet.google.com/abc-defg-hij',
+        ])->assertCreated();
+
+        $res->assertJsonPath('session.type', 'online')
+            ->assertJsonPath('session.meeting_url', 'https://meet.google.com/abc-defg-hij');
+    }
+
+    public function test_session_meeting_url_must_be_https(): void
+    {
+        $cohort = Cohort::factory()->create();
+
+        $this->actingAs($this->admin())->postJson("/api/admin/cohorts/{$cohort->id}/sessions", [
+            'title' => 'Kelas',
+            'type' => 'online',
+            'meeting_url' => 'http://insecure.example',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['meeting_url']);
+    }
+
+    public function test_legacy_session_without_location_can_update_title_alone(): void
+    {
+        $cohort = Cohort::factory()->create();
+        $session = CohortSession::factory()->for($cohort)->create(['type' => 'offline']);
+
+        $this->actingAs($this->admin())->patchJson("/api/admin/sessions/{$session->id}", ['title' => 'Judul Baru'])
+            ->assertOk()->assertJsonPath('session.title', 'Judul Baru');
+    }
+
+    public function test_mentor_cannot_manage_classes(): void
+    {
+        // Class CRUD sits under cohorts.manage (admin); mentors only record
+        // attendance (spec 2026-07-18). Roles are already seeded by setUp().
+        $mentor = User::factory()->create();
+        $mentor->assignRole('mentor');
+        $cohort = Cohort::factory()->create();
+
+        $this->actingAs($mentor)
+            ->postJson("/api/admin/cohorts/{$cohort->id}/sessions", ['title' => 'Kelas', 'type' => 'online'])
+            ->assertForbidden();
     }
 }

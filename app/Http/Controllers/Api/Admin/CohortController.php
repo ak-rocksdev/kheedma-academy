@@ -8,7 +8,6 @@ use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class CohortController extends Controller
@@ -53,6 +52,13 @@ class CohortController extends Controller
                 'scheduled_at' => $s->scheduled_at?->toIso8601String(),
                 'position' => (int) $s->position,
                 'attendances_count' => (int) $s->attendances_count,
+                'type' => $s->type,
+                'location_name' => $s->location_name,
+                'location_address' => $s->location_address,
+                'location_lat' => $s->location_lat,
+                'location_lng' => $s->location_lng,
+                'meeting_url' => $s->meeting_url,
+                'maps_url' => $s->mapsUrl(),
             ]),
             'roster' => $roster,
         ]);
@@ -62,14 +68,8 @@ class CohortController extends Controller
     {
         $cohort = Cohort::create($this->validated($request));
 
-        // Launch decision 2026-07-15: one cohort = one meeting. The single
-        // session is seeded invisibly so attendance works the moment the
-        // cohort exists; session management stays dormant in the UI.
-        $cohort->sessions()->create([
-            'title' => 'Pertemuan',
-            'scheduled_at' => $cohort->start_date,
-            'position' => 1,
-        ]);
+        // Spec 2026-07-18: cohort = batch. Classes (sessions) are created
+        // explicitly by the admin, one per meeting.
 
         return response()->json([
             'cohort' => $this->row($cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments')),
@@ -105,19 +105,6 @@ class CohortController extends Controller
     {
         $creating = $cohort === null;
 
-        // Effective type must consider partial updates: a raw-API update that
-        // omits `type` on an offline cohort must still require the location
-        // fields, so this reads request-then-existing-then-default instead of
-        // the string 'required_if:type,offline' (which only reads request input).
-        $isOffline = fn () => $request->input('type', $cohort?->type ?? 'offline') === 'offline';
-
-        // Cohorts created before this feature have no location. An update that
-        // doesn't touch type/location fields must not brick, so the requiredIf
-        // trio only runs when one of those fields is actually present in the
-        // request (or type is being switched).
-        $locationTouched = $request->hasAny(['type', 'location_address', 'location_lat', 'location_lng']);
-        $locationRequiredness = $locationTouched ? [Rule::requiredIf($isOffline), 'nullable'] : ['nullable'];
-
         $data = $request->validate([
             'name' => $creating
                 ? ['required', 'string', 'max:255']
@@ -151,17 +138,7 @@ class CohortController extends Controller
             ],
             'registration_opens_at' => ['sometimes', 'nullable', 'date'],
             'registration_closes_at' => ['sometimes', 'nullable', 'date'],
-            'type' => ['sometimes', 'required', Rule::in(['offline', 'online'])],
-            'location_name' => ['nullable', 'string', 'max:255'],
-            'location_address' => [...$locationRequiredness, 'string', 'max:500'],
-            'location_lat' => [...$locationRequiredness, 'numeric', 'between:-90,90'],
-            'location_lng' => [...$locationRequiredness, 'numeric', 'between:-180,180'],
-            'meeting_url' => ['nullable', 'url:https', 'max:500'],
             'materials_url' => ['nullable', 'url:https', 'max:500'],
-        ], [
-            'location_address.required_if' => 'Kelas offline butuh alamat lokasi.',
-            'location_lat.required_if' => 'Pilih titik lokasi dari pencarian tempat.',
-            'location_lng.required_if' => 'Pilih titik lokasi dari pencarian tempat.',
         ]);
 
         if (! empty($data['registration_closes_at']) && strlen($data['registration_closes_at']) === 10) {
@@ -183,7 +160,7 @@ class CohortController extends Controller
     }
 
     /**
-     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool,type:string,location_name:?string,location_address:?string,location_lat:?float,location_lng:?float,meeting_url:?string,materials_url:?string}
+     * @return array{id:int,name:string,program:?array{id:int,name:string},start_date:?string,end_date:?string,status:string,mentor:?array{id:int,name:string},enrollments_count:int,registration_opens_at:?string,registration_closes_at:?string,registration_open:bool,materials_url:?string}
      */
     private function row(Cohort $c): array
     {
@@ -199,15 +176,6 @@ class CohortController extends Controller
             'registration_opens_at' => $c->registration_opens_at?->toIso8601String(),
             'registration_closes_at' => $c->registration_closes_at?->toIso8601String(),
             'registration_open' => $c->isOpenForRegistration(),
-            // NOTE: type/location_*/meeting_url/maps_url are gone from Cohort as of
-            // the venue-to-session move (2026-07-19) — venue now lives on
-            // CohortSession. Re-exposing it here is deferred to the API rework task.
-            'type' => $c->type,
-            'location_name' => $c->location_name,
-            'location_address' => $c->location_address,
-            'location_lat' => $c->location_lat,
-            'location_lng' => $c->location_lng,
-            'meeting_url' => $c->meeting_url,
             'materials_url' => $c->materials_url,
         ];
     }

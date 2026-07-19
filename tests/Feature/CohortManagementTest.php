@@ -147,7 +147,7 @@ class CohortManagementTest extends TestCase
             ->assertJsonValidationErrors('registration_closes_at');
     }
 
-    public function test_creating_a_cohort_seeds_one_default_session(): void
+    public function test_creating_a_cohort_seeds_no_sessions(): void
     {
         $program = Program::factory()->active()->create();
 
@@ -159,9 +159,8 @@ class CohortManagementTest extends TestCase
             ])
             ->assertCreated();
 
-        $cohort = Cohort::where('name', 'Angkatan Sederhana')->sole();
-        $this->assertCount(1, $cohort->sessions);
-        $this->assertSame('2026-09-01', $cohort->sessions->first()->scheduled_at?->toDateString());
+        $cohortId = Cohort::where('name', 'Angkatan Sederhana')->sole()->id;
+        $this->assertSame(0, Cohort::find($cohortId)->sessions()->count());
     }
 
     public function test_cohort_with_enrollments_cannot_be_deleted(): void
@@ -222,91 +221,6 @@ class CohortManagementTest extends TestCase
             ->assertNoContent();
     }
 
-    public function test_offline_cohort_requires_location_fields(): void
-    {
-        $program = Program::factory()->active()->create();
-
-        $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', [
-                'name' => 'Angkatan Offline',
-                'program_id' => $program->id,
-                'type' => 'offline',
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors(['location_address', 'location_lat', 'location_lng']);
-    }
-
-    public function test_online_cohort_can_be_created_with_only_meeting_url(): void
-    {
-        $program = Program::factory()->active()->create();
-
-        $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', [
-                'name' => 'Angkatan Online',
-                'program_id' => $program->id,
-                'type' => 'online',
-                'meeting_url' => 'https://meet.google.com/abc-defg-hij',
-            ])
-            ->assertCreated()
-            ->assertJsonPath('cohort.type', 'online')
-            ->assertJsonPath('cohort.meeting_url', 'https://meet.google.com/abc-defg-hij');
-    }
-
-    public function test_meeting_url_must_be_https(): void
-    {
-        $program = Program::factory()->active()->create();
-
-        $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', [
-                'name' => 'Angkatan Online',
-                'program_id' => $program->id,
-                'type' => 'online',
-                'meeting_url' => 'http://meet.google.com/abc-defg-hij',
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('meeting_url');
-    }
-
-    public function test_meeting_url_rejects_garbage_values(): void
-    {
-        $program = Program::factory()->active()->create();
-
-        $this->actingAs($this->admin())
-            ->postJson('/api/admin/cohorts', [
-                'name' => 'Angkatan Online',
-                'program_id' => $program->id,
-                'type' => 'online',
-                'meeting_url' => 'bukan-url',
-            ])
-            ->assertStatus(422)
-            ->assertJsonValidationErrors('meeting_url');
-    }
-
-    public function test_meeting_url_can_be_changed_later(): void
-    {
-        $cohort = Cohort::factory()->online()->create();
-
-        $this->actingAs($this->admin())
-            ->patchJson("/api/admin/cohorts/{$cohort->id}", [
-                'meeting_url' => 'https://zoom.us/j/123456789',
-            ])
-            ->assertOk()
-            ->assertJsonPath('cohort.meeting_url', 'https://zoom.us/j/123456789');
-
-        $this->assertSame('https://zoom.us/j/123456789', $cohort->fresh()->meeting_url);
-    }
-
-    public function test_cohort_payload_includes_type_and_maps_url_for_a_located_cohort(): void
-    {
-        $cohort = Cohort::factory()->atLocation()->create();
-
-        $this->actingAs($this->admin())
-            ->getJson("/api/admin/cohorts/{$cohort->id}")
-            ->assertOk()
-            ->assertJsonPath('cohort.type', 'offline')
-            ->assertJsonPath('cohort.maps_url', $cohort->mapsUrl());
-    }
-
     public function test_start_date_accepts_datetime_local_format_and_keeps_the_time(): void
     {
         $program = Program::factory()->active()->create();
@@ -346,15 +260,5 @@ class CohortManagementTest extends TestCase
             ])
             ->assertStatus(422)
             ->assertJsonValidationErrors('end_date');
-    }
-
-    public function test_legacy_offline_cohort_without_location_can_update_name_alone(): void
-    {
-        $cohort = Cohort::factory()->create();
-
-        $this->actingAs($this->admin())
-            ->patchJson("/api/admin/cohorts/{$cohort->id}", ['name' => 'Nama Baru'])
-            ->assertOk()
-            ->assertJsonPath('cohort.name', 'Nama Baru');
     }
 }
