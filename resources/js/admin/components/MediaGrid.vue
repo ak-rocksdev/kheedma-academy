@@ -183,8 +183,20 @@ function formatSize(bytes) {
                     </span>
                     <p class="mt-4 text-sm font-semibold text-foreground">Belum ada file media</p>
                     <p class="mt-1 max-w-xs text-sm text-muted-foreground">
-                        Unggah lewat tombol di atas, atau seret dan lepas file langsung ke sini.
+                        Seret dan lepas file ke sini, atau pilih dari perangkatmu.
                     </p>
+                    <label class="mt-5 inline-flex cursor-pointer items-center gap-2 rounded-full bg-orange-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">
+                        <UploadCloud class="h-4 w-4" />
+                        {{ uploading ? 'Mengunggah…' : 'Unggah file' }}
+                        <input
+                            type="file"
+                            class="sr-only"
+                            multiple
+                            :accept="picker ? 'image/*' : 'image/*,application/pdf'"
+                            :disabled="uploading"
+                            @change="onFilesChosen($event.target.files); $event.target.value = ''"
+                        >
+                    </label>
                 </div>
 
                 <div v-if="meta && meta.current < meta.last" class="mt-4 text-center">
