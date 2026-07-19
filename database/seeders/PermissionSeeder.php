@@ -28,6 +28,8 @@ class PermissionSeeder extends Seeder
             'community.view',
             'content.manage',
             'data.export',
+            'assignments.manage',
+            'assignments.grade',
         ];
 
         foreach ($permissions as $permission) {
@@ -40,6 +42,8 @@ class PermissionSeeder extends Seeder
             'people.view',
             'cohorts.view',
             'attendance.record',
+            'assignments.manage',
+            'assignments.grade',
         ]);
         Role::findOrCreate('participant', 'web')->syncPermissions([]);
 

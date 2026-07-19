@@ -37,4 +37,15 @@ class PermissionSeederTest extends TestCase
         $this->assertTrue(Role::findByName('admin', 'web')->hasPermissionTo('content.manage'));
         $this->assertFalse(Role::findByName('mentor', 'web')->hasPermissionTo('content.manage'));
     }
+
+    public function test_assignment_permissions_exist_for_admin_and_mentor(): void
+    {
+        $this->seed(PermissionSeeder::class);
+
+        foreach (['admin', 'mentor'] as $role) {
+            $roleModel = Role::findByName($role, 'web');
+            $this->assertTrue($roleModel->hasPermissionTo('assignments.manage'));
+            $this->assertTrue($roleModel->hasPermissionTo('assignments.grade'));
+        }
+    }
 }
