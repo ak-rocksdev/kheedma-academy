@@ -195,7 +195,13 @@
                                                                         <span class="block text-sm font-semibold text-teal-900">{{ $session->location_name ?: 'Lokasi kelas' }}</span>
                                                                         <span class="block text-xs text-teal-800/70">{{ $session->location_address ?: 'Lihat lokasi di peta' }}</span>
                                                                     </span>
-                                                                    <svg class="h-4 w-4 shrink-0 text-teal-700 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    {{-- Labeled affordance: the verb tells what you get, the
+                                                                         chevron tells how it behaves; the label flips when open. --}}
+                                                                    <span class="flex shrink-0 items-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-1.5 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40">
+                                                                        <span class="group-open:hidden">Lihat peta</span>
+                                                                        <span class="hidden group-open:inline">Tutup peta</span>
+                                                                        <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    </span>
                                                                 </summary>
                                                                 <div class="border-t border-teal-900/10">
                                                                     <iframe
