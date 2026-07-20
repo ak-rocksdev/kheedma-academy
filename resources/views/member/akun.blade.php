@@ -93,7 +93,7 @@
                         @if ($kelasNotice === 'accepted')
                             <p class="font-semibold text-teal-900">Pendaftaranmu diterima! 🎉</p>
                             <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
-                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini — pantau ya.
+                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini, pantau ya.
                             </p>
                         @else
                             <p class="font-semibold text-teal-900">Pendaftaranmu sedang ditinjau.</p>
