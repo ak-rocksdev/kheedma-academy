@@ -10,6 +10,7 @@ use App\Models\CohortSession;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
+use App\Models\SessionConfirmation;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -233,6 +234,27 @@ class CohortSessionTest extends TestCase
             ->assertJsonPath('sessions.0.assignment', null)
             ->assertJsonPath('roster.0.average', null)
             ->assertJsonPath('roster.0.qualifies', null);
+    }
+
+    public function test_cohort_detail_carries_confirmation_recap_per_session(): void
+    {
+        $cohort = Cohort::factory()->create();
+        $session = CohortSession::factory()->for($cohort)->create();
+        $personA = Person::create(['name' => 'Aisyah Uji', 'phone' => '+62811111111', 'email' => fake()->unique()->safeEmail()]);
+        $personB = Person::create(['name' => 'Budi Uji', 'phone' => '+62822222222', 'email' => fake()->unique()->safeEmail()]);
+        $enrollA = Enrollment::create(['people_id' => $personA->id, 'cohort_id' => $cohort->id]);
+        $enrollB = Enrollment::create(['people_id' => $personB->id, 'cohort_id' => $cohort->id]);
+        SessionConfirmation::factory()->create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollA->id]);
+        SessionConfirmation::factory()->cannotAttend('Bentrok kerja.')->create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollB->id]);
+
+        $res = $this->actingAs($this->admin())->getJson("/api/admin/cohorts/{$cohort->id}")->assertOk();
+
+        $row = collect($res->json('sessions'))->firstWhere('id', $session->id);
+        $this->assertSame(1, $row['confirmations']['attending']);
+        $this->assertSame(1, $row['confirmations']['cannot_attend']);
+        $names = collect($row['confirmations']['entries'])->pluck('name');
+        $this->assertTrue($names->contains('Aisyah Uji'));
+        $this->assertSame('Bentrok kerja.', collect($row['confirmations']['entries'])->firstWhere('name', 'Budi Uji')['note']);
     }
 
     public function test_mentor_cannot_manage_classes(): void

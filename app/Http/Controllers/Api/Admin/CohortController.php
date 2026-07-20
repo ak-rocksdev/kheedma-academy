@@ -32,7 +32,10 @@ class CohortController extends Controller
     {
         $cohort->load(['mentor:id,name', 'program:id,name,min_average_score'])->loadCount('enrollments');
 
-        $sessions = $cohort->sessions()->withCount('attendances')->with('assignment.updater:id,name')->get();
+        $sessions = $cohort->sessions()
+            ->withCount('attendances')
+            ->with(['assignment.updater:id,name', 'confirmations.enrollment.person:id,name'])
+            ->get();
         $assignments = $sessions->pluck('assignment')->filter()->values();
 
         $enrollments = $cohort->enrollments()
@@ -97,6 +100,15 @@ class CohortController extends Controller
                 'meeting_url' => $s->meeting_url,
                 'maps_url' => $s->mapsUrl(),
                 'assignment' => $s->assignment ? AssignmentController::row($s->assignment) : null,
+                'confirmations' => [
+                    'attending' => $s->confirmations->where('status', 'attending')->count(),
+                    'cannot_attend' => $s->confirmations->where('status', 'cannot_attend')->count(),
+                    'entries' => $s->confirmations->map(fn ($c) => [
+                        'name' => $c->enrollment->person?->name ?? '-',
+                        'status' => $c->status,
+                        'note' => $c->note,
+                    ])->values(),
+                ],
             ]),
             'roster' => $roster,
             // Whole-number averages (e.g. 80.0) must keep their decimal so

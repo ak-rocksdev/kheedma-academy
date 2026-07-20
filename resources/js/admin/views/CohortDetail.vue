@@ -127,6 +127,14 @@ const hadirCount = computed(() =>
     selectedSession.value ? roster.value.filter((r) => isHadir(r, selectedSession.value)).length : 0
 );
 
+// Konfirmasi kehadiran recap: intent signal for the mentor, read-only here.
+const confirmationRecap = computed(() => {
+    const c = selectedSession.value?.confirmations;
+    if (!c) return null;
+    const responded = c.attending + c.cannot_attend;
+    return { ...c, belum: Math.max(0, activeRosterCount.value - responded) };
+});
+
 
 // Mirrors Cohort::startCountdownLabel(): final week only, display-side.
 const countdownLabel = computed(() => {
@@ -491,6 +499,28 @@ watch(() => props.id, () => load());
                             ></div>
                         </div>
                     </div>
+                </div>
+                <div v-if="confirmationRecap" class="border-b border-border px-4 py-2.5 text-xs sm:px-6">
+                    <details class="group">
+                        <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground [&::-webkit-details-marker]:hidden">
+                            <span class="font-semibold uppercase tracking-wide">Konfirmasi kehadiran</span>
+                            <span class="font-semibold text-teal-700">{{ confirmationRecap.attending }} hadir</span>
+                            <span class="font-semibold text-orange-600">{{ confirmationRecap.cannot_attend }} berhalangan</span>
+                            <span>{{ confirmationRecap.belum }} belum konfirmasi</span>
+                            <span class="ml-auto text-[0.7rem] underline-offset-2 group-open:hidden">Lihat nama</span>
+                            <span class="ml-auto hidden text-[0.7rem] group-open:inline">Tutup</span>
+                        </summary>
+                        <ul class="mt-2 space-y-1">
+                            <li v-for="entry in selectedSession.confirmations.entries" :key="entry.name + entry.status" class="flex flex-wrap items-baseline gap-x-2">
+                                <span class="font-medium text-foreground">{{ entry.name }}</span>
+                                <span :class="entry.status === 'attending' ? 'text-teal-700' : 'text-orange-600'">
+                                    {{ entry.status === 'attending' ? 'hadir' : 'berhalangan' }}
+                                </span>
+                                <span v-if="entry.note" class="text-muted-foreground">· {{ entry.note }}</span>
+                            </li>
+                            <li v-if="!selectedSession.confirmations.entries.length" class="text-muted-foreground">Belum ada yang konfirmasi.</li>
+                        </ul>
+                    </details>
                 </div>
                 <table class="w-full text-sm">
                     <thead>
