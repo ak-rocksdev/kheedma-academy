@@ -605,11 +605,20 @@ function initToasts() {
         const leave = () => {
             if (toast.hasAttribute('data-leaving')) return;
             toast.setAttribute('data-leaving', '');
-            toast.addEventListener('transitionend', () => toast.remove(), { once: true });
-            setTimeout(() => toast.remove(), 400); // reduced-motion fallback
+            toast.addEventListener('animationend', () => toast.remove(), { once: true });
+            setTimeout(() => toast.remove(), 500); // reduced-motion fallback
         };
+
         toast.querySelector('[data-toast-close]')?.addEventListener('click', leave);
-        setTimeout(leave, 5000);
+
+        // The timer bar IS the clock: it pauses on hover via CSS, so its
+        // own completion — not a fixed setTimeout — decides when to leave.
+        const timer = toast.querySelector('[data-toast-timer]');
+        if (timer) {
+            timer.addEventListener('animationend', leave, { once: true });
+        } else {
+            setTimeout(leave, 5000);
+        }
     });
 }
 

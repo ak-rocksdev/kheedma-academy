@@ -401,20 +401,38 @@
     box-shadow: 0 20px 45px -15px color-mix(in srgb, var(--color-teal-900) 35%, transparent);
 }
 
-/* Toast (x-toast): drop in from above; [data-leaving] fades it out.
-   initToasts() in app.js drives the lifecycle. */
+/* Toast (x-toast): slides in from the right with a soft settle, leaves the
+   same way. The timer bar drains over the dismiss window and pauses on
+   hover. Lifecycle: initToasts() in app.js. */
 .kh-toast {
-    animation: kh-toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+    animation: kh-toast-in 0.4s cubic-bezier(0.21, 1.02, 0.73, 1) both;
 }
 .kh-toast[data-leaving] {
-    transition: opacity 0.25s ease, translate 0.25s ease;
-    opacity: 0;
-    translate: 0 -0.5rem;
+    animation: kh-toast-out 0.3s cubic-bezier(0.55, 0, 0.55, 0.2) both;
+}
+.kh-toast-timer {
+    transform-origin: left;
+    animation: kh-toast-timer var(--kh-toast-duration, 5s) linear both;
+}
+.kh-toast:hover .kh-toast-timer,
+.kh-toast:focus-within .kh-toast-timer {
+    animation-play-state: paused;
 }
 @keyframes kh-toast-in {
-    from { opacity: 0; translate: 0 -0.75rem; }
+    from { opacity: 0; translate: 1.5rem -0.35rem; scale: 0.96; }
+    to { opacity: 1; translate: 0 0; scale: 1; }
+}
+@keyframes kh-toast-out {
+    from { opacity: 1; translate: 0 0; scale: 1; }
+    to { opacity: 0; translate: 1.5rem 0; scale: 0.96; }
+}
+@keyframes kh-toast-timer {
+    from { scale: 1 1; }
+    to { scale: 0 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-    .kh-toast { animation: none; }
-    .kh-toast[data-leaving] { transition: none; }
+    .kh-toast,
+    .kh-toast[data-leaving] { animation: none; }
+    .kh-toast[data-leaving] { opacity: 0; }
+    .kh-toast-timer { animation-timing-function: linear; }
 }
