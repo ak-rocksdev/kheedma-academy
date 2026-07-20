@@ -175,7 +175,7 @@ class MemberAreaController extends Controller
         // Tab aktif dari query ?bagian=; nilai tak dikenal jatuh ke default.
         // Smart default: member dengan kelas aktif datang untuk kelasnya —
         // sambut langsung di tab kelas, bukan profil.
-        $activeTab = in_array($request->query('bagian'), ['profil', 'pendaftaran', 'kelas'], true)
+        $activeTab = in_array($request->query('bagian'), ['profil', 'pendaftaran', 'kelas', 'tugas'], true)
             ? $request->query('bagian')
             : ($enrolledClasses->isNotEmpty() ? 'kelas' : 'profil');
 

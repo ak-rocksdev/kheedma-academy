@@ -6,6 +6,7 @@
         'profil' => 'Profil',
         'pendaftaran' => 'Pendaftaran',
         'kelas' => 'Kelas & Program',
+        'tugas' => 'Tugas',
     ])
 
     <section class="relative overflow-hidden">
@@ -239,113 +240,23 @@
                                                     @endif
                                                     @if (isset($assignmentCards[$session->id]))
                                                         @php($tugas = $assignmentCards[$session->id])
-                                                        {{-- Validation errors are global per redirect; the hidden _assignment_id
-                                                             marker scopes reopen + old() prefill to the card that actually
-                                                             failed, so sibling cards stay untouched. --}}
-                                                        @php($failedHere = $errors->hasAny(['url', 'note']) && (int) old('_assignment_id') === $tugas['assignment']->id)
-                                                        <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white" {{ session('tugas_terkirim') === $tugas['assignment']->id || $failedHere ? 'open' : '' }}>
-                                                            <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
-                                                                <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
-                                                                    <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/><path d="m10 13 1.5 1.5L15 11" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                                </span>
-                                                                <span class="min-w-0 flex-1">
-                                                                    <span class="block text-sm font-semibold text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
-                                                                    <span @class([
-                                                                        'block text-xs font-semibold',
-                                                                        'text-teal-800/60' => $tugas['state'] === 'belum_dikerjakan',
-                                                                        'text-orange-700' => $tugas['state'] === 'menunggu_dinilai',
-                                                                        'text-teal-700' => $tugas['state'] === 'dinilai',
-                                                                    ])>
-                                                                        @if ($tugas['state'] === 'belum_dikerjakan') Belum dikerjakan
-                                                                        @elseif ($tugas['state'] === 'menunggu_dinilai') Menunggu dinilai
-                                                                        @else Nilai kamu: {{ $tugas['score'] }}
-                                                                        @endif
-                                                                    </span>
-                                                                </span>
-                                                                <span class="flex shrink-0 items-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-1.5 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40">
-                                                                    <span class="group-open:hidden">Lihat tugas</span>
-                                                                    <span class="hidden group-open:inline">Tutup tugas</span>
-                                                                    <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                                </span>
-                                                            </summary>
-                                                            <div class="border-t border-teal-900/10 px-4 py-4 text-sm text-teal-800/80">
-                                                                <p class="whitespace-pre-line">{{ $tugas['assignment']->body }}</p>
-
-                                                                @if (session('tugas_terkirim') === $tugas['assignment']->id)
-                                                                    <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-teal-800">Jawabanmu terkirim. Mentor akan menilainya segera.</p>
-                                                                @endif
-
-                                                                @if ($tugas['state'] === 'dinilai')
-                                                                    <div class="mt-4 rounded-2xl bg-sand-50 px-4 py-3">
-                                                                        <p class="text-xs font-semibold uppercase tracking-wide text-teal-800/60">Nilai kamu</p>
-                                                                        <p class="mt-1 text-3xl font-bold text-teal-900">{{ $tugas['score'] }}</p>
-                                                                        @if ($tugas['feedback'])
-                                                                            <blockquote class="mt-2 border-l-2 border-orange-400 pl-3 text-sm italic text-teal-800/80">{{ $tugas['feedback'] }}</blockquote>
-                                                                        @endif
-                                                                    </div>
-                                                                @elseif ($tugas['state'] === 'menunggu_dinilai')
-                                                                    <p class="mt-3 font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
-                                                                    <p class="mt-1 truncate text-xs">Link terkirim: <a href="{{ $tugas['latest_url'] }}" target="_blank" rel="noopener" class="font-semibold text-teal-700 hover:underline">{{ $tugas['latest_url'] }}</a></p>
-                                                                @endif
-
-                                                                @php($formLabel = match ($tugas['state']) {
-                                                                    'belum_dikerjakan' => 'Kirim jawaban',
-                                                                    'menunggu_dinilai' => 'Perbaiki kiriman',
-                                                                    default => 'Kirim ulang untuk perbaiki nilai',
-                                                                })
-                                                                @php($retakeCollapsed = $tugas['state'] === 'dinilai' && ! $failedHere)
-
-                                                                {{-- Graded state hides the form behind a confirm step: the score
-                                                                     is the destination, retaking is a deliberate choice. --}}
-                                                                @if ($retakeCollapsed)
-                                                                    <button type="button" data-retake-toggle
-                                                                            class="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
-                                                                        {{ $formLabel }}
-                                                                    </button>
-                                                                @endif
-
-                                                                <div @if ($retakeCollapsed) data-retake-form hidden @endif>
-                                                                    @if ($tugas['state'] === 'dinilai')
-                                                                        <p class="mt-4 rounded-xl border border-orange-300/60 bg-orange-50 px-4 py-3 text-sm text-orange-800">
-                                                                            Yakin mau kirim ulang? Nilai {{ $tugas['score'] }} tetap berlaku sampai kiriman barumu dinilai mentor.
-                                                                        </p>
-                                                                    @endif
-                                                                    <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-3 space-y-2">
-                                                                        @csrf
-                                                                        <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
-                                                                        <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $formLabel }}</label>
-                                                                        {{-- Input group: the https:// prefix is fixed chrome, the member
-                                                                             types (or pastes) the link itself; the server normalizes. --}}
-                                                                        <div class="flex w-full">
-                                                                            <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
-                                                                            <input type="text" name="url" value="{{ $failedHere ? preg_replace('#^https?://#i', '', old('url', '')) : '' }}" placeholder="drive.google.com/…" inputmode="url"
-                                                                                   autocapitalize="off" autocorrect="off" spellcheck="false"
-                                                                                   class="w-full min-w-0 rounded-r-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-                                                                        </div>
-                                                                        @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
-                                                                        <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
-                                                                               class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-                                                                        @if ($failedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
-                                                                        <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $formLabel }}</button>
-                                                                        @if ($tugas['versions'] > 1)
-                                                                            <p class="text-xs text-teal-800/50">Kiriman ke-{{ $tugas['versions'] }}. Nilai lama tetap berlaku sampai versi baru dinilai.</p>
-                                                                        @endif
-                                                                    </form>
-                                                                </div>
-
-                                                                {{-- Compact own history (spec): every version with time + grade. --}}
-                                                                @if ($tugas['versions'] > 1)
-                                                                    <ul class="mt-3 space-y-1 border-t border-teal-900/10 pt-3 text-xs text-teal-800/60">
-                                                                        @foreach ($tugas['history'] as $i => $item)
-                                                                            <li class="flex items-center justify-between gap-3">
-                                                                                <span class="min-w-0 truncate">Kiriman {{ $tugas['versions'] - $i }} · {{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</span>
-                                                                                <span class="shrink-0 font-semibold {{ $item['score'] !== null ? 'text-teal-700' : 'text-teal-800/40' }}">{{ $item['score'] ?? 'belum dinilai' }}</span>
-                                                                            </li>
-                                                                        @endforeach
-                                                                    </ul>
-                                                                @endif
-                                                            </div>
-                                                        </details>
+                                                        {{-- Tugas lives in its own tab; this row is the signpost. --}}
+                                                        <div class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-teal-900/10 bg-white px-4 py-3">
+                                                            <span class="flex min-w-0 items-center gap-2 text-sm">
+                                                                <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                <span class="truncate font-medium text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
+                                                                <span @class([
+                                                                    'hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline',
+                                                                    'bg-sand-100 text-teal-800/60' => $tugas['state'] === 'belum_dikerjakan',
+                                                                    'bg-orange-100 text-orange-700' => $tugas['state'] === 'menunggu_dinilai',
+                                                                    'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
+                                                                ])>{{ $tugas['state'] === 'dinilai' ? 'Nilai '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
+                                                            </span>
+                                                            <a href="{{ route('member.area', ['bagian' => 'tugas']) }}" class="flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-700 transition hover:text-orange-600">
+                                                                Lihat tugas
+                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                            </a>
+                                                        </div>
                                                     @endif
                                                 </div>
                                             @endforeach
@@ -366,42 +277,6 @@
                                 </div>
                             @endforeach
                         </div>
-                        @foreach ($programProgress as $progress)
-                            <div class="mt-4 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
-                                <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Progres Nilai</p>
-                                <p class="mt-2 text-lg font-bold text-teal-900">
-                                    @if ($progress['average'] !== null)
-                                        Rata-ratamu {{ rtrim(rtrim(number_format($progress['average'], 1, ',', '.'), '0'), ',') }} dari minimum {{ $progress['threshold'] }}
-                                    @else
-                                        Belum ada nilai. Minimum kelulusan: {{ $progress['threshold'] }}
-                                    @endif
-                                </p>
-                                <div class="mt-3 h-2 overflow-hidden rounded-full bg-sand-100">
-                                    <div class="h-full rounded-full {{ $progress['qualifies'] ? 'bg-teal-600' : 'bg-orange-400' }}"
-                                         style="width: {{ $progress['average'] !== null ? min(100, round($progress['average'] / max(1, $progress['threshold']) * 100)) : 0 }}%"></div>
-                                </div>
-                                <ul class="mt-4 space-y-1.5 text-sm">
-                                    @foreach ($progress['rows'] as $row)
-                                        <li class="flex items-center justify-between gap-3">
-                                            <span class="min-w-0 truncate text-teal-800/80">{{ $row['title'] }}</span>
-                                            <span @class([
-                                                'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                                                'bg-sand-100 text-teal-800/60' => $row['state'] === 'belum_dikerjakan',
-                                                'bg-orange-100 text-orange-700' => $row['state'] === 'menunggu_dinilai',
-                                                'bg-teal-100 text-teal-700' => $row['state'] === 'dinilai',
-                                            ])>{{ $row['state'] === 'dinilai' ? $row['score'] : ($row['state'] === 'menunggu_dinilai' ? 'Menunggu' : 'Belum') }}</span>
-                                        </li>
-                                    @endforeach
-                                </ul>
-                                @if ($progress['qualifies'])
-                                    <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
-                                        Kamu memenuhi syarat! Lanjut ke kelas komunitas
-                                    </a>
-                                @else
-                                    <p class="mt-3 text-sm text-teal-800/70">Capai rata-rata {{ $progress['threshold'] }} untuk membuka kelas komunitas.</p>
-                                @endif
-                            </div>
-                        @endforeach
                     </div>
                 @endif
 
@@ -480,6 +355,188 @@
                         Materi pilihan dan pengumuman komunitas akan tampil di sini. Nantikan ya!
                     </p>
                 </div>
+            @elseif ($activeTab === 'tugas')
+                <div class="mt-8">
+                    <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Tugas Saya</h2>
+
+                @foreach ($programProgress as $progress)
+                    <div class="mt-4 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                        <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Progres Nilai</p>
+                        <p class="mt-2 text-lg font-bold text-teal-900">
+                            @if ($progress['average'] !== null)
+                                Rata-ratamu {{ rtrim(rtrim(number_format($progress['average'], 1, ',', '.'), '0'), ',') }} dari minimum {{ $progress['threshold'] }}
+                            @else
+                                Belum ada nilai. Minimum kelulusan: {{ $progress['threshold'] }}
+                            @endif
+                        </p>
+                        <div class="mt-3 h-2 overflow-hidden rounded-full bg-sand-100">
+                            <div class="h-full rounded-full {{ $progress['qualifies'] ? 'bg-teal-600' : 'bg-orange-400' }}"
+                                 style="width: {{ $progress['average'] !== null ? min(100, round($progress['average'] / max(1, $progress['threshold']) * 100)) : 0 }}%"></div>
+                        </div>
+                        <ul class="mt-4 space-y-1.5 text-sm">
+                            @foreach ($progress['rows'] as $row)
+                                <li class="flex items-center justify-between gap-3">
+                                    <span class="min-w-0 truncate text-teal-800/80">{{ $row['title'] }}</span>
+                                    <span @class([
+                                        'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold',
+                                        'bg-sand-100 text-teal-800/60' => $row['state'] === 'belum_dikerjakan',
+                                        'bg-orange-100 text-orange-700' => $row['state'] === 'menunggu_dinilai',
+                                        'bg-teal-100 text-teal-700' => $row['state'] === 'dinilai',
+                                    ])>{{ $row['state'] === 'dinilai' ? $row['score'] : ($row['state'] === 'menunggu_dinilai' ? 'Menunggu' : 'Belum') }}</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                        @if ($progress['qualifies'])
+                            <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
+                                Kamu memenuhi syarat! Lanjut ke kelas komunitas
+                            </a>
+                        @else
+                            <p class="mt-3 text-sm text-teal-800/70">Capai rata-rata {{ $progress['threshold'] }} untuk membuka kelas komunitas.</p>
+                        @endif
+                    </div>
+                @endforeach
+
+                    @if (collect($assignmentCards)->isEmpty())
+                        <div class="mt-4 rounded-3xl border border-dashed border-teal-900/15 bg-white/40 p-8 text-center">
+                            <p class="text-sm leading-relaxed text-teal-800/70">
+                                Belum ada tugas dari mentormu. Begitu soal dirilis, tugasmu tampil di sini.
+                            </p>
+                        </div>
+                    @endif
+
+                    @foreach ($enrolledClasses as $enrollment)
+                        @foreach ($enrollment->cohort->sessions as $session)
+                            @if (isset($assignmentCards[$session->id]))
+                                @php($tugas = $assignmentCards[$session->id])
+                                @php($failedHere = $errors->hasAny(['url', 'note']) && (int) old('_assignment_id') === $tugas['assignment']->id)
+                                @php($operativeIndex = collect($tugas['history'])->search(fn ($h) => $h['score'] !== null))
+                                @php($actionLabel = match ($tugas['state']) {
+                                    'belum_dikerjakan' => 'Kirim jawaban',
+                                    'menunggu_dinilai' => 'Perbaiki kiriman',
+                                    default => 'Kirim ulang untuk perbaiki nilai',
+                                })
+
+                                <div class="mt-4 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                                    <div class="flex flex-wrap items-start justify-between gap-2">
+                                        <div class="min-w-0">
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $session->title }} · {{ $enrollment->cohort->program?->name }}</p>
+                                            <p class="mt-1 font-semibold text-teal-900">{{ $tugas['assignment']->title }}</p>
+                                        </div>
+                                        <span @class([
+                                            'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                                            'bg-sand-100 text-teal-800/60' => $tugas['state'] === 'belum_dikerjakan',
+                                            'bg-orange-100 text-orange-700' => $tugas['state'] === 'menunggu_dinilai',
+                                            'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
+                                        ])>{{ $tugas['state'] === 'dinilai' ? 'Dinilai · '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
+                                    </div>
+
+                                    @if (session('tugas_terkirim') === $tugas['assignment']->id)
+                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Jawabanmu terkirim. Mentor akan menilainya segera.</p>
+                                    @elseif ($tugas['state'] === 'menunggu_dinilai')
+                                        <p class="mt-3 text-sm font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
+                                    @endif
+
+                                    {{-- Soal collapsible: same pill pattern as the map. --}}
+                                    <details class="kh-collapsible group mt-4 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                        <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
+                                            <span class="text-sm font-semibold text-teal-900">Soal tugas</span>
+                                            <span class="flex shrink-0 items-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-1.5 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40">
+                                                <span class="group-open:hidden">Lihat soal</span>
+                                                <span class="hidden group-open:inline">Tutup soal</span>
+                                                <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                            </span>
+                                        </summary>
+                                        <div class="whitespace-pre-line border-t border-teal-900/10 px-4 py-4 text-sm text-teal-800/80">{{ $tugas['assignment']->body }}</div>
+                                    </details>
+
+                                    @if ($tugas['versions'] > 0)
+                                        {{-- Riwayat kiriman: satu baris per kiriman; baris "berlaku"
+                                             disorot — inilah nilai yang dihitung. --}}
+                                        <div class="mt-4 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                            <table class="w-full text-sm">
+                                                <thead>
+                                                    <tr class="bg-sand-50 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-teal-800/60">
+                                                        <th class="px-4 py-2.5">Kiriman</th>
+                                                        <th class="px-4 py-2.5">Link</th>
+                                                        <th class="hidden px-4 py-2.5 sm:table-cell">Waktu</th>
+                                                        <th class="px-4 py-2.5 text-right">Nilai</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="divide-y divide-teal-900/5">
+                                                    @foreach ($tugas['history'] as $i => $item)
+                                                        <tr @class(['bg-teal-50/60' => $i === $operativeIndex])>
+                                                            <td class="px-4 py-2.5 font-medium text-teal-900">
+                                                                #{{ $tugas['versions'] - $i }}
+                                                                @if ($i === $operativeIndex)
+                                                                    <span class="ml-1.5 rounded-full bg-teal-700 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-white">Berlaku</span>
+                                                                @endif
+                                                            </td>
+                                                            <td class="max-w-0 px-4 py-2.5">
+                                                                <a href="{{ $item['url'] }}" target="_blank" rel="noopener" class="block truncate text-teal-700 hover:underline">{{ preg_replace('#^https?://#i', '', $item['url']) }}</a>
+                                                            </td>
+                                                            <td class="hidden whitespace-nowrap px-4 py-2.5 text-teal-800/60 sm:table-cell">{{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</td>
+                                                            <td class="px-4 py-2.5 text-right font-semibold tabular-nums {{ $item['score'] !== null ? 'text-teal-900' : 'text-orange-600' }}">
+                                                                {{ $item['score'] ?? 'Menunggu' }}
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+
+                                    @if ($tugas['state'] === 'dinilai' && $tugas['feedback'])
+                                        <blockquote class="mt-3 border-l-2 border-orange-400 pl-3 text-sm italic text-teal-800/80">{{ $tugas['feedback'] }}</blockquote>
+                                    @endif
+
+                                    <div class="mt-4">
+                                        <button type="button" data-modal-open="modal-tugas-{{ $tugas['assignment']->id }}"
+                                                @class([
+                                                    'inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold transition',
+                                                    'bg-teal-700 text-white hover:bg-teal-900' => $tugas['state'] === 'belum_dikerjakan',
+                                                    'border border-teal-900/15 text-teal-700 hover:border-teal-600/40 hover:text-orange-600' => $tugas['state'] !== 'belum_dikerjakan',
+                                                ])>
+                                            {{ $actionLabel }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <x-modal id="modal-tugas-{{ $tugas['assignment']->id }}"
+                                         :title="$tugas['state'] === 'dinilai' ? 'Kirim ulang tugas?' : ($tugas['state'] === 'menunggu_dinilai' ? 'Perbaiki kirimanmu' : 'Kirim jawabanmu')"
+                                         :autoopen="$failedHere">
+                                    @if ($tugas['state'] === 'dinilai')
+                                        <p class="rounded-xl border border-orange-300/60 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                                            Nilai {{ $tugas['score'] }} tetap berlaku sampai kiriman barumu dinilai mentor.
+                                        </p>
+                                    @elseif ($tugas['state'] === 'menunggu_dinilai')
+                                        <p class="rounded-xl bg-sand-50 px-4 py-3 text-sm text-teal-800/80">
+                                            Kiriman lamamu tetap tercatat; versi baru menggantikannya dalam antrean penilaian.
+                                        </p>
+                                    @endif
+                                    <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-3 space-y-2.5">
+                                        @csrf
+                                        <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Link jawaban</label>
+                                        <div class="flex w-full">
+                                            <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
+                                            <input type="text" name="url" value="{{ $failedHere ? preg_replace('#^https?://#i', '', old('url', '')) : '' }}" placeholder="drive.google.com/…" inputmode="url"
+                                                   autocapitalize="off" autocorrect="off" spellcheck="false"
+                                                   class="w-full min-w-0 rounded-r-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                        </div>
+                                        @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
+                                        <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
+                                               class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                        @if ($failedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
+                                        <div class="flex justify-end gap-2 pt-2">
+                                            <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                            <button type="submit" class="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $actionLabel }}</button>
+                                        </div>
+                                    </form>
+                                </x-modal>
+                            @endif
+                        @endforeach
+                    @endforeach
+                </div>
             @else
                 <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Profil</h2>
@@ -533,6 +590,9 @@
         </x-nav.bottom-nav-item>
         <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'kelas'])" label="Kelas" :active="$activeTab === 'kelas'">
             <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6.25C10 4.75 7.5 4.5 5 4.5v13c2.5 0 5 .25 7 1.75 2-1.5 4.5-1.75 7-1.75v-13c-2.5 0-5 .25-7 1.75Z"/><path d="M12 6.25v13"/></svg>
+        </x-nav.bottom-nav-item>
+        <x-nav.bottom-nav-item :href="route('member.area', ['bagian' => 'tugas'])" label="Tugas" :active="$activeTab === 'tugas'">
+            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/><path d="m9.5 12.5 1.75 1.75 3.25-3.5"/></svg>
         </x-nav.bottom-nav-item>
     </x-nav.bottom-nav>
 

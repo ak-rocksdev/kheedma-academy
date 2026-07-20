@@ -418,7 +418,7 @@ class MemberAreaTest extends TestCase
             'feedback' => 'Bagus, riset kamu tajam.',
         ]);
 
-        $this->actingAs($user)->get('/akun?bagian=kelas')
+        $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()
             ->assertSee('Riset 3 Produk')
             ->assertSee('Cari 3 produk winning.')
@@ -439,7 +439,7 @@ class MemberAreaTest extends TestCase
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
 
-        $this->actingAs($user)->get('/akun?bagian=kelas')
+        $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()
             ->assertSee('Tugas Konten')
             ->assertSee('Kirim jawaban')
@@ -461,7 +461,7 @@ class MemberAreaTest extends TestCase
             'enrollment_id' => $enrollment->id,
         ]);
 
-        $this->actingAs($user)->get('/akun?bagian=kelas')
+        $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()
             ->assertSee('Jawabanmu sudah terkirim, menunggu dinilai mentor.')
             ->assertSee('Perbaiki kiriman')
