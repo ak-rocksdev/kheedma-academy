@@ -464,7 +464,29 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()
             ->assertSee('Jawabanmu sudah terkirim, menunggu dinilai mentor.')
-            ->assertSee('Perbaiki kiriman')
+            ->assertSee('Edit kiriman')
+            ->assertDontSee('Perbaiki kiriman')
             ->assertSee('Capai rata-rata 75 untuk membuka kelas komunitas');
+    }
+
+    public function test_waiting_submission_locks_after_the_edit_window(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['min_average_score' => 75]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+            'created_at' => now()->subHours(7),
+        ]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Kirimanmu terkunci dan masuk antrean penilaian mentor.')
+            ->assertDontSee('Edit kiriman');
     }
 }

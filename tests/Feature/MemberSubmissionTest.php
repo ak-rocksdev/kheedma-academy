@@ -49,7 +49,7 @@ class MemberSubmissionTest extends TestCase
         return Assignment::factory()->for($session, 'session')->create();
     }
 
-    public function test_enrolled_member_submits_and_resubmits(): void
+    public function test_waiting_submission_blocks_new_rows_until_graded(): void
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
@@ -63,13 +63,93 @@ class MemberSubmissionTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('tugas_terkirim', $assignment->id);
 
-        // Resubmission while still ungraded is allowed: append, never update.
+        // Spam-guard: while ungraded, a second SEND is rejected (edit instead).
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'https://drive.google.com/jawaban-2'])
+            ->assertSessionHasErrors('url');
+        $this->assertSame(1, AssignmentSubmission::count());
+
+        // Once graded, a retake appends a NEW row again.
+        $first = AssignmentSubmission::sole();
+        $first->score = 60;
+        $first->graded_at = now();
+        $first->save();
+
         $this->actingAs($user)
             ->post(route('member.assignment.submit', $assignment), ['url' => 'https://drive.google.com/jawaban-2'])
             ->assertRedirect();
 
         $this->assertSame(2, AssignmentSubmission::count());
         $this->assertSame('https://drive.google.com/jawaban-2', AssignmentSubmission::latest('id')->first()->url);
+    }
+
+    public function test_member_edits_waiting_submission_in_place(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $submission = AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+            'url' => 'https://drive.google.com/salah',
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('member.submission.update', $submission), [
+                'url' => 'drive.google.com/benar',
+                'note' => 'Link sudah dibetulkan.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('tugas_diperbarui', $assignment->id);
+
+        $this->assertSame(1, AssignmentSubmission::count());
+        $fresh = $submission->fresh();
+        $this->assertSame('https://drive.google.com/benar', $fresh->url);
+        $this->assertSame('Link sudah dibetulkan.', $fresh->note);
+    }
+
+    public function test_edit_locks_after_the_window(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $submission = AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+            'url' => 'https://drive.google.com/awal',
+            'created_at' => now()->subHours(7),
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('member.submission.update', $submission), ['url' => 'drive.google.com/telat'])
+            ->assertSessionHasErrors('url');
+
+        $this->assertSame('https://drive.google.com/awal', $submission->fresh()->url);
+    }
+
+    public function test_cannot_edit_graded_or_foreign_submission(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $graded = AssignmentSubmission::factory()->graded(70)->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($user)
+            ->patch(route('member.submission.update', $graded), ['url' => 'drive.google.com/x'])
+            ->assertNotFound();
+
+        [$stranger] = $this->member();
+        $pending = AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($stranger)
+            ->patch(route('member.submission.update', $pending), ['url' => 'drive.google.com/x'])
+            ->assertNotFound();
     }
 
     public function test_client_cannot_smuggle_grade_fields_into_a_submission(): void

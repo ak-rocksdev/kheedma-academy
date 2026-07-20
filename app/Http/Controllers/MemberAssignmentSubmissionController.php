@@ -6,14 +6,18 @@ use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MemberAssignmentSubmissionController extends Controller
 {
+    /** A freshly-sent submission stays editable this long (PO decision 2026-07-20). */
+    public const EDIT_WINDOW_HOURS = 6;
+
     /**
-     * A member sends (or re-sends) their answer link. Append-only: a retake
-     * is a NEW row; the previous grade stands until the mentor grades the
-     * new version. Only url/note ever come from the request — score and
-     * grader fields are the mentor's alone (mass-assignment guard).
+     * A member sends their answer link. Append-only: a post-grade retake is
+     * a NEW row; the previous grade stands until the new version is graded.
+     * Only url/note ever come from the request — score and grader fields
+     * are the mentor's alone (mass-assignment guard).
      */
     public function store(Request $request, Assignment $assignment): RedirectResponse
     {
@@ -26,12 +30,82 @@ class MemberAssignmentSubmissionController extends Controller
 
         abort_unless($enrollment !== null && $enrollment->isActive(), 404);
 
+        // Spam-guard: while the latest submission awaits grading, no new rows
+        // may be added — the member edits that row instead (update()).
+        $latest = $assignment->submissions()
+            ->where('enrollment_id', $enrollment->id)
+            ->latest('id')
+            ->first();
+
+        if ($latest !== null && $latest->score === null) {
+            throw ValidationException::withMessages([
+                'url' => 'Kirimanmu masih menunggu dinilai. Edit kiriman itu, bukan mengirim baru.',
+            ]);
+        }
+
         // The form shows a fixed "https://" prefix, so members type (or paste)
         // the link without worrying about the scheme; normalize before
         // validating so both shapes pass the same rules.
         $request->merge(['url' => $this->normalizedUrl($request->input('url'))]);
 
-        $data = $request->validate([
+        $data = $request->validate($this->rules(), $this->messages());
+
+        $submission = new AssignmentSubmission;
+        $submission->assignment_id = $assignment->id;
+        $submission->enrollment_id = $enrollment->id;
+        $submission->url = $data['url'];
+        $submission->note = $data['note'] ?? null;
+        $submission->save();
+
+        return back()->with('tugas_terkirim', $assignment->id);
+    }
+
+    /**
+     * Edit the just-sent submission in place — while a submission waits for
+     * grading the member cannot ADD rows, only fix the newest one, and only
+     * within the edit window. Guards: own active enrollment, ungraded,
+     * latest row, inside the window.
+     */
+    public function update(Request $request, AssignmentSubmission $submission): RedirectResponse
+    {
+        $person = $request->user()->person;
+        $enrollment = $submission->enrollment;
+
+        abort_unless(
+            $person !== null
+            && $enrollment->person?->is($person)
+            && $enrollment->isActive(),
+            404
+        );
+
+        $isLatest = ! $submission->assignment->submissions()
+            ->where('enrollment_id', $enrollment->id)
+            ->where('id', '>', $submission->id)
+            ->exists();
+
+        abort_unless($submission->score === null && $isLatest, 404);
+
+        if ($submission->created_at->lt(now()->subHours(self::EDIT_WINDOW_HOURS))) {
+            throw ValidationException::withMessages([
+                'url' => 'Masa edit sudah lewat. Kirimanmu terkunci dan masuk antrean penilaian mentor.',
+            ]);
+        }
+
+        $request->merge(['url' => $this->normalizedUrl($request->input('url'))]);
+
+        $data = $request->validate($this->rules(), $this->messages());
+
+        $submission->url = $data['url'];
+        $submission->note = $data['note'] ?? null;
+        $submission->save();
+
+        return back()->with('tugas_diperbarui', $submission->assignment_id);
+    }
+
+    /** @return array<string, mixed> */
+    private function rules(): array
+    {
+        return [
             'url' => [
                 'required',
                 'url:https',
@@ -46,20 +120,17 @@ class MemberAssignmentSubmissionController extends Controller
                 },
             ],
             'note' => ['nullable', 'string', 'max:1000'],
-        ], [
+        ];
+    }
+
+    /** @return array<string, string> */
+    private function messages(): array
+    {
+        return [
             'url.required' => 'Link jawaban wajib diisi.',
             'url.url' => 'Formatnya harus link, contoh: https://drive.google.com/…',
             'url.max' => 'Link terlalu panjang (maksimal 500 karakter).',
-        ]);
-
-        $submission = new AssignmentSubmission;
-        $submission->assignment_id = $assignment->id;
-        $submission->enrollment_id = $enrollment->id;
-        $submission->url = $data['url'];
-        $submission->note = $data['note'] ?? null;
-        $submission->save();
-
-        return back()->with('tugas_terkirim', $assignment->id);
+        ];
     }
 
     /** Prepend https:// when the member typed a bare link (the UI shows the prefix). */

@@ -99,13 +99,23 @@ class MemberAreaController extends Controller
                 $latest = $rows->first();
                 $lastGraded = $rows->whereNotNull('score')->first();
 
+                // Edit window: a waiting submission can be fixed in place
+                // (never re-sent) for a few hours; then it locks for grading.
+                $canEdit = $latest !== null
+                    && $latest->score === null
+                    && $latest->created_at->gte(now()->subHours(MemberAssignmentSubmissionController::EDIT_WINDOW_HOURS));
+
                 $assignmentCards[$session->id] = [
                     'assignment' => $assignment,
                     'state' => $scoring->submissionState($assignment, $enrollment),
                     'score' => $lastGraded?->score,
                     'feedback' => $lastGraded?->feedback,
+                    'latest_id' => $latest?->id,
                     'latest_url' => $latest?->url,
+                    'latest_note' => $latest?->note,
                     'latest_at' => $latest?->created_at,
+                    'can_edit' => $canEdit,
+                    'edit_until' => $canEdit ? $latest->created_at->copy()->addHours(MemberAssignmentSubmissionController::EDIT_WINDOW_HOURS) : null,
                     'versions' => $rows->count(),
                     // Compact own history for the card (spec: versions with time +
                     // grade if any), oldest last.

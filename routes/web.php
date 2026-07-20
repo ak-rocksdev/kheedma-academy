@@ -45,6 +45,9 @@ Route::get('/akun', [MemberAreaController::class, 'index'])->middleware('auth')-
 Route::post('/akun/tugas/{assignment}', [MemberAssignmentSubmissionController::class, 'store'])
     ->middleware(['auth', 'throttle:10,1'])
     ->name('member.assignment.submit');
+Route::patch('/akun/tugas/kiriman/{submission}', [MemberAssignmentSubmissionController::class, 'update'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('member.submission.update');
 
 /*
  | Member password reset. The GET reset route MUST be named password.reset —

@@ -409,6 +409,7 @@
                             @if (isset($assignmentCards[$session->id]))
                                 @php($tugas = $assignmentCards[$session->id])
                                 @php($failedHere = $errors->hasAny(['url', 'note']) && (int) old('_assignment_id') === $tugas['assignment']->id)
+                                @php($editFailedHere = $errors->hasAny(['url', 'note']) && (int) old('_submission_id') === ($tugas['latest_id'] ?? 0))
                                 @php($operativeIndex = collect($tugas['history'])->search(fn ($h) => $h['score'] !== null))
                                 @php($actionLabel = match ($tugas['state']) {
                                     'belum_dikerjakan' => 'Kirim jawaban',
@@ -432,8 +433,16 @@
 
                                     @if (session('tugas_terkirim') === $tugas['assignment']->id)
                                         <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Jawabanmu terkirim. Mentor akan menilainya segera.</p>
-                                    @elseif ($tugas['state'] === 'menunggu_dinilai')
+                                    @elseif (session('tugas_diperbarui') === $tugas['assignment']->id)
+                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Kirimanmu diperbarui.</p>
+                                    @endif
+                                    @if ($tugas['state'] === 'menunggu_dinilai')
                                         <p class="mt-3 text-sm font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
+                                        @if ($tugas['can_edit'])
+                                            <p class="mt-1 text-xs text-teal-800/60">Salah tempel link? Kamu masih bisa edit kiriman ini sampai pukul {{ $tugas['edit_until']->format('H.i') }}.</p>
+                                        @else
+                                            <p class="mt-1 text-xs text-teal-800/60">Kirimanmu terkunci dan masuk antrean penilaian mentor.</p>
+                                        @endif
                                     @endif
 
                                     {{-- Soal collapsible: same pill pattern as the map. --}}
@@ -476,7 +485,15 @@
                                                             </td>
                                                             <td class="hidden whitespace-nowrap px-4 py-2.5 text-teal-800/60 sm:table-cell">{{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</td>
                                                             <td class="px-4 py-2.5 text-right font-semibold tabular-nums {{ $item['score'] !== null ? 'text-teal-900' : 'text-orange-600' }}">
-                                                                {{ $item['score'] ?? 'Menunggu' }}
+                                                                <span class="inline-flex items-center gap-2">
+                                                                    {{ $item['score'] ?? 'Menunggu' }}
+                                                                    @if ($i === 0 && $tugas['can_edit'])
+                                                                        <button type="button" data-modal-open="modal-edit-tugas-{{ $tugas['assignment']->id }}"
+                                                                                class="rounded-full border border-teal-900/15 px-2.5 py-0.5 text-[0.7rem] font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
+                                                                            Edit kiriman
+                                                                        </button>
+                                                                    @endif
+                                                                </span>
                                                             </td>
                                                         </tr>
                                                     @endforeach
@@ -489,6 +506,7 @@
                                         <blockquote class="mt-3 border-l-2 border-orange-400 pl-3 text-sm italic text-teal-800/80">{{ $tugas['feedback'] }}</blockquote>
                                     @endif
 
+                                    @if ($tugas['state'] !== 'menunggu_dinilai')
                                     <div class="mt-4">
                                         <button type="button" data-modal-open="modal-tugas-{{ $tugas['assignment']->id }}"
                                                 @class([
@@ -499,8 +517,10 @@
                                             {{ $actionLabel }}
                                         </button>
                                     </div>
+                                    @endif
                                 </div>
 
+                                @if ($tugas['state'] !== 'menunggu_dinilai')
                                 <x-modal id="modal-tugas-{{ $tugas['assignment']->id }}"
                                          :title="$tugas['state'] === 'dinilai' ? 'Kirim ulang tugas?' : ($tugas['state'] === 'menunggu_dinilai' ? 'Perbaiki kirimanmu' : 'Kirim jawabanmu')"
                                          :autoopen="$failedHere">
@@ -533,6 +553,37 @@
                                         </div>
                                     </form>
                                 </x-modal>
+                                @endif
+
+                                {{-- Rendered only while editable (or to resurface an edit
+                                     error) so a locked card carries no edit affordance at all. --}}
+                                @if ($tugas['state'] === 'menunggu_dinilai' && $tugas['latest_id'] && ($tugas['can_edit'] || $editFailedHere))
+                                    <x-modal id="modal-edit-tugas-{{ $tugas['assignment']->id }}" title="Edit kirimanmu" :autoopen="$editFailedHere">
+                                        <p class="rounded-xl bg-sand-50 px-4 py-3 text-sm text-teal-800/80">
+                                            Perubahan menggantikan kiriman yang sama, tanpa menambah baris baru. Bisa diedit sampai pukul {{ $tugas['edit_until']?->format('H.i') ?? '-' }}.
+                                        </p>
+                                        <form method="POST" action="{{ route('member.submission.update', $tugas['latest_id']) }}" data-submit-once class="mt-3 space-y-2.5">
+                                            @csrf
+                                            @method('PATCH')
+                                            <input type="hidden" name="_submission_id" value="{{ $tugas['latest_id'] }}">
+                                            <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Link jawaban</label>
+                                            <div class="flex w-full">
+                                                <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $editFailedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
+                                                <input type="text" name="url" value="{{ $editFailedHere ? preg_replace('#^https?://#i', '', old('url', '')) : preg_replace('#^https?://#i', '', $tugas['latest_url'] ?? '') }}" placeholder="drive.google.com/…" inputmode="url"
+                                                       autocapitalize="off" autocorrect="off" spellcheck="false"
+                                                       class="w-full min-w-0 rounded-r-lg border {{ $editFailedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                            </div>
+                                            @if ($editFailedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
+                                            <input type="text" name="note" value="{{ $editFailedHere ? old('note') : $tugas['latest_note'] }}" placeholder="Catatan untuk mentor (opsional)"
+                                                   class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                            @if ($editFailedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
+                                            <div class="flex justify-end gap-2 pt-2">
+                                                <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                                <button type="submit" class="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Simpan perubahan</button>
+                                            </div>
+                                        </form>
+                                    </x-modal>
+                                @endif
                             @endif
                         @endforeach
                     @endforeach
