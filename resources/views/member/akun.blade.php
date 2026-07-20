@@ -240,6 +240,25 @@
                                                         @else
                                                             <p class="mt-2 text-sm text-teal-800/70">Lokasi kelas akan diumumkan.</p>
                                                         @endif
+
+                                                        {{-- Fixed offline-benefits copy (spec: deliberately not CMS-editable). --}}
+                                                        <div class="mt-3 rounded-2xl bg-teal-900/[0.04] px-4 py-3.5">
+                                                            <p class="text-xs font-bold uppercase tracking-wide text-teal-800/70">Kenapa hadir offline?</p>
+                                                            <ul class="mt-2 space-y-1.5 text-sm text-teal-800/80">
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Pemantauan langsung dari mentor
+                                                                </li>
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Review editing videomu oleh mentor
+                                                                </li>
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Praktik posting sosmed langsung di kelas
+                                                                </li>
+                                                            </ul>
+                                                        </div>
                                                     @endif
 
                                                     @php($konfirmasi = $confirmationCards[$session->id] ?? null)

@@ -611,4 +611,42 @@ class MemberAreaTest extends TestCase
             ->assertOk()
             ->assertDontSee('Bisa hadir di kelas ini?');
     }
+
+    public function test_offline_class_shows_benefit_block(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create([
+            'scheduled_at' => now()->addDays(3),
+            'type' => 'offline',
+            'location_name' => 'Kantor Kheedma',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kenapa hadir offline?')
+            ->assertSee('Pemantauan langsung dari mentor')
+            ->assertSee('Review editing videomu oleh mentor')
+            ->assertSee('Praktik posting sosmed langsung di kelas');
+    }
+
+    public function test_online_class_shows_no_offline_benefits(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create([
+            'scheduled_at' => now()->addDays(3),
+            'type' => 'online',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Kenapa hadir offline?');
+    }
 }
