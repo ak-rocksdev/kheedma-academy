@@ -428,7 +428,7 @@
                                         data-lock-trigger
                                         data-lock-message="{{ $entry['message'] }}"
                                         data-lock-reason="{{ $entry['reason'] }}"
-                                        class="flex w-full items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white/50 px-5 py-4 text-left opacity-75 transition hover:opacity-100"
+                                        class="flex w-full items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white/50 px-5 py-4 text-left transition"
                                     >
                                         <div>
                                             <p class="font-semibold text-teal-900/70">{{ $entry['program']->name }}</p>
@@ -488,8 +488,8 @@
                             @endforeach
                         </ul>
                         @if ($progress['qualifies'])
-                            <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
-                                Kamu memenuhi syarat! Lanjut ke kelas komunitas
+                            <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
+                                Lanjut ke kelas komunitas
                             </a>
                         @else
                             <p class="mt-3 text-sm text-teal-800/70">Capai rata-rata {{ $progress['threshold'] }} untuk membuka kelas komunitas.</p>
@@ -709,7 +709,7 @@
                         </div>
                         <div>
                             <dt class="text-xs uppercase tracking-wide text-teal-800/70">Email</dt>
-                            <dd class="mt-0.5 font-medium text-teal-900">{{ $user->email }}</dd>
+                            <dd class="mt-0.5 break-words font-medium text-teal-900">{{ $user->email }}</dd>
                         </div>
                         <div>
                             <dt class="text-xs uppercase tracking-wide text-teal-800/70">Nomor HP</dt>
