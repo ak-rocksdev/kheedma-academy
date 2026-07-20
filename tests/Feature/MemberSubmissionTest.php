@@ -235,6 +235,42 @@ class MemberSubmissionTest extends TestCase
         $this->assertSame('https://drive.google.com/jawaban-polos', AssignmentSubmission::sole()->url);
     }
 
+    public function test_www_prefixed_bare_link_is_normalized_to_https(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
+
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'www.google.com'])
+            ->assertRedirect()
+            ->assertSessionHas('toast');
+
+        $this->assertSame('https://www.google.com', AssignmentSubmission::sole()->url);
+    }
+
+    /**
+     * A member may type, paste, or have their browser autofill an explicit
+     * "http://" scheme even though the form only shows a fixed "https://"
+     * prefix. Since the app never accepts plain http anyway, this must be
+     * silently upgraded to https instead of rejected with a format error.
+     */
+    public function test_http_scheme_link_is_upgraded_to_https(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
+
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'http://www.google.com'])
+            ->assertRedirect()
+            ->assertSessionHas('toast');
+
+        $this->assertSame('https://www.google.com', AssignmentSubmission::sole()->url);
+    }
+
     public function test_url_host_needs_a_real_domain(): void
     {
         [$user, $person] = $this->member();
