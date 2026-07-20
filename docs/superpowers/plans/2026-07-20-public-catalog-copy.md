@@ -76,6 +76,8 @@
     }
 ```
 
+Also add an ordering test — positions deliberately contradicting the schedule, asserting `assertSeeInOrder([...])` with the unscheduled class last. Without it, the relation's baked-in position-first sort passes unnoticed (this exact bug was caught in review).
+
 Note: check `CohortFactory` for the correct open-window state name (`openWindow()` is used in `MemberAreaTest`); reuse whatever `ProgramDetailTest` already uses to build an open program, and only add what is missing.
 
 - [ ] **Step 2: Run tests to verify they fail**
@@ -94,7 +96,9 @@ In `ProgramPageController::show()`, before the `return view(...)`:
         $openCohort = $isOpen ? $program->openCohort() : null;
         $openClasses = $openCohort
             ? $openCohort->sessions()
-                ->orderByRaw('scheduled_at IS NULL, scheduled_at')
+                // reorder() clears the relation's baked-in position-first sort so
+                // the schedule (nulls last) actually governs, per the spec.
+                ->reorder()->orderByRaw('scheduled_at IS NULL, scheduled_at')
                 ->get()
                 ->map(fn ($session) => [
                     'title' => $session->title,
@@ -165,7 +169,9 @@ git commit -m "feat: program page lists the batch's classes for guests"
 - Consumes: `Program::openCohort()`.
 - Produces: each `$programs` entry gains `'class_count' => int` (0 when no open cohort or no classes).
 
-- [ ] **Step 1: Write the failing test** (append to `PublicCatalogTest`; read its helpers first and mirror how it builds open programs)
+Traps verified during self-review: `PublicCatalogTest` does NOT import `CohortSession` (add it), and its `openProgram()` helper does not return the cohort — build the program + cohort directly in the new test as shown below. The per-card `openCohort()?->sessions()->count()` query pair is accepted (a handful of cards; the query-efficiency backlog item covers the wider sweep).
+
+- [ ] **Step 1: Write the failing test** (append to `PublicCatalogTest`; add the missing `CohortSession` import)
 
 ```php
     public function test_chooser_card_shows_class_count(): void
@@ -333,4 +339,14 @@ git commit -m "feat: offline classes state why showing up in person pays"
 
 - [ ] **Step 1:** `php artisan test --compact` — full suite green.
 - [ ] **Step 2:** Playwright: program landing page as guest (class list, no venue leak), /daftar chooser ("N kelas" meta), member timeline offline card (benefit block). Screenshots.
-- [ ] **Step 3:** Ledger entry in `.superpowers/sdd/progress.md`.
+- [ ] **Step 3: Copy pass (spec Phase C item).** Sweep the surfaces Phases A-C touched (funnel/program.blade.php, funnel/chooser.blade.php, member akun.blade.php Kelas + Tugas tabs, admin recap strings in CohortDetail.vue) for: em-dashes in UI copy (forbidden), register drift (formal "Anda" leaking into "kamu" surfaces), and vocabulary consistency (Angkatan = cohort, Kelas = session, konfirmasi kehadiran naming). Fix inline, commit as `copy: ...` if anything surfaces; note "clean" in the ledger otherwise.
+- [ ] **Step 4:** Ledger entry in `.superpowers/sdd/progress.md`.
+
+---
+
+## Self-review (2026-07-20, after Task 1 executed)
+
+1. **Spec coverage**: public class list (T1), "N kelas" meta (T2, PO-endorsed), offline benefits (T3) — covered. GAP FOUND: the spec's "copy pass" had no explicit step; added as Task 4 Step 3.
+2. **Reality drift**: T1's review caught a Medium ordering bug (relation's baked-in position-first sort defeats the orderByRaw). Plan code + tests amended to the shipped fix (`reorder()` + assertSeeInOrder regression test).
+3. **Placeholder scan**: `openWindow()` factory state exists; `PublicCatalogTest` lacks a `CohortSession` import and its `openProgram()` helper hides the cohort — T2 brief now warns both.
+4. **Type consistency**: `openClasses` shape (T1) and `class_count` int (T2) consistent between controller and Blade; T3 is static copy, no data contract.
