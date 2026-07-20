@@ -510,7 +510,7 @@ watch(() => props.id, () => load());
                             <span class="ml-auto hidden text-[0.7rem] group-open:inline">Tutup</span>
                         </summary>
                         <ul class="mt-2 space-y-1">
-                            <li v-for="entry in selectedSession.confirmations.entries" :key="entry.name + entry.status" class="flex flex-wrap items-baseline gap-x-2">
+                            <li v-for="(entry, i) in selectedSession.confirmations.entries" :key="i" class="flex flex-wrap items-baseline gap-x-2">
                                 <span class="font-medium text-foreground">{{ entry.name }}</span>
                                 <span :class="entry.status === 'attending' ? 'text-teal-700' : 'text-orange-600'">
                                     {{ entry.status === 'attending' ? 'hadir' : 'berhalangan' }}
@@ -687,7 +687,8 @@ watch(() => props.id, () => load());
         <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
                 Menghapus "{{ deleteTarget?.title }}" juga menghapus {{ deleteTarget?.attendances_count ?? 0 }}
-                catatan kehadiran kelas ini. Tindakan ini tidak bisa dibatalkan.
+                catatan kehadiran, semua konfirmasi kehadiran, dan tugas kelas ini beserta kirimannya.
+                Tindakan ini tidak bisa dibatalkan.
             </p>
             <Alert v-if="deleteError" class="mt-3">{{ deleteError }}</Alert>
             <div class="mt-4 flex justify-end gap-2">
