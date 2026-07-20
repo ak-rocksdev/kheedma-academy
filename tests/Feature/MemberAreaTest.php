@@ -194,7 +194,7 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Besok')
-            ->assertSee('<details class="group', false)
+            ->assertSee('<details class="kh-collapsible group', false)
             ->assertDontSee('<details open', false);
     }
 

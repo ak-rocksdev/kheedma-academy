@@ -185,7 +185,7 @@
                                                             {{-- PO decision 2026-07-20: the map always starts collapsed —
                                                                  the venue name/address line already answers "di mana",
                                                                  the map is one tap away when needed. --}}
-                                                            <details class="group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                                            <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
                                                                 <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
                                                                     {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
                                                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">

@@ -308,6 +308,28 @@
 }
 
 /*
+ | Smooth open/close for <details> collapsibles (.kh-collapsible), CSS-only.
+ | Progressive enhancement: browsers with ::details-content + interpolate-size
+ | (Chrome 131+, others catching up) animate the height; everyone else keeps
+ | the instant toggle. Reduced-motion users always get the instant toggle.
+ */
+:root {
+    interpolate-size: allow-keywords;
+}
+@media (prefers-reduced-motion: no-preference) {
+    .kh-collapsible::details-content {
+        block-size: 0;
+        overflow-y: clip;
+        transition:
+            block-size 0.3s ease,
+            content-visibility 0.3s allow-discrete;
+    }
+    .kh-collapsible[open]::details-content {
+        block-size: auto;
+    }
+}
+
+/*
  | Duet Date Picker (public funnel, birth-date field) — themed to the brand
  | tokens above. Every --duet-* variable must be defined: the component ships
  | no fallbacks and we deliberately skip its default theme so these values
