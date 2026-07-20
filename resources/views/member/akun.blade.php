@@ -299,7 +299,7 @@
                                                                 <input type="hidden" name="status" value="cannot_attend">
                                                                 <input type="hidden" name="_session_id" value="{{ $session->id }}">
                                                                 <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Kendalamu (opsional)</label>
-                                                                <textarea name="note" rows="3" placeholder="Contoh: bentrok jam kerja, ada acara keluarga."
+                                                                <textarea name="note" rows="3" placeholder="Contoh: bentrok jam kerja, ada keperluan lain, dll."
                                                                           class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">{{ $confirmFailedHere ? old('note') : $konfirmasi['note'] }}</textarea>
                                                                 @if ($confirmFailedHere) <p class="text-xs text-red-600">{{ $errors->first('status') ?: $errors->first('note') }}</p> @endif
                                                                 <div class="flex justify-end gap-2 pt-2">

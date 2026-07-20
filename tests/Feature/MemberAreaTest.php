@@ -595,4 +595,19 @@ class MemberAreaTest extends TestCase
             ->assertDontSee('Bisa hadir di kelas ini?')
             ->assertDontSee('Insya Allah hadir');
     }
+
+    public function test_prompt_hidden_once_marked_hadir(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create(['scheduled_at' => now()->addDays(3)]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Bisa hadir di kelas ini?');
+    }
 }

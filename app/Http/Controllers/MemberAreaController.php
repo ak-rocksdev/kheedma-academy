@@ -140,7 +140,10 @@ class MemberAreaController extends Controller
                 $confirmationCards[$session->id] = [
                     'status' => $row?->status,
                     'note' => $row?->note,
-                    'editable' => $session->scheduled_at === null || $session->scheduled_at->isFuture(),
+                    // Editable until the class starts; once the mentor marked this member
+                    // hadir the fact exists and the intent prompt is moot (PO 2026-07-20).
+                    'editable' => ($session->scheduled_at === null || $session->scheduled_at->isFuture())
+                        && ! $enrollment->attendances->contains('cohort_session_id', $session->id),
                 ];
             }
         }
