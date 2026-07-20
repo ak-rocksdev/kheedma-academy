@@ -20,7 +20,6 @@ const emit = defineEmits(['close', 'graded']);
 const loading = ref(false);
 const error = ref('');
 const history = ref([]);
-const state = ref('belum_dikerjakan');
 
 // Grade form always aims at the NEWEST row shown (by id, race-safe).
 const score = ref('');
@@ -38,17 +37,17 @@ watch(() => props.target, async (target) => {
     formErrors.value = {};
     try {
         const res = await submissionsApi.history(target.assignment.id, target.enrollmentId);
+        if (props.target !== target) return; // stale response: a newer target took over
         history.value = res.submissions;
-        state.value = res.state;
         const latest = res.submissions[0];
-        if (latest?.score !== null && latest !== undefined) {
-            score.value = latest?.score ?? '';
-            feedback.value = latest?.feedback ?? '';
+        if (latest !== undefined && latest.score !== null) {
+            score.value = latest.score;
+            feedback.value = latest.feedback ?? '';
         }
     } catch (e) {
-        if (!e.sessionExpired) error.value = e.message ?? 'Gagal memuat riwayat.';
+        if (props.target === target && !e.sessionExpired) error.value = e.message ?? 'Gagal memuat riwayat.';
     } finally {
-        loading.value = false;
+        if (props.target === target) loading.value = false;
     }
 });
 
