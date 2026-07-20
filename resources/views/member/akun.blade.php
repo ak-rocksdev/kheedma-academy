@@ -330,7 +330,7 @@
                                                                     <svg class="h-7 w-7 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                 </span>
                                                                 <p class="mt-3 text-sm leading-relaxed text-teal-800/80">
-                                                                    Kamu akan tercatat hadir di <span class="font-semibold text-teal-900">{{ $session->title }}</span>.
+                                                                    Kamu akan terkonfirmasi hadir di <span class="font-semibold text-teal-900">{{ $session->title }}</span>.
                                                                     Masih bisa diubah sampai kelas dimulai.
                                                                 </p>
                                                             </div>

@@ -556,7 +556,7 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Bisa hadir di kelas ini?')
-            ->assertSee('Bisa hadir')
+            ->assertSee('Ya, saya hadir')
             ->assertSee('Konfirmasi hadir?')
             ->assertSee('Berhalangan');
     }

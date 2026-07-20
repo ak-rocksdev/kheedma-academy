@@ -191,7 +191,7 @@ class PublicCatalogTest extends TestCase
         $this->actingAs($user)
             ->get('/akun?bagian=kelas')
             ->assertOk()
-            ->assertSee('Program untuk Anda')
+            ->assertSee('Program untukmu')
             ->assertSee('Affiliate Kelas Satu')
             ->assertSee('data-lock-trigger', false);
     }
