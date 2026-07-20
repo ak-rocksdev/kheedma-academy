@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Cohort;
 use App\Models\CohortSession;
+use App\Models\Enrollment;
+use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -104,5 +107,36 @@ class AssignmentAdminTest extends TestCase
         $this->actingAs($user)
             ->putJson("/api/admin/sessions/{$session->id}/assignment", ['title' => 'X', 'body' => 'Y'])
             ->assertForbidden();
+    }
+
+    public function test_pending_count_follows_the_latest_submission_per_enrollment(): void
+    {
+        $session = $this->cohortSession();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+
+        $makeEnrollment = function () use ($session) {
+            $person = Person::create([
+                'name' => 'Peserta '.fake()->unique()->numberBetween(1, 99999),
+                'phone' => '+628'.fake()->unique()->numerify('##########'),
+                'email' => fake()->unique()->safeEmail(),
+            ]);
+
+            return Enrollment::create(['people_id' => $person->id, 'cohort_id' => $session->cohort_id]);
+        };
+
+        // A: graded then resubmitted (latest ungraded) -> counts as pending.
+        $a = $makeEnrollment();
+        AssignmentSubmission::factory()->graded(80)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $a->id]);
+        AssignmentSubmission::factory()->create(['assignment_id' => $assignment->id, 'enrollment_id' => $a->id]);
+
+        // B: submitted then graded (latest graded) -> NOT pending.
+        $b = $makeEnrollment();
+        AssignmentSubmission::factory()->create(['assignment_id' => $assignment->id, 'enrollment_id' => $b->id]);
+        AssignmentSubmission::factory()->graded(90)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $b->id]);
+
+        $this->actingAs($this->mentor())
+            ->putJson("/api/admin/sessions/{$session->id}/assignment", ['title' => $assignment->title, 'body' => $assignment->body])
+            ->assertOk()
+            ->assertJsonPath('assignment.pending_count', 1);
     }
 }
