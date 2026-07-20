@@ -129,7 +129,7 @@
         @auth
             {{-- Menu akun mobile: chip inisial dengan drop-up (Akun Saya/Panel Admin + Keluar) --}}
             <details class="account-menu relative flex flex-1">
-                <summary class="flex w-full cursor-pointer list-none flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold text-teal-800/60 [&::-webkit-details-marker]:hidden">
+                <summary class="flex w-full cursor-pointer list-none flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold text-teal-800 [&::-webkit-details-marker]:hidden">
                     <span class="flex h-5 w-5 items-center justify-center rounded-full bg-teal-700 text-[0.6rem] font-bold text-white">
                         {{ strtoupper(mb_substr(auth()->user()->name, 0, 1)) }}
                     </span>

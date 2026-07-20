@@ -33,7 +33,7 @@
                 </div>
 
                 <div>
-                    <span class="block text-sm font-medium text-teal-800">PIN <span class="text-teal-800/50">(6 digit)</span></span>
+                    <span class="block text-sm font-medium text-teal-800">PIN <span class="text-teal-800/70">(6 digit)</span></span>
                     <x-pin-input name="password" autocomplete="current-password" :invalid="$errors->has('password')" />
                 </div>
 
@@ -51,7 +51,7 @@
                 </button>
             </form>
 
-            <p class="mt-6 text-center text-sm text-teal-800/60">
+            <p class="mt-6 text-center text-sm text-teal-800/70">
                 Belum punya akun? <a href="{{ route('komunitas') }}" class="font-semibold text-teal-700 hover:text-orange-600">Gabung komunitas</a>
             </p>
         </div>

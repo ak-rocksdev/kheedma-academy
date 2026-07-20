@@ -11,7 +11,7 @@
            class="flex items-center justify-between gap-3 rounded-2xl border border-teal-900/15 bg-white px-5 py-3.5 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40 hover:text-orange-600">
             <span>
                 TikTok
-                <span class="block text-xs font-normal text-teal-800/50">@kheedmaacademy</span>
+                <span class="block text-xs font-normal text-teal-800/70">@kheedmaacademy</span>
             </span>
             <span class="flex items-center gap-2">
                 <span data-social-check class="hidden text-teal-600">✓</span>
@@ -24,7 +24,7 @@
            class="flex items-center justify-between gap-3 rounded-2xl border border-teal-900/15 bg-white px-5 py-3.5 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40 hover:text-orange-600">
             <span>
                 Instagram
-                <span class="block text-xs font-normal text-teal-800/50">@kheedmaacademy</span>
+                <span class="block text-xs font-normal text-teal-800/70">@kheedmaacademy</span>
             </span>
             <span class="flex items-center gap-2">
                 <span data-social-check class="hidden text-teal-600">✓</span>

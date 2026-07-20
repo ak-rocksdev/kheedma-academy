@@ -39,7 +39,7 @@
                     </a>
                 </div>
 
-                <p class="mt-5 text-sm text-teal-800/60 sm:mt-6">
+                <p class="mt-5 text-sm text-teal-800/70 sm:mt-6">
                     <span class="font-semibold text-teal-700">Kelas perdana gratis</span>, sebagai eksperimen terukur. Tempat terbatas.
                 </p>
             </div>
