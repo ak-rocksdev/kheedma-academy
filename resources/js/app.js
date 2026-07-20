@@ -304,6 +304,56 @@ function initPinInputs() {
     });
 }
 
+/**
+ * Reusable modal (<x-modal>): open via [data-modal-open="{id}"]; close via
+ * any [data-modal-close] inside it, the backdrop, or Escape. A modal marked
+ * data-modal-autoopen opens on load (validation redirect reopens the form
+ * the member was in). Body scroll locks while a modal is open.
+ */
+function initModals() {
+    const modals = document.querySelectorAll('[data-modal]');
+    if (!modals.length) {
+        return;
+    }
+
+    function open(modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.body.classList.add('overflow-hidden');
+        modal.querySelector('input, button, [href]')?.focus();
+    }
+
+    function close(modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    document.querySelectorAll('[data-modal-open]').forEach((trigger) => {
+        trigger.addEventListener('click', () => {
+            const modal = document.getElementById(trigger.dataset.modalOpen);
+            if (modal) open(modal);
+        });
+    });
+
+    modals.forEach((modal) => {
+        modal.querySelectorAll('[data-modal-close]').forEach((el) => {
+            el.addEventListener('click', () => close(modal));
+        });
+        if (modal.hasAttribute('data-modal-autoopen')) {
+            open(modal);
+        }
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+            modals.forEach((modal) => {
+                if (!modal.classList.contains('hidden')) close(modal);
+            });
+        }
+    });
+}
+
 /** Close any header account menu when clicking anywhere outside it. */
 function initAccountMenu() {
     const menus = document.querySelectorAll('details.account-menu');
@@ -542,6 +592,7 @@ function initLockModal() {
 initRegionSelects();
 initBirthDatePicker();
 initPinInputs();
+initModals();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

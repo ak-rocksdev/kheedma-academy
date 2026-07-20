@@ -247,6 +247,21 @@ export const sessions = {
     },
 };
 
+export const assignments = {
+    upsert(sessionId, payload) {
+        return api(`/admin/sessions/${sessionId}/assignment`, { method: 'PUT', body: payload });
+    },
+};
+
+export const submissions = {
+    history(assignmentId, enrollmentId) {
+        return api(`/admin/assignments/${assignmentId}/enrollments/${enrollmentId}/submissions`);
+    },
+    grade(id, payload) {
+        return api(`/admin/submissions/${id}/grade`, { method: 'PATCH', body: payload });
+    },
+};
+
 export const contentSections = {
     list(query = '') {
         return api(`/admin/content-sections${query}`);

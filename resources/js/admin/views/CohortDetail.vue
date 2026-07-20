@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, CalendarDays, Check, Copy, FileText, Pencil, Plus, Ticket, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, ClipboardList, Copy, FileText, Pencil, Plus, Ticket, Trash2, UserMinus } from 'lucide-vue-next';
 import { copyText } from '@/lib/clipboard';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,8 @@ import { fmtDateTime } from '@/lib/format';
 import { cohortStatusLabel, cohortStatusVariant } from '@/lib/status';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
 import SessionFormDialog from '@/components/SessionFormDialog.vue';
+import AssignmentFormDialog from '@/components/AssignmentFormDialog.vue';
+import GradingDialog from '@/components/GradingDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -63,6 +65,40 @@ async function confirmDeleteSession() {
     } catch (e) {
         if (!e.sessionExpired) deleteError.value = e.message ?? 'Gagal menghapus kelas.';
     }
+}
+
+// Tugas kelas terpilih (spec 1 phase 2): satu tugas per kelas.
+const assignmentFormOpen = ref(false);
+
+function openAssignmentForm() {
+    assignmentFormOpen.value = true;
+}
+
+async function onAssignmentSaved(assignment) {
+    if (selectedSession.value) selectedSession.value.assignment = assignment;
+}
+
+// Panel penilaian: sel Nilai di roster membuka riwayat + form nilai.
+const gradingTarget = ref(null);
+
+function openGrading(row) {
+    if (!selectedSession.value?.assignment || !auth.can('assignments.grade')) return;
+    gradingTarget.value = {
+        assignment: selectedSession.value.assignment,
+        enrollmentId: row.enrollment_id,
+        personName: row.person.name,
+    };
+}
+
+function assignmentStateFor(row) {
+    const id = selectedSession.value?.assignment?.id;
+    return id ? (row.assignment_states?.[id] ?? { state: 'belum_dikerjakan', score: null }) : null;
+}
+
+
+/** The soal is rich HTML now; the card preview wants readable plain text. */
+function plainExcerpt(html) {
+    return (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
 const loading = ref(true);
@@ -409,6 +445,35 @@ watch(() => props.id, () => load());
                 </div>
             </div>
 
+            <!-- Tugas kelas terpilih: soal ditulis mentor, dinilai dari roster. -->
+            <div v-if="selectedSession" class="mt-6 rounded-xl border border-border bg-card px-4 py-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                            <ClipboardList class="size-5 text-teal-700" />
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Tugas · {{ selectedSession.title }}</p>
+                            <template v-if="selectedSession.assignment">
+                                <p class="mt-0.5 font-semibold text-foreground">{{ selectedSession.assignment.title }}</p>
+                                <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">{{ plainExcerpt(selectedSession.assignment.body) }}</p>
+                            </template>
+                            <p v-else class="mt-0.5 text-sm text-muted-foreground/70 italic">Belum ada tugas untuk kelas ini.</p>
+                        </div>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <Badge v-if="selectedSession.assignment?.pending_count" variant="secondary" class="bg-orange-100 text-orange-700">
+                            {{ selectedSession.assignment.pending_count }} menunggu dinilai
+                        </Badge>
+                        <Button v-if="auth.can('assignments.manage')" variant="outline" size="sm" @click="openAssignmentForm">
+                            <Pencil v-if="selectedSession.assignment" class="mr-1 h-3.5 w-3.5" />
+                            <Plus v-else class="mr-1 h-3.5 w-3.5" />
+                            {{ selectedSession.assignment ? 'Ubah tugas' : 'Tulis tugas' }}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Daftar hadir: kehadiran dicatat per kelas terpilih di atas. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
                 <div v-if="selectedSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -432,6 +497,8 @@ watch(() => props.id, () => load());
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                             <th class="px-3 py-3 font-semibold sm:px-4">Peserta</th>
                             <th class="px-2 py-3 text-center font-semibold sm:px-3">Kehadiran</th>
+                            <th v-if="selectedSession?.assignment" class="px-2 py-3 text-center font-semibold sm:px-3">Nilai</th>
+                            <th v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 font-semibold sm:table-cell">Rata-rata</th>
                             <!-- Status hanya bermakna saat menyimpang; di layar sempit
                                  kolomnya dilipat (baris dropped sudah tampak pudar). -->
                             <th class="hidden px-3 py-3 font-semibold sm:table-cell">Status</th>
@@ -440,7 +507,7 @@ watch(() => props.id, () => load());
                     </thead>
                     <tbody>
                         <tr v-if="!roster.length">
-                            <td colspan="4" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
+                            <td :colspan="4 + (selectedSession?.assignment ? 1 : 0) + (cohort.min_average_score !== null ? 1 : 0)" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
                         </tr>
                         <tr
                             v-for="row in roster"
@@ -468,6 +535,40 @@ watch(() => props.id, () => load());
                                     <Check v-if="isHadir(row, selectedSession)" class="size-3.5" />
                                     {{ isHadir(row, selectedSession) ? 'Hadir' : 'Tandai hadir' }}
                                 </button>
+                            </td>
+                            <td v-if="selectedSession?.assignment" class="px-2 py-3 text-center sm:px-3">
+                                <!-- The waiting state is the mentor's work queue:
+                                     it reads as an action, not a passive chip. -->
+                                <button
+                                    v-if="assignmentStateFor(row)?.state === 'menunggu_dinilai'"
+                                    type="button"
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                    :disabled="!auth.can('assignments.grade')"
+                                    @click="openGrading(row)"
+                                >
+                                    <Pencil class="size-3" /> Nilai sekarang
+                                </button>
+                                <button
+                                    v-else-if="assignmentStateFor(row)?.state === 'dinilai'"
+                                    type="button"
+                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500 hover:bg-teal-200"
+                                    :disabled="!auth.can('assignments.grade')"
+                                    title="Lihat atau perbarui nilai"
+                                    @click="openGrading(row)"
+                                >
+                                    {{ assignmentStateFor(row)?.score }}
+                                    <Pencil class="size-3 opacity-50 transition group-hover/nilai:opacity-100" />
+                                </button>
+                                <span v-else class="text-xs text-muted-foreground/50">Belum kirim</span>
+                            </td>
+                            <td v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 sm:table-cell">
+                                <template v-if="row.average !== null">
+                                    <span class="font-semibold text-foreground">{{ row.average }}</span>
+                                    <Badge :variant="row.qualifies ? 'success' : 'secondary'" class="ml-1.5">
+                                        {{ row.qualifies ? 'Memenuhi syarat' : 'Belum memenuhi' }}
+                                    </Badge>
+                                </template>
+                                <span v-else class="text-xs text-muted-foreground/50">—</span>
                             </td>
                             <td class="hidden px-3 py-3 sm:table-cell">
                                 <!-- Status default (accepted/belum ada) adalah derau; hanya
@@ -549,6 +650,10 @@ watch(() => props.id, () => load());
             :session="sessionBeingEdited"
             @saved="load"
         />
+
+        <AssignmentFormDialog v-model:open="assignmentFormOpen" :session="selectedSession" @saved="onAssignmentSaved" />
+
+        <GradingDialog :target="gradingTarget" @close="gradingTarget = null" @graded="load" />
 
         <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">

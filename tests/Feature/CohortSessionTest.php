@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
@@ -182,6 +184,55 @@ class CohortSessionTest extends TestCase
 
         $this->actingAs($this->admin())->patchJson("/api/admin/sessions/{$session->id}", ['title' => 'Judul Baru'])
             ->assertOk()->assertJsonPath('session.title', 'Judul Baru');
+    }
+
+    public function test_cohort_detail_carries_assignment_states_and_recap(): void
+    {
+        $program = Program::factory()->active()->create(['min_average_score' => 75]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        $assignment = Assignment::factory()->for($session, 'session')->create(['title' => 'Tugas Riset']);
+        $person = Person::create([
+            'name' => 'Peserta Rekap',
+            'phone' => '+628'.fake()->unique()->numerify('##########'),
+            'email' => fake()->unique()->safeEmail(),
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        AssignmentSubmission::factory()->graded(80)->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/admin/cohorts/{$cohort->id}")
+            ->assertOk()
+            ->assertJsonPath('cohort.min_average_score', 75)
+            ->assertJsonPath('sessions.0.assignment.title', 'Tugas Riset')
+            ->assertJsonPath('sessions.0.assignment.pending_count', 0)
+            ->assertJsonPath("roster.0.assignment_states.{$assignment->id}.state", 'dinilai')
+            ->assertJsonPath("roster.0.assignment_states.{$assignment->id}.score", 80)
+            ->assertJsonPath('roster.0.average', 80.0)
+            ->assertJsonPath('roster.0.qualifies', true);
+    }
+
+    public function test_recap_is_null_without_a_threshold_and_assignment_null_without_soal(): void
+    {
+        $cohort = Cohort::factory()->create(['program_id' => Program::factory()->active()->create()->id]);
+        CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        $person = Person::create([
+            'name' => 'Peserta Polos',
+            'phone' => '+628'.fake()->unique()->numerify('##########'),
+            'email' => fake()->unique()->safeEmail(),
+        ]);
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/admin/cohorts/{$cohort->id}")
+            ->assertOk()
+            ->assertJsonPath('cohort.min_average_score', null)
+            ->assertJsonPath('sessions.0.assignment', null)
+            ->assertJsonPath('roster.0.average', null)
+            ->assertJsonPath('roster.0.qualifies', null);
     }
 
     public function test_mentor_cannot_manage_classes(): void

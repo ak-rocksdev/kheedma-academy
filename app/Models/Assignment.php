@@ -38,4 +38,18 @@ class Assignment extends Model
     {
         return $this->belongsTo(User::class, 'updated_by');
     }
+
+    /**
+     * Soal as safe HTML. Editor-authored bodies are sanitized at write time
+     * and pass through; legacy plain-text bodies (pre rich-text) are escaped
+     * with their line breaks restored.
+     */
+    public function bodyHtml(): string
+    {
+        if (preg_match('/<(p|ul|ol|li|h[1-6]|strong|em|a|br|blockquote|img)\b/i', $this->body)) {
+            return $this->body;
+        }
+
+        return nl2br(e($this->body));
+    }
 }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AssignmentSubmission;
 use App\Models\Cohort;
 use App\Models\User;
+use App\Support\AssignmentScoring;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -26,26 +28,61 @@ class CohortController extends Controller
     }
 
     /** Detail for the roster/sessions/attendance screen. */
-    public function show(Cohort $cohort): JsonResponse
+    public function show(Cohort $cohort, AssignmentScoring $scoring): JsonResponse
     {
-        $cohort->load(['mentor:id,name', 'program:id,name'])->loadCount('enrollments');
+        $cohort->load(['mentor:id,name', 'program:id,name,min_average_score'])->loadCount('enrollments');
 
-        $sessions = $cohort->sessions()->withCount('attendances')->get();
+        $sessions = $cohort->sessions()->withCount('attendances')->with('assignment.updater:id,name')->get();
+        $assignments = $sessions->pluck('assignment')->filter()->values();
 
-        $roster = $cohort->enrollments()
+        $enrollments = $cohort->enrollments()
             ->with(['person:id,name,phone', 'latestStatusEvent', 'attendances:id,enrollment_id,cohort_session_id'])
-            ->get()
-            ->map(fn ($e) => [
+            ->get();
+
+        // One submissions pass for the whole roster: latest row + latest graded
+        // row per (assignment, enrollment) give state and effective score.
+        $submissions = AssignmentSubmission::query()
+            ->whereIn('assignment_id', $assignments->pluck('id'))
+            ->whereIn('enrollment_id', $enrollments->pluck('id'))
+            ->orderBy('id')
+            ->get(['id', 'assignment_id', 'enrollment_id', 'score'])
+            ->groupBy(fn ($s) => $s->assignment_id.':'.$s->enrollment_id);
+
+        $threshold = $cohort->program?->min_average_score;
+
+        $roster = $enrollments->map(function ($e) use ($assignments, $submissions, $threshold, $scoring, $cohort) {
+            $states = [];
+            foreach ($assignments as $assignment) {
+                $rows = $submissions->get($assignment->id.':'.$e->id, collect());
+                $lastGraded = $rows->whereNotNull('score')->last();
+                $states[$assignment->id] = [
+                    'state' => $rows->isEmpty()
+                        ? 'belum_dikerjakan'
+                        : ($rows->last()->score === null ? 'menunggu_dinilai' : 'dinilai'),
+                    'score' => $lastGraded?->score,
+                ];
+            }
+
+            // Program-wide average (spans the person's other classes too);
+            // the SAME rounded value the community gate compares. Computed
+            // once per row.
+            $avg = $threshold !== null ? $scoring->averageFor($e->person, $cohort->program) : null;
+
+            return [
                 'enrollment_id' => $e->id,
                 'person' => ['id' => $e->person->id, 'name' => $e->person->name, 'phone' => $e->person->phone],
                 'hadir' => $e->attendances->count(),
                 'latest_status' => $e->latestStatusEvent?->status,
                 'latest_status_at' => $e->latestStatusEvent?->occurred_at?->toIso8601String(),
                 'attended_session_ids' => $e->attendances->pluck('cohort_session_id')->values(),
-            ]);
+                'assignment_states' => (object) $states,
+                'average' => $avg,
+                'qualifies' => $threshold !== null ? ($avg !== null && $avg >= $threshold) : null,
+            ];
+        });
 
         return response()->json([
-            'cohort' => $this->row($cohort),
+            'cohort' => array_merge($this->row($cohort), ['min_average_score' => $threshold]),
             'sessions' => $sessions->map(fn ($s) => [
                 'id' => $s->id,
                 'title' => $s->title,
@@ -59,9 +96,12 @@ class CohortController extends Controller
                 'location_lng' => $s->location_lng,
                 'meeting_url' => $s->meeting_url,
                 'maps_url' => $s->mapsUrl(),
+                'assignment' => $s->assignment ? AssignmentController::row($s->assignment) : null,
             ]),
             'roster' => $roster,
-        ]);
+            // Whole-number averages (e.g. 80.0) must keep their decimal so
+            // the field round-trips as a float, not silently become an int.
+        ], 200, [], JSON_PRESERVE_ZERO_FRACTION);
     }
 
     public function store(Request $request): JsonResponse

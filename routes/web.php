@@ -3,6 +3,7 @@
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\MemberAreaController;
+use App\Http\Controllers\MemberAssignmentSubmissionController;
 use App\Http\Controllers\MemberAuthController;
 use App\Http\Controllers\MemberPasswordController;
 use App\Http\Controllers\ProgramPageController;
@@ -41,6 +42,12 @@ Route::get('/masuk', [MemberAuthController::class, 'showLogin'])->name('member.l
 Route::post('/masuk', [MemberAuthController::class, 'login'])->middleware('throttle:10,1')->name('member.login.store');
 Route::post('/keluar', [MemberAuthController::class, 'logout'])->name('member.logout');
 Route::get('/akun', [MemberAreaController::class, 'index'])->middleware('auth')->name('member.area');
+Route::post('/akun/tugas/{assignment}', [MemberAssignmentSubmissionController::class, 'store'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('member.assignment.submit');
+Route::patch('/akun/tugas/kiriman/{submission}', [MemberAssignmentSubmissionController::class, 'update'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('member.submission.update');
 
 /*
  | Member password reset. The GET reset route MUST be named password.reset —

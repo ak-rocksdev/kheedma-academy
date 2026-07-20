@@ -123,8 +123,13 @@ class ProgramController extends Controller
                     : ['sometimes', 'required', 'integer', 'min:1', 'max:255'])
                 : ['prohibited'],
             'locked_message' => ['sometimes', 'nullable', 'string', 'max:2000'],
+            'min_average_score' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:100'],
             'status' => $creating ? ['required', 'in:draft,active,inactive'] : ['sometimes', 'required', 'in:draft,active,inactive'],
             'selection_mode' => $creating ? ['required', 'in:selective,instant'] : ['sometimes', 'required', 'in:selective,instant'],
+        ], [
+            'min_average_score.integer' => 'Nilai minimum harus angka bulat 1 sampai 100.',
+            'min_average_score.min' => 'Nilai minimum paling rendah 1.',
+            'min_average_score.max' => 'Nilai minimum paling tinggi 100.',
         ]);
 
         // Switching (or defaulting) to general must clear a stale level.
@@ -151,6 +156,7 @@ class ProgramController extends Controller
             'type' => $p->type,
             'level' => $p->level !== null ? (int) $p->level : null,
             'locked_message' => $p->locked_message,
+            'min_average_score' => $p->min_average_score !== null ? (int) $p->min_average_score : null,
             'thumbnail_url' => $p->thumbnail_path ? Storage::disk('public')->url($p->thumbnail_path) : null,
             'is_open' => $p->hasAttribute('has_open_cohort') ? $p->status === 'active' && (bool) $p->has_open_cohort : $p->isOpen(),
             'cohorts_count' => (int) ($p->cohorts_count ?? 0),

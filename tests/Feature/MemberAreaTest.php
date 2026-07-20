@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Assignment;
+use App\Models\AssignmentSubmission;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
@@ -396,5 +398,148 @@ class MemberAreaTest extends TestCase
             ->assertSee('Kelas Belum Diikuti')
             ->assertDontSee('Buka materi kelas')
             ->assertDontSee('https://drive.google.com/rahasia', false);
+    }
+
+    public function test_member_sees_assignment_with_score_and_feedback(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['min_average_score' => 75]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create(['title' => 'Kelas 1: Riset']);
+        $assignment = Assignment::factory()->for($session, 'session')->create([
+            'title' => 'Riset 3 Produk',
+            'body' => 'Cari 3 produk winning.',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+        AssignmentSubmission::factory()->graded(82)->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+            'feedback' => 'Bagus, riset kamu tajam.',
+        ]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Riset 3 Produk')
+            ->assertSee('Cari 3 produk winning.')
+            ->assertSee('Bagus, riset kamu tajam.')
+            ->assertSee('82')
+            ->assertSee('Kirim ulang untuk perbaiki nilai')
+            ->assertSee('Rata-ratamu')
+            ->assertSee('Kamu memenuhi syarat! Lanjut ke kelas komunitas');
+    }
+
+    public function test_member_sees_submit_form_when_not_yet_submitted(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        Assignment::factory()->for($session, 'session')->create(['title' => 'Tugas Konten']);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Tugas Konten')
+            ->assertSee('Kirim jawaban')
+            // No threshold on this program -> no progress card.
+            ->assertDontSee('Rata-ratamu');
+    }
+
+    public function test_assignment_stays_locked_until_marked_hadir(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        Assignment::factory()->for($session, 'session')->create([
+            'title' => 'Tugas Terkunci',
+            'body' => 'Isi soal rahasia sebelum hadir.',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Tugas Terkunci')
+            ->assertSee('Soal dan pengiriman tugas terbuka setelah kehadiranmu ditandai mentor')
+            ->assertDontSee('Isi soal rahasia sebelum hadir.')
+            ->assertDontSee('Kirim jawaban');
+    }
+
+    public function test_waiting_state_shows_confirmation_and_fix_link(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['min_average_score' => 75]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Jawabanmu sudah terkirim, menunggu dinilai mentor.')
+            ->assertSee('Edit kiriman')
+            ->assertDontSee('Perbaiki kiriman')
+            ->assertSee('Capai rata-rata 75 untuk membuka kelas komunitas');
+    }
+
+    public function test_rich_soal_renders_formatted_and_legacy_plain_text_keeps_breaks(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+
+        $richSession = CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Rich']);
+        Assignment::factory()->for($richSession, 'session')->create([
+            'title' => 'Tugas Rich',
+            'body' => '<p>Langkah <strong>satu</strong></p><ul><li>Poin A</li></ul>',
+        ]);
+
+        $legacySession = CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Legacy']);
+        Assignment::factory()->for($legacySession, 'session')->create([
+            'title' => 'Tugas Legacy',
+            'body' => "Baris satu\nBaris dua",
+        ]);
+
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $richSession->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $legacySession->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('<strong>satu</strong>', false)
+            ->assertSee('<li>Poin A</li>', false)
+            ->assertSee('Baris satu<br', false);
+    }
+
+    public function test_waiting_submission_locks_after_the_edit_window(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create(['min_average_score' => 75]);
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+            'created_at' => now()->subHours(7),
+        ]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Kirimanmu terkunci dan masuk antrean penilaian mentor.')
+            ->assertDontSee('Edit kiriman');
     }
 }

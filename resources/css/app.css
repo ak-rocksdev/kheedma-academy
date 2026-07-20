@@ -330,6 +330,26 @@
 }
 
 /*
+ | Reusable modal (<x-modal>): quiet scale+fade entrance; reduced-motion
+ | users get an instant appearance.
+ */
+@media (prefers-reduced-motion: no-preference) {
+    .kh-modal-card {
+        animation: kh-modal-in 0.2s ease-out;
+    }
+}
+@keyframes kh-modal-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px) scale(0.97);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/*
  | Duet Date Picker (public funnel, birth-date field) — themed to the brand
  | tokens above. Every --duet-* variable must be defined: the component ships
  | no fallbacks and we deliberately skip its default theme so these values
