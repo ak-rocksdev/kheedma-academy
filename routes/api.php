@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\Admin\PersonController;
 use App\Http\Controllers\Api\Admin\ProgramController;
 use App\Http\Controllers\Api\Admin\ProgramThumbnailController;
 use App\Http\Controllers\Api\Admin\StatsController;
+use App\Http\Controllers\Api\Admin\SubmissionController;
 use App\Http\Controllers\Api\Admin\UserController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Middleware\EnsureUserIsActive;
@@ -56,6 +57,11 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
         Route::put('/sessions/{session}/attendance', [AttendanceController::class, 'update'])->middleware('permission:attendance.record');
         Route::put('/sessions/{session}/assignment', [AssignmentController::class, 'upsert'])->middleware('permission:assignments.manage');
+
+        Route::middleware('permission:assignments.grade')->group(function () {
+            Route::get('/assignments/{assignment}/enrollments/{enrollment}/submissions', [SubmissionController::class, 'index']);
+            Route::patch('/submissions/{submission}/grade', [SubmissionController::class, 'grade']);
+        });
 
         Route::middleware('permission:programs.manage')->group(function () {
             Route::get('/programs', [ProgramController::class, 'index']);
