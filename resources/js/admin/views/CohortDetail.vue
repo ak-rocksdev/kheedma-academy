@@ -95,7 +95,6 @@ function assignmentStateFor(row) {
     return id ? (row.assignment_states?.[id] ?? { state: 'belum_dikerjakan', score: null }) : null;
 }
 
-const STATE_LABELS = { belum_dikerjakan: 'Belum', menunggu_dinilai: 'Menunggu', dinilai: 'Dinilai' };
 
 /** The soal is rich HTML now; the card preview wants readable plain text. */
 function plainExcerpt(html) {
@@ -538,19 +537,29 @@ watch(() => props.id, () => load());
                                 </button>
                             </td>
                             <td v-if="selectedSession?.assignment" class="px-2 py-3 text-center sm:px-3">
+                                <!-- The waiting state is the mentor's work queue:
+                                     it reads as an action, not a passive chip. -->
                                 <button
+                                    v-if="assignmentStateFor(row)?.state === 'menunggu_dinilai'"
                                     type="button"
-                                    class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition"
-                                    :class="{
-                                        'border-border text-muted-foreground hover:border-teal-600/50': assignmentStateFor(row)?.state === 'belum_dikerjakan',
-                                        'border-orange-300 bg-orange-100 text-orange-700 hover:border-orange-400': assignmentStateFor(row)?.state === 'menunggu_dinilai',
-                                        'border-teal-300 bg-teal-100 text-teal-700 hover:border-teal-500': assignmentStateFor(row)?.state === 'dinilai',
-                                    }"
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
                                     :disabled="!auth.can('assignments.grade')"
                                     @click="openGrading(row)"
                                 >
-                                    {{ assignmentStateFor(row)?.state === 'dinilai' ? assignmentStateFor(row)?.score : STATE_LABELS[assignmentStateFor(row)?.state] }}
+                                    <Pencil class="size-3" /> Nilai sekarang
                                 </button>
+                                <button
+                                    v-else-if="assignmentStateFor(row)?.state === 'dinilai'"
+                                    type="button"
+                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500"
+                                    :disabled="!auth.can('assignments.grade')"
+                                    title="Lihat atau perbarui nilai"
+                                    @click="openGrading(row)"
+                                >
+                                    {{ assignmentStateFor(row)?.score }}
+                                    <Pencil class="size-3 opacity-0 transition group-hover/nilai:opacity-70" />
+                                </button>
+                                <span v-else class="text-xs text-muted-foreground/50">Belum kirim</span>
                             </td>
                             <td v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 sm:table-cell">
                                 <template v-if="row.average !== null">
