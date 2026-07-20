@@ -97,6 +97,11 @@ function assignmentStateFor(row) {
 
 const STATE_LABELS = { belum_dikerjakan: 'Belum', menunggu_dinilai: 'Menunggu', dinilai: 'Dinilai' };
 
+/** The soal is rich HTML now; the card preview wants readable plain text. */
+function plainExcerpt(html) {
+    return (html ?? '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
 const loading = ref(true);
 const error = ref('');
 
@@ -452,7 +457,7 @@ watch(() => props.id, () => load());
                             <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Tugas · {{ selectedSession.title }}</p>
                             <template v-if="selectedSession.assignment">
                                 <p class="mt-0.5 font-semibold text-foreground">{{ selectedSession.assignment.title }}</p>
-                                <p class="mt-1 line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">{{ selectedSession.assignment.body }}</p>
+                                <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">{{ plainExcerpt(selectedSession.assignment.body) }}</p>
                             </template>
                             <p v-else class="mt-0.5 text-sm text-muted-foreground/70 italic">Belum ada tugas untuk kelas ini.</p>
                         </div>

@@ -469,6 +469,34 @@ class MemberAreaTest extends TestCase
             ->assertSee('Capai rata-rata 75 untuk membuka kelas komunitas');
     }
 
+    public function test_rich_soal_renders_formatted_and_legacy_plain_text_keeps_breaks(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+
+        $richSession = CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Rich']);
+        Assignment::factory()->for($richSession, 'session')->create([
+            'title' => 'Tugas Rich',
+            'body' => '<p>Langkah <strong>satu</strong></p><ul><li>Poin A</li></ul>',
+        ]);
+
+        $legacySession = CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Legacy']);
+        Assignment::factory()->for($legacySession, 'session')->create([
+            'title' => 'Tugas Legacy',
+            'body' => "Baris satu\nBaris dua",
+        ]);
+
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('<strong>satu</strong>', false)
+            ->assertSee('<li>Poin A</li>', false)
+            ->assertSee('Baris satu<br', false);
+    }
+
     public function test_waiting_submission_locks_after_the_edit_window(): void
     {
         [$user, $person] = $this->member();

@@ -88,6 +88,22 @@ class AssignmentAdminTest extends TestCase
         $this->assertSame($mentor->id, Assignment::sole()->updated_by);
     }
 
+    public function test_body_is_sanitized_to_the_allowlist(): void
+    {
+        $session = $this->cohortSession();
+
+        $this->actingAs($this->mentor())
+            ->putJson("/api/admin/sessions/{$session->id}/assignment", [
+                'title' => 'Tugas HTML',
+                'body' => '<p>Langkah <strong>satu</strong></p><script>alert(1)</script>',
+            ])
+            ->assertOk();
+
+        $body = Assignment::sole()->body;
+        $this->assertStringContainsString('<strong>satu</strong>', $body);
+        $this->assertStringNotContainsString('<script', $body);
+    }
+
     public function test_title_and_body_are_required(): void
     {
         $session = $this->cohortSession();

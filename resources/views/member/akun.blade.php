@@ -458,7 +458,7 @@
                                                 <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                             </span>
                                         </summary>
-                                        <div class="whitespace-pre-line border-t border-teal-900/10 px-4 py-4 text-sm text-teal-800/80">{{ $tugas['assignment']->body }}</div>
+                                        <div class="kh-prose border-t border-teal-900/10 px-4 py-4 text-sm text-teal-800/80">{!! $tugas['assignment']->bodyHtml() !!}</div>
                                     </details>
 
                                     @if ($tugas['versions'] > 0)

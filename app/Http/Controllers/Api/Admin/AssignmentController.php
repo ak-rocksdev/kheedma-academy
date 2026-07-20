@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Assignment;
 use App\Models\CohortSession;
+use App\Support\SectionBodySanitizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,11 +16,11 @@ class AssignmentController extends Controller
      * schema). Authorship fields are set server-side only — request input
      * never reaches them (mass-assignment guard).
      */
-    public function upsert(Request $request, CohortSession $session): JsonResponse
+    public function upsert(Request $request, CohortSession $session, SectionBodySanitizer $sanitizer): JsonResponse
     {
         $data = $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'body' => ['required', 'string', 'max:10000'],
+            'body' => ['required', 'string', 'max:20000'],
         ], [
             'title.required' => 'Judul tugas wajib diisi.',
             'body.required' => 'Soal tugas wajib diisi.',
@@ -34,7 +35,9 @@ class AssignmentController extends Controller
         }
 
         $assignment->title = $data['title'];
-        $assignment->body = $data['body'];
+        // Editor output is HTML; the same allowlist that guards content
+        // sections guards the soal (server is the authority, not the editor).
+        $assignment->body = $sanitizer->sanitize($data['body']);
         $assignment->updated_by = $request->user()->id;
         $assignment->save();
 
