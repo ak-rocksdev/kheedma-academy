@@ -264,9 +264,6 @@
                                                     @php($konfirmasi = $confirmationCards[$session->id] ?? null)
                                                     @if ($konfirmasi && $konfirmasi['editable'])
                                                         <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
-                                                            @if (session('konfirmasi_tersimpan') === $session->id)
-                                                                <p class="mb-2 text-xs font-semibold text-teal-700">Konfirmasimu tersimpan. Terima kasih!</p>
-                                                            @endif
                                                             @if ($konfirmasi['status'] === null)
                                                                 <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
                                                                 <p class="mt-0.5 text-xs text-teal-800/60">Konfirmasimu membantu mentor menyiapkan kelas.</p>
@@ -535,11 +532,6 @@
                                         ])>{{ $tugas['state'] === 'dinilai' ? 'Dinilai · '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
                                     </div>
 
-                                    @if (session('tugas_terkirim') === $tugas['assignment']->id)
-                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Jawabanmu terkirim. Mentor akan menilainya segera.</p>
-                                    @elseif (session('tugas_diperbarui') === $tugas['assignment']->id)
-                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Kirimanmu diperbarui.</p>
-                                    @endif
                                     @if ($tugas['state'] === 'menunggu_dinilai')
                                         <p class="mt-3 text-sm font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
                                         @if ($tugas['can_edit'])

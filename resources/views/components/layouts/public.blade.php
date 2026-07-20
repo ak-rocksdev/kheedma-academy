@@ -146,5 +146,7 @@
         @endauth
     </x-nav.bottom-nav>
 @endif
+
+<x-toast-stack />
 </body>
 </html>

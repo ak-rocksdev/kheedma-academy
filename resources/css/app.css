@@ -400,3 +400,21 @@
     border-radius: 1rem; /* rounded-2xl */
     box-shadow: 0 20px 45px -15px color-mix(in srgb, var(--color-teal-900) 35%, transparent);
 }
+
+/* Toast (x-toast): drop in from above; [data-leaving] fades it out.
+   initToasts() in app.js drives the lifecycle. */
+.kh-toast {
+    animation: kh-toast-in 0.35s cubic-bezier(0.21, 1.02, 0.73, 1) both;
+}
+.kh-toast[data-leaving] {
+    transition: opacity 0.25s ease, translate 0.25s ease;
+    opacity: 0;
+    translate: 0 -0.5rem;
+}
+@keyframes kh-toast-in {
+    from { opacity: 0; translate: 0 -0.75rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .kh-toast { animation: none; }
+    .kh-toast[data-leaving] { transition: none; }
+}

@@ -56,7 +56,7 @@ class MemberSessionConfirmationTest extends TestCase
         $this->actingAs($user)
             ->post(route('member.session.confirm', $session), ['status' => 'attending'])
             ->assertRedirect()
-            ->assertSessionHas('konfirmasi_tersimpan', $session->id);
+            ->assertSessionHas('toast');
 
         $this->assertSame(1, SessionConfirmation::count());
         $this->assertSame('attending', SessionConfirmation::sole()->status);
@@ -118,7 +118,7 @@ class MemberSessionConfirmationTest extends TestCase
         $this->actingAs($user)
             ->post(route('member.session.confirm', $session), ['status' => 'attending'])
             ->assertRedirect()
-            ->assertSessionHas('konfirmasi_tersimpan', $session->id);
+            ->assertSessionHas('toast');
 
         $this->assertSame(1, SessionConfirmation::count());
     }

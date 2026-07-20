@@ -72,7 +72,7 @@ class MemberSubmissionTest extends TestCase
                 'note' => 'Versi pertama.',
             ])
             ->assertRedirect()
-            ->assertSessionHas('tugas_terkirim', $assignment->id);
+            ->assertSessionHas('toast');
 
         // Spam-guard: while ungraded, a second SEND is rejected (edit instead).
         $this->actingAs($user)
@@ -111,7 +111,7 @@ class MemberSubmissionTest extends TestCase
                 'note' => 'Link sudah dibetulkan.',
             ])
             ->assertRedirect()
-            ->assertSessionHas('tugas_diperbarui', $assignment->id);
+            ->assertSessionHas('toast');
 
         $this->assertSame(1, AssignmentSubmission::count());
         $fresh = $submission->fresh();
@@ -230,7 +230,7 @@ class MemberSubmissionTest extends TestCase
         $this->actingAs($user)
             ->post(route('member.assignment.submit', $assignment), ['url' => 'drive.google.com/jawaban-polos'])
             ->assertRedirect()
-            ->assertSessionHas('tugas_terkirim', $assignment->id);
+            ->assertSessionHas('toast');
 
         $this->assertSame('https://drive.google.com/jawaban-polos', AssignmentSubmission::sole()->url);
     }

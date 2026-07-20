@@ -597,10 +597,27 @@ function initLockModal() {
     });
 }
 
+/* Toasts (x-toast-stack): each card slides in, self-dismisses after a
+   beat, and the X closes it early. Server flashes render them; this only
+   handles the lifecycle. */
+function initToasts() {
+    document.querySelectorAll('[data-toast]').forEach((toast) => {
+        const leave = () => {
+            if (toast.hasAttribute('data-leaving')) return;
+            toast.setAttribute('data-leaving', '');
+            toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+            setTimeout(() => toast.remove(), 400); // reduced-motion fallback
+        };
+        toast.querySelector('[data-toast-close]')?.addEventListener('click', leave);
+        setTimeout(leave, 5000);
+    });
+}
+
 initRegionSelects();
 initBirthDatePicker();
 initPinInputs();
 initModals();
+initToasts();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

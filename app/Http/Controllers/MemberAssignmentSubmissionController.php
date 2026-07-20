@@ -69,7 +69,7 @@ class MemberAssignmentSubmissionController extends Controller
         $submission->note = $data['note'] ?? null;
         $submission->save();
 
-        return back()->with('tugas_terkirim', $assignment->id);
+        return back()->with('toast', ['type' => 'success', 'message' => 'Jawabanmu terkirim. Mentor akan menilainya segera.']);
     }
 
     /**
@@ -111,7 +111,7 @@ class MemberAssignmentSubmissionController extends Controller
         $submission->note = $data['note'] ?? null;
         $submission->save();
 
-        return back()->with('tugas_diperbarui', $submission->assignment_id);
+        return back()->with('toast', ['type' => 'success', 'message' => 'Kirimanmu diperbarui.']);
     }
 
     /** @return array<string, mixed> */

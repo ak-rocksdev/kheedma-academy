@@ -53,6 +53,6 @@ class MemberSessionConfirmationController extends Controller
             ],
         );
 
-        return back()->with('konfirmasi_tersimpan', $session->id);
+        return back()->with('toast', ['type' => 'success', 'message' => 'Konfirmasimu tersimpan. Terima kasih!']);
     }
 }
