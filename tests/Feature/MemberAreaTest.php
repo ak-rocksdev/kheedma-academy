@@ -556,7 +556,8 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertSee('Bisa hadir di kelas ini?')
-            ->assertSee('Insya Allah hadir')
+            ->assertSee('Bisa hadir')
+            ->assertSee('Konfirmasi hadir?')
             ->assertSee('Berhalangan');
     }
 
@@ -593,7 +594,7 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertDontSee('Bisa hadir di kelas ini?')
-            ->assertDontSee('Insya Allah hadir');
+            ->assertDontSee('Konfirmasi hadir?');
     }
 
     public function test_prompt_hidden_once_marked_hadir(): void

@@ -246,17 +246,14 @@
                                                     @if ($konfirmasi && $konfirmasi['editable'])
                                                         <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
                                                             @if (session('konfirmasi_tersimpan') === $session->id)
-                                                                <p class="mb-2 text-xs font-semibold text-teal-700">Konfirmasimu tersimpan. Syukron!</p>
+                                                                <p class="mb-2 text-xs font-semibold text-teal-700">Konfirmasimu tersimpan. Terima kasih!</p>
                                                             @endif
                                                             @if ($konfirmasi['status'] === null)
                                                                 <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
                                                                 <p class="mt-0.5 text-xs text-teal-800/60">Konfirmasimu membantu mentor menyiapkan kelas.</p>
                                                                 <div class="mt-3 flex flex-wrap gap-2">
-                                                                    <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once>
-                                                                        @csrf
-                                                                        <input type="hidden" name="status" value="attending">
-                                                                        <button type="submit" class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Insya Allah hadir</button>
-                                                                    </form>
+                                                                    <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
+                                                                            class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Bisa hadir</button>
                                                                     <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
                                                                             class="rounded-full border border-teal-900/15 px-4 py-2 text-sm font-semibold text-teal-800 transition hover:border-orange-400 hover:text-orange-600">Berhalangan</button>
                                                                 </div>
@@ -272,11 +269,8 @@
                                                                     @endif
                                                                     <div class="flex flex-wrap gap-2">
                                                                         @if ($konfirmasi['status'] === 'cannot_attend')
-                                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once>
-                                                                                @csrf
-                                                                                <input type="hidden" name="status" value="attending">
-                                                                                <button type="submit" class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
-                                                                            </form>
+                                                                            <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
+                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
                                                                         @else
                                                                             <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
                                                                                     class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-orange-400 hover:text-orange-600">Ubah konfirmasi</button>
@@ -306,6 +300,26 @@
                                                                     <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
                                                                     <button type="submit" class="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">Kirim konfirmasi</button>
                                                                 </div>
+                                                            </form>
+                                                        </x-modal>
+
+                                                        {{-- Confirm-hadir dialog: every confirmation passes through an
+                                                             explicit dialog (PO 2026-07-20), house take on SweetAlert. --}}
+                                                        <x-modal id="modal-hadir-{{ $session->id }}" title="Konfirmasi hadir?">
+                                                            <div class="text-center">
+                                                                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-100">
+                                                                    <svg class="h-7 w-7 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                </span>
+                                                                <p class="mt-3 text-sm leading-relaxed text-teal-800/80">
+                                                                    Kamu akan tercatat hadir di <span class="font-semibold text-teal-900">{{ $session->title }}</span>.
+                                                                    Masih bisa diubah sampai kelas dimulai.
+                                                                </p>
+                                                            </div>
+                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once class="mt-4 flex justify-center gap-2">
+                                                                @csrf
+                                                                <input type="hidden" name="status" value="attending">
+                                                                <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                                                <button type="submit" class="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Ya, saya hadir</button>
                                                             </form>
                                                         </x-modal>
                                                     @endif
