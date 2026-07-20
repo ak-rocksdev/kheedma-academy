@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
-import { ArrowLeft, CalendarDays, Check, Copy, FileText, Pencil, Plus, Ticket, Trash2, UserMinus } from 'lucide-vue-next';
+import { ArrowLeft, CalendarDays, Check, ClipboardList, Copy, FileText, Pencil, Plus, Ticket, Trash2, UserMinus } from 'lucide-vue-next';
 import { copyText } from '@/lib/clipboard';
 import { cohorts as cohortsApi, enrollments as enrollmentsApi, sessions as sessionsApi, api } from '@/api';
 import { Badge } from '@/components/ui/badge';
@@ -15,6 +15,7 @@ import { fmtDateTime } from '@/lib/format';
 import { cohortStatusLabel, cohortStatusVariant } from '@/lib/status';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
 import SessionFormDialog from '@/components/SessionFormDialog.vue';
+import AssignmentFormDialog from '@/components/AssignmentFormDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -63,6 +64,17 @@ async function confirmDeleteSession() {
     } catch (e) {
         if (!e.sessionExpired) deleteError.value = e.message ?? 'Gagal menghapus kelas.';
     }
+}
+
+// Tugas kelas terpilih (spec 1 phase 2): satu tugas per kelas.
+const assignmentFormOpen = ref(false);
+
+function openAssignmentForm() {
+    assignmentFormOpen.value = true;
+}
+
+async function onAssignmentSaved(assignment) {
+    if (selectedSession.value) selectedSession.value.assignment = assignment;
 }
 
 const loading = ref(true);
@@ -409,6 +421,35 @@ watch(() => props.id, () => load());
                 </div>
             </div>
 
+            <!-- Tugas kelas terpilih: soal ditulis mentor, dinilai dari roster. -->
+            <div v-if="selectedSession" class="mt-6 rounded-xl border border-border bg-card px-4 py-4">
+                <div class="flex flex-wrap items-start justify-between gap-3">
+                    <div class="flex min-w-0 items-start gap-3">
+                        <span class="flex size-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
+                            <ClipboardList class="size-5 text-teal-700" />
+                        </span>
+                        <div class="min-w-0">
+                            <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Tugas · {{ selectedSession.title }}</p>
+                            <template v-if="selectedSession.assignment">
+                                <p class="mt-0.5 font-semibold text-foreground">{{ selectedSession.assignment.title }}</p>
+                                <p class="mt-1 line-clamp-2 whitespace-pre-line text-sm text-muted-foreground">{{ selectedSession.assignment.body }}</p>
+                            </template>
+                            <p v-else class="mt-0.5 text-sm text-muted-foreground/70 italic">Belum ada tugas untuk kelas ini.</p>
+                        </div>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-2">
+                        <Badge v-if="selectedSession.assignment?.pending_count" variant="secondary" class="bg-orange-100 text-orange-700">
+                            {{ selectedSession.assignment.pending_count }} menunggu dinilai
+                        </Badge>
+                        <Button v-if="auth.can('assignments.manage')" variant="outline" size="sm" @click="openAssignmentForm">
+                            <Pencil v-if="selectedSession.assignment" class="mr-1 h-3.5 w-3.5" />
+                            <Plus v-else class="mr-1 h-3.5 w-3.5" />
+                            {{ selectedSession.assignment ? 'Ubah tugas' : 'Tulis tugas' }}
+                        </Button>
+                    </div>
+                </div>
+            </div>
+
             <!-- Daftar hadir: kehadiran dicatat per kelas terpilih di atas. -->
             <div class="mt-6 overflow-hidden rounded-xl border border-border bg-card">
                 <div v-if="selectedSession && activeRosterCount" class="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
@@ -549,6 +590,8 @@ watch(() => props.id, () => load());
             :session="sessionBeingEdited"
             @saved="load"
         />
+
+        <AssignmentFormDialog v-model:open="assignmentFormOpen" :session="selectedSession" @saved="onAssignmentSaved" />
 
         <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
