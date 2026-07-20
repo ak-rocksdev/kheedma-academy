@@ -24,6 +24,31 @@
                 </div>
             @endif
 
+            @if (count($openClasses))
+                <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
+                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Jadwal Kelas</p>
+                    <h2 class="mt-2 text-lg font-bold text-teal-900">Apa saja yang akan kamu ikuti?</h2>
+                    <ul class="mt-4 divide-y divide-teal-900/5">
+                        @foreach ($openClasses as $i => $kelas)
+                            <li class="flex flex-wrap items-center gap-x-3 gap-y-1 py-3">
+                                <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sand-100 text-xs font-bold text-teal-800/70">{{ $i + 1 }}</span>
+                                <span class="min-w-0 flex-1">
+                                    <span class="block text-sm font-semibold text-teal-900">{{ $kelas['title'] }}</span>
+                                    @if ($kelas['schedule'])
+                                        <span class="block text-xs text-teal-800/60">{{ $kelas['schedule'] }}</span>
+                                    @endif
+                                </span>
+                                <span @class([
+                                    'shrink-0 rounded-full px-2.5 py-1 text-[0.65rem] font-semibold uppercase tracking-wide',
+                                    'bg-teal-100 text-teal-700' => ! $kelas['is_online'],
+                                    'bg-sand-100 text-teal-800/70' => $kelas['is_online'],
+                                ])>{{ $kelas['is_online'] ? 'Online' : 'Tatap muka' }}</span>
+                            </li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="mt-10 text-center">
                 @if (session('application_notice'))
                     <div class="mx-auto mb-6 max-w-md rounded-2xl border border-orange-200 bg-orange-50 px-4 py-3 text-sm text-orange-800">
