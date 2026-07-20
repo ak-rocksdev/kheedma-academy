@@ -28,7 +28,7 @@
                 </div>
 
                 <div>
-                    <span class="block text-sm font-medium text-teal-800">PIN baru <span class="text-teal-800/50">(6 digit angka)</span></span>
+                    <span class="block text-sm font-medium text-teal-800">PIN baru <span class="text-teal-800/70">(6 digit angka)</span></span>
                     <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
                     @error('password') <p class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>

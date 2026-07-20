@@ -93,7 +93,7 @@
                         @if ($kelasNotice === 'accepted')
                             <p class="font-semibold text-teal-900">Pendaftaranmu diterima! 🎉</p>
                             <p class="mt-1 text-sm leading-relaxed text-teal-800/70">
-                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini — pantau ya.
+                                Tim sedang menyiapkan penempatan kelasmu. Jadwal dan lokasinya akan tampil di sini, pantau ya.
                             </p>
                         @else
                             <p class="font-semibold text-teal-900">Pendaftaranmu sedang ditinjau.</p>
@@ -266,7 +266,7 @@
                                                         <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
                                                             @if ($konfirmasi['status'] === null)
                                                                 <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
-                                                                <p class="mt-0.5 text-xs text-teal-800/60">Konfirmasimu membantu mentor menyiapkan kelas.</p>
+                                                                <p class="mt-0.5 text-xs text-teal-800/70">Konfirmasimu membantu mentor menyiapkan kelas.</p>
                                                                 <div class="mt-3 flex flex-wrap gap-2">
                                                                     <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
                                                                             class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Bisa hadir</button>
@@ -308,7 +308,7 @@
                                                                 @csrf
                                                                 <input type="hidden" name="status" value="cannot_attend">
                                                                 <input type="hidden" name="_session_id" value="{{ $session->id }}">
-                                                                <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Kendalamu (opsional)</label>
+                                                                <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/70">Kendalamu (opsional)</label>
                                                                 <textarea name="note" rows="3" placeholder="Contoh: bentrok jam kerja, ada keperluan lain, dll."
                                                                           class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">{{ $confirmFailedHere ? old('note') : $konfirmasi['note'] }}</textarea>
                                                                 @if ($confirmFailedHere) <p class="text-xs text-red-600">{{ $errors->first('status') ?: $errors->first('note') }}</p> @endif
@@ -348,8 +348,8 @@
                                                                 <span class="truncate font-medium text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
                                                                 <span @class([
                                                                     'hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline',
-                                                                    'bg-sand-100 text-teal-800/60' => $tugas['state'] === 'belum_dikerjakan',
-                                                                    'bg-orange-100 text-orange-700' => $tugas['state'] === 'menunggu_dinilai',
+                                                                    'bg-sand-100 text-teal-800/70' => $tugas['state'] === 'belum_dikerjakan',
+                                                                    'bg-orange-100 text-orange-800' => $tugas['state'] === 'menunggu_dinilai',
                                                                     'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
                                                                 ])>{{ $tugas['state'] === 'dinilai' ? 'Nilai '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
                                                             </span>
@@ -398,7 +398,7 @@
                                         </p>
                                     </div>
                                     @if ($entry['chip'])
-                                        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $entry['state'] === 'pending' ? 'bg-orange-100 text-orange-700' : 'bg-teal-100 text-teal-700' }}">
+                                        <span class="shrink-0 rounded-full px-3 py-1 text-xs font-semibold {{ $entry['state'] === 'pending' ? 'bg-orange-100 text-orange-800' : 'bg-teal-100 text-teal-700' }}">
                                             {{ $entry['chip'] }}
                                         </span>
                                     @else
@@ -428,11 +428,11 @@
                                         data-lock-trigger
                                         data-lock-message="{{ $entry['message'] }}"
                                         data-lock-reason="{{ $entry['reason'] }}"
-                                        class="flex w-full items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white/50 px-5 py-4 text-left opacity-75 transition hover:opacity-100"
+                                        class="flex w-full items-center justify-between gap-4 rounded-2xl border border-teal-900/10 bg-white/50 px-5 py-4 text-left transition"
                                     >
                                         <div>
                                             <p class="font-semibold text-teal-900/70">{{ $entry['program']->name }}</p>
-                                            <p class="text-xs text-teal-800/50">Level {{ $entry['program']->level }} · Terkunci</p>
+                                            <p class="text-xs text-teal-800/70">Level {{ $entry['program']->level }} · Terkunci</p>
                                         </div>
                                         <svg class="h-4 w-4 shrink-0 text-teal-700/50" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="9" width="10" height="7" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke-linecap="round"/></svg>
                                     </button>
@@ -480,16 +480,16 @@
                                     <span class="min-w-0 truncate text-teal-800/80">{{ $row['title'] }}</span>
                                     <span @class([
                                         'shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold',
-                                        'bg-sand-100 text-teal-800/60' => $row['state'] === 'belum_dikerjakan',
-                                        'bg-orange-100 text-orange-700' => $row['state'] === 'menunggu_dinilai',
+                                        'bg-sand-100 text-teal-800/70' => $row['state'] === 'belum_dikerjakan',
+                                        'bg-orange-100 text-orange-800' => $row['state'] === 'menunggu_dinilai',
                                         'bg-teal-100 text-teal-700' => $row['state'] === 'dinilai',
                                     ])>{{ $row['state'] === 'dinilai' ? $row['score'] : ($row['state'] === 'menunggu_dinilai' ? 'Menunggu' : 'Belum') }}</span>
                                 </li>
                             @endforeach
                         </ul>
                         @if ($progress['qualifies'])
-                            <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-full bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
-                                Kamu memenuhi syarat! Lanjut ke kelas komunitas
+                            <a href="{{ route('daftar') }}" class="mt-4 inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-orange-600">
+                                Lanjut ke kelas komunitas
                             </a>
                         @else
                             <p class="mt-3 text-sm text-teal-800/70">Capai rata-rata {{ $progress['threshold'] }} untuk membuka kelas komunitas.</p>
@@ -521,13 +521,13 @@
                                 <div class="mt-4 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                                     <div class="flex flex-wrap items-start justify-between gap-2">
                                         <div class="min-w-0">
-                                            <p class="text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $session->title }} · {{ $enrollment->cohort->program?->name }}</p>
+                                            <p class="text-xs font-semibold uppercase tracking-wide text-teal-800/70">{{ $session->title }} · {{ $enrollment->cohort->program?->name }}</p>
                                             <p class="mt-1 font-semibold text-teal-900">{{ $tugas['assignment']->title }}</p>
                                         </div>
                                         <span @class([
                                             'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
-                                            'bg-sand-100 text-teal-800/60' => $tugas['state'] === 'belum_dikerjakan',
-                                            'bg-orange-100 text-orange-700' => $tugas['state'] === 'menunggu_dinilai',
+                                            'bg-sand-100 text-teal-800/70' => $tugas['state'] === 'belum_dikerjakan',
+                                            'bg-orange-100 text-orange-800' => $tugas['state'] === 'menunggu_dinilai',
                                             'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
                                         ])>{{ $tugas['state'] === 'dinilai' ? 'Dinilai · '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
                                     </div>
@@ -535,9 +535,9 @@
                                     @if ($tugas['state'] === 'menunggu_dinilai')
                                         <p class="mt-3 text-sm font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
                                         @if ($tugas['can_edit'])
-                                            <p class="mt-1 text-xs text-teal-800/60">Salah tempel link? Kamu masih bisa edit kiriman ini sampai pukul {{ $tugas['edit_until']->format('H.i') }}.</p>
+                                            <p class="mt-1 text-xs text-teal-800/70">Salah tempel link? Kamu masih bisa edit kiriman ini sampai pukul {{ $tugas['edit_until']->format('H.i') }}.</p>
                                         @else
-                                            <p class="mt-1 text-xs text-teal-800/60">Kirimanmu terkunci dan masuk antrean penilaian mentor.</p>
+                                            <p class="mt-1 text-xs text-teal-800/70">Kirimanmu terkunci dan masuk antrean penilaian mentor.</p>
                                         @endif
                                     @endif
 
@@ -572,7 +572,7 @@
                                             <div class="overflow-x-auto">
                                             <table class="w-full min-w-[26rem] text-sm">
                                                 <thead>
-                                                    <tr class="bg-sand-50 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-teal-800/60">
+                                                    <tr class="bg-sand-50 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-teal-800/70">
                                                         <th class="px-4 py-2.5">Kiriman</th>
                                                         <th class="px-4 py-2.5">Link</th>
                                                         <th class="hidden px-4 py-2.5 sm:table-cell">Waktu</th>
@@ -591,7 +591,7 @@
                                                             <td class="w-full max-w-0 px-4 py-2.5">
                                                                 <a href="{{ $item['url'] }}" target="_blank" rel="noopener" class="block truncate text-teal-700 hover:underline">{{ preg_replace('#^https?://#i', '', $item['url']) }}</a>
                                                             </td>
-                                                            <td class="hidden whitespace-nowrap px-4 py-2.5 text-teal-800/60 sm:table-cell">{{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</td>
+                                                            <td class="hidden whitespace-nowrap px-4 py-2.5 text-teal-800/70 sm:table-cell">{{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</td>
                                                             <td class="px-4 py-2.5 text-right font-semibold tabular-nums {{ $item['score'] !== null ? 'text-teal-900' : 'text-orange-600' }}">
                                                                 <span class="inline-flex items-center gap-2">
                                                                     {{ $item['score'] ?? 'Menunggu' }}
@@ -645,9 +645,9 @@
                                     <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-3 space-y-2.5">
                                         @csrf
                                         <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
-                                        <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Link jawaban</label>
+                                        <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/70">Link jawaban</label>
                                         <div class="flex w-full">
-                                            <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
+                                            <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/70">https://</span>
                                             <input type="text" name="url" value="{{ $failedHere ? preg_replace('#^https?://#i', '', old('url', '')) : '' }}" placeholder="drive.google.com/…" inputmode="url"
                                                    autocapitalize="off" autocorrect="off" spellcheck="false"
                                                    class="w-full min-w-0 rounded-r-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
@@ -675,9 +675,9 @@
                                             @csrf
                                             @method('PATCH')
                                             <input type="hidden" name="_submission_id" value="{{ $tugas['latest_id'] }}">
-                                            <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Link jawaban</label>
+                                            <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/70">Link jawaban</label>
                                             <div class="flex w-full">
-                                                <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $editFailedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
+                                                <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $editFailedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/70">https://</span>
                                                 <input type="text" name="url" value="{{ $editFailedHere ? preg_replace('#^https?://#i', '', old('url', '')) : preg_replace('#^https?://#i', '', $tugas['latest_url'] ?? '') }}" placeholder="drive.google.com/…" inputmode="url"
                                                        autocapitalize="off" autocorrect="off" spellcheck="false"
                                                        class="w-full min-w-0 rounded-r-lg border {{ $editFailedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
@@ -704,15 +704,15 @@
                          label-value pair tight instead of stretching across. --}}
                     <dl class="mt-4 grid gap-x-10 gap-y-4 text-sm sm:grid-cols-2">
                         <div>
-                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Nama</dt>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/70">Nama</dt>
                             <dd class="mt-0.5 font-medium text-teal-900">{{ $user->name }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Email</dt>
-                            <dd class="mt-0.5 font-medium text-teal-900">{{ $user->email }}</dd>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/70">Email</dt>
+                            <dd class="mt-0.5 break-words font-medium text-teal-900">{{ $user->email }}</dd>
                         </div>
                         <div>
-                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Nomor HP</dt>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/70">Nomor HP</dt>
                             <dd class="mt-0.5 font-medium text-teal-900">{{ $person?->phone ?? '—' }}</dd>
                         </div>
                     </dl>

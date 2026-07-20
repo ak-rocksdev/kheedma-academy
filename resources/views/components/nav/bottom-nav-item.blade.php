@@ -6,7 +6,7 @@
    @class([
        'flex flex-1 flex-col items-center gap-1 py-2.5 text-[0.65rem] font-semibold',
        'text-orange-600' => $active,
-       'text-teal-800/60' => ! $active,
+       'text-teal-800' => ! $active,
    ])>
     {{ $slot }}
     {{ $label }}

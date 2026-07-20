@@ -428,7 +428,7 @@ class MemberAreaTest extends TestCase
             ->assertSee('82')
             ->assertSee('Kirim ulang untuk perbaiki nilai')
             ->assertSee('Rata-ratamu')
-            ->assertSee('Kamu memenuhi syarat! Lanjut ke kelas komunitas');
+            ->assertSee('Lanjut ke kelas komunitas');
     }
 
     public function test_member_sees_submit_form_when_not_yet_submitted(): void

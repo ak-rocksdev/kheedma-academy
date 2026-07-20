@@ -145,15 +145,22 @@ class MemberAssignmentSubmissionController extends Controller
         ];
     }
 
-    /** Prepend https:// when the member typed a bare link (the UI shows the prefix). */
+    /**
+     * The form shows a fixed, non-editable "https://" prefix, so the app
+     * never accepts anything but https. Strip any scheme the member typed,
+     * pasted, or had autofilled (bare "http://" included) and reapply
+     * https, instead of merely leaving an existing scheme untouched - the
+     * old approach silently rejected a benign "http://" link downstream
+     * with a confusing format error.
+     */
     private function normalizedUrl(?string $url): string
     {
         $url = trim((string) $url);
 
-        if ($url === '' || preg_match('#^https?://#i', $url)) {
+        if ($url === '') {
             return $url;
         }
 
-        return 'https://'.$url;
+        return 'https://'.preg_replace('#^(?:https?:)?//#i', '', $url);
     }
 }

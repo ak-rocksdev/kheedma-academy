@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import RichTextEditor from '@/components/RichTextEditor.vue';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { Alert } from '@/components/ui/alert';
 
 const props = defineProps({
     /** Session row (API shape) whose assignment is being written/edited. */
@@ -18,6 +19,7 @@ const isEditing = computed(() => props.session?.assignment != null);
 
 const form = ref({});
 const formErrors = ref({});
+const error = ref('');
 const saving = ref(false);
 
 /**
@@ -47,11 +49,13 @@ watch(open, (isOpen) => {
         body: toEditorHtml(props.session?.assignment?.body ?? ''),
     };
     formErrors.value = {};
+    error.value = '';
 });
 
 async function save() {
     saving.value = true;
     formErrors.value = {};
+    error.value = '';
     try {
         const res = await assignmentsApi.upsert(props.session.id, { title: form.value.title, body: form.value.body });
         open.value = false;
@@ -59,7 +63,7 @@ async function save() {
     } catch (e) {
         if (e.sessionExpired) return;
         formErrors.value = e.errors ?? {};
-        if (!Object.keys(formErrors.value).length) formErrors.value = { title: [e.message ?? 'Gagal menyimpan.'] };
+        if (!Object.keys(formErrors.value).length) error.value = e.message ?? 'Gagal menyimpan.';
     } finally {
         saving.value = false;
     }
@@ -68,6 +72,7 @@ async function save() {
 
 <template>
     <Dialog v-model:open="open" wide :title="isEditing ? 'Ubah Tugas' : 'Tulis Tugas'">
+        <Alert v-if="error" class="mb-3 px-3.5 py-2.5">{{ error }}</Alert>
         <form class="space-y-3" @submit.prevent="save">
             <div>
                 <label class="text-xs text-muted-foreground">Judul tugas</label>

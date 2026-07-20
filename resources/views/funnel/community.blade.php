@@ -77,28 +77,28 @@
 
                     <dl class="space-y-3 rounded-2xl border border-teal-900/10 bg-white px-5 py-4 text-sm">
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nama lengkap</dt>
+                            <dt class="text-teal-800/70">Nama lengkap</dt>
                             <dd class="font-medium text-teal-900">{{ $person->name }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nomor HP</dt>
+                            <dt class="text-teal-800/70">Nomor HP</dt>
                             <dd class="font-medium text-teal-900">{{ $person->phone }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Email</dt>
+                            <dt class="text-teal-800/70">Email</dt>
                             <dd class="font-medium text-teal-900">{{ $person->email }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Tanggal lahir</dt>
+                            <dt class="text-teal-800/70">Tanggal lahir</dt>
                             <dd class="font-medium text-teal-900">{{ $person->birth_date->locale('id')->translatedFormat('j F Y') }} ({{ $person->age }} tahun)</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Jenis kelamin</dt>
+                            <dt class="text-teal-800/70">Jenis kelamin</dt>
                             <dd class="font-medium text-teal-900">{{ $person->gender === 'male' ? 'Laki-laki' : 'Perempuan' }}</dd>
                         </div>
                         @if ($person->tiktok_username)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">TikTok</dt>
+                                <dt class="text-teal-800/70">TikTok</dt>
                                 <dd class="font-medium text-teal-900">
                                     {{ $person->tiktok_username }}
                                     @if ($person->tiktok_followers !== null)
@@ -109,7 +109,7 @@
                         @endif
                         @if ($person->has_started_affiliate !== null)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Affiliate TikTok</dt>
+                                <dt class="text-teal-800/70">Affiliate TikTok</dt>
                                 <dd class="font-medium text-teal-900">
                                     @if ($person->has_started_affiliate)
                                         Sudah &middot; Level {{ $person->affiliate_level }} &middot; {{ $gmvLabels[$person->affiliate_gmv_range] ?? $person->affiliate_gmv_range }}
@@ -120,7 +120,7 @@
                             </div>
                         @endif
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Follow sosmed</dt>
+                            <dt class="text-teal-800/70">Follow sosmed</dt>
                             <dd class="font-medium text-teal-900">{{ $person->followed_socials ? 'Sudah' : 'Belum' }}</dd>
                         </div>
                     </dl>
@@ -186,7 +186,7 @@
                 </div>
 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-teal-800">Nomor HP <span class="text-teal-800/50">(WhatsApp aktif)</span></label>
+                    <label for="phone" class="block text-sm font-medium text-teal-800">Nomor HP <span class="text-teal-800/70">(WhatsApp aktif)</span></label>
                     <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone', $person?->phone) }}" autocomplete="tel"
                            class="{{ $field }} @error('phone') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="0812xxxxxxx">
@@ -227,15 +227,15 @@
 
                 @guest
                     <div>
-                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/50">(6 digit angka)</span></span>
+                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/70">(6 digit angka)</span></span>
                         <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
-                        <p class="mt-1.5 text-xs text-teal-800/50">PIN dipakai untuk masuk ke akunmu. Jangan bagikan ke siapa pun.</p>
+                        <p class="mt-1.5 text-xs text-teal-800/70">PIN dipakai untuk masuk ke akunmu. Jangan bagikan ke siapa pun.</p>
                         @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest
 
                 <div>
-                    <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional, tanpa @)</span></label>
+                    <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/70">(opsional, tanpa @)</span></label>
                     <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username', $person?->tiktok_username) }}"
                            class="{{ $field }} border border-teal-900/15" placeholder="username">
                     @error('tiktok_username') <p data-server-error-for="tiktok_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -328,7 +328,7 @@
                 </div>
 
                 @auth
-                    <p class="text-xs text-teal-800/60">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
+                    <p class="text-xs text-teal-800/70">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
                 @endauth
 
                 <div class="pt-2">
@@ -344,7 +344,7 @@
             @endif
 
             @guest
-                <p class="mt-6 text-center text-sm text-teal-800/60">
+                <p class="mt-6 text-center text-sm text-teal-800/70">
                     Sudah punya akun? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk di sini</a>
                 </p>
             @endguest

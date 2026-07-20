@@ -41,7 +41,7 @@
                 </button>
             </form>
 
-            <p class="mt-6 text-center text-sm text-teal-800/60">
+            <p class="mt-6 text-center text-sm text-teal-800/70">
                 Ingat PIN-mu? <a href="{{ route('member.login') }}" class="font-semibold text-teal-700 hover:text-orange-600">Masuk</a>
             </p>
         </div>
