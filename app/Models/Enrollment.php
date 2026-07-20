@@ -48,6 +48,11 @@ class Enrollment extends Model
         return $this->hasMany(AssignmentSubmission::class);
     }
 
+    public function sessionConfirmations(): HasMany
+    {
+        return $this->hasMany(SessionConfirmation::class);
+    }
+
     /** The most recent transition — convenient for showing current state. */
     public function latestStatusEvent(): HasOne
     {
