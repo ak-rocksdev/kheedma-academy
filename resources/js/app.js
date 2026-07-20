@@ -605,8 +605,12 @@ function initToasts() {
         const leave = () => {
             if (toast.hasAttribute('data-leaving')) return;
             toast.setAttribute('data-leaving', '');
-            toast.addEventListener('animationend', () => toast.remove(), { once: true });
-            setTimeout(() => toast.remove(), 500); // reduced-motion fallback
+            // The timer bar's own animationend bubbles up here, so only the
+            // exit animation may remove the card.
+            toast.addEventListener('animationend', (e) => {
+                if (e.animationName === 'kh-toast-out') toast.remove();
+            });
+            setTimeout(() => toast.remove(), 600); // reduced-motion fallback
         };
 
         toast.querySelector('[data-toast-close]')?.addEventListener('click', leave);
