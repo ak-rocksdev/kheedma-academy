@@ -412,6 +412,7 @@ class MemberAreaTest extends TestCase
         ]);
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
         AssignmentSubmission::factory()->graded(82)->create([
             'assignment_id' => $assignment->id,
             'enrollment_id' => $enrollment->id,
@@ -438,6 +439,7 @@ class MemberAreaTest extends TestCase
         Assignment::factory()->for($session, 'session')->create(['title' => 'Tugas Konten']);
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
 
         $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()
@@ -445,6 +447,27 @@ class MemberAreaTest extends TestCase
             ->assertSee('Kirim jawaban')
             // No threshold on this program -> no progress card.
             ->assertDontSee('Rata-ratamu');
+    }
+
+    public function test_assignment_stays_locked_until_marked_hadir(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        Assignment::factory()->for($session, 'session')->create([
+            'title' => 'Tugas Terkunci',
+            'body' => 'Isi soal rahasia sebelum hadir.',
+        ]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=tugas')
+            ->assertOk()
+            ->assertSee('Tugas Terkunci')
+            ->assertSee('Soal dan pengiriman tugas terbuka setelah kehadiranmu ditandai mentor')
+            ->assertDontSee('Isi soal rahasia sebelum hadir.')
+            ->assertDontSee('Kirim jawaban');
     }
 
     public function test_waiting_state_shows_confirmation_and_fix_link(): void
@@ -489,6 +512,8 @@ class MemberAreaTest extends TestCase
 
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
         StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        Attendance::create(['cohort_session_id' => $richSession->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $legacySession->id, 'enrollment_id' => $enrollment->id]);
 
         $this->actingAs($user)->get('/akun?bagian=tugas')
             ->assertOk()

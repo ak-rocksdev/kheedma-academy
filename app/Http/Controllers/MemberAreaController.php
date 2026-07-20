@@ -76,7 +76,7 @@ class MemberAreaController extends Controller
         // Kelasmu: the member's own active enrollments, with cohort logistics.
         $enrolledClasses = $person
             ? $person->enrollments()
-                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions.assignment', 'latestStatusEvent'])
+                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions.assignment', 'latestStatusEvent', 'attendances'])
                 ->withCount('attendances')
                 ->get()
                 ->filter(fn (Enrollment $e) => $e->isActive())
@@ -107,6 +107,9 @@ class MemberAreaController extends Controller
 
                 $assignmentCards[$session->id] = [
                     'assignment' => $assignment,
+                    // Attendance gates the whole assignment: no soal, no
+                    // sending, until the mentor marks this member hadir.
+                    'attended' => $enrollment->attendances->contains('cohort_session_id', $session->id),
                     'state' => $scoring->submissionState($assignment, $enrollment),
                     'score' => $lastGraded?->score,
                     'feedback' => $lastGraded?->feedback,

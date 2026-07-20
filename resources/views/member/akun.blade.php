@@ -448,6 +448,16 @@
                                         @endif
                                     @endif
 
+                                    @unless ($tugas['attended'])
+                                        {{-- Attendance gate: soal and sending stay locked until
+                                             the mentor marks this member hadir. --}}
+                                        <div class="mt-4 flex items-start gap-3 rounded-2xl border border-dashed border-teal-900/15 bg-sand-50/60 px-4 py-3.5">
+                                            <svg class="mt-0.5 size-4 shrink-0 text-teal-800/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+                                            <p class="text-sm leading-relaxed text-teal-800/70">Soal dan pengiriman tugas terbuka setelah kehadiranmu ditandai mentor di kelas ini.</p>
+                                        </div>
+                                    @endunless
+
+                                    @if ($tugas['attended'])
                                     {{-- Soal collapsible: same pill pattern as the map. --}}
                                     <details class="kh-collapsible group mt-4 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
                                         <summary class="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
@@ -460,6 +470,7 @@
                                         </summary>
                                         <div class="kh-prose border-t border-teal-900/10 px-4 py-4 text-sm text-teal-800/80">{!! $tugas['assignment']->bodyHtml() !!}</div>
                                     </details>
+                                    @endif
 
                                     @if ($tugas['versions'] > 0)
                                         {{-- Riwayat kiriman: satu baris per kiriman; baris "berlaku"
@@ -511,7 +522,7 @@
                                         <blockquote class="mt-3 border-l-2 border-orange-400 pl-3 text-sm italic text-teal-800/80">{{ $tugas['feedback'] }}</blockquote>
                                     @endif
 
-                                    @if ($tugas['state'] !== 'menunggu_dinilai')
+                                    @if ($tugas['attended'] && $tugas['state'] !== 'menunggu_dinilai')
                                     <div class="mt-4">
                                         <button type="button" data-modal-open="modal-tugas-{{ $tugas['assignment']->id }}"
                                                 @class([
@@ -525,7 +536,7 @@
                                     @endif
                                 </div>
 
-                                @if ($tugas['state'] !== 'menunggu_dinilai')
+                                @if ($tugas['attended'] && $tugas['state'] !== 'menunggu_dinilai')
                                 <x-modal id="modal-tugas-{{ $tugas['assignment']->id }}"
                                          :title="$tugas['state'] === 'dinilai' ? 'Kirim ulang tugas?' : ($tugas['state'] === 'menunggu_dinilai' ? 'Perbaiki kirimanmu' : 'Kirim jawabanmu')"
                                          :autoopen="$failedHere">

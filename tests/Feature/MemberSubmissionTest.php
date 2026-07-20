@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Assignment;
 use App\Models\AssignmentSubmission;
+use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
 use App\Models\Enrollment;
@@ -49,11 +50,21 @@ class MemberSubmissionTest extends TestCase
         return Assignment::factory()->for($session, 'session')->create();
     }
 
+    /** Sending requires the mentor to have marked this enrollment hadir. */
+    private function attend(Assignment $assignment, Enrollment $enrollment): void
+    {
+        Attendance::create([
+            'cohort_session_id' => $assignment->session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+    }
+
     public function test_waiting_submission_blocks_new_rows_until_graded(): void
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
-        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
 
         $this->actingAs($user)
             ->post(route('member.assignment.submit', $assignment), [
@@ -156,7 +167,8 @@ class MemberSubmissionTest extends TestCase
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
-        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
 
         $this->actingAs($user)
             ->post(route('member.assignment.submit', $assignment), [
@@ -169,6 +181,20 @@ class MemberSubmissionTest extends TestCase
         $submission = AssignmentSubmission::sole();
         $this->assertNull($submission->score);
         $this->assertNull($submission->graded_by);
+    }
+
+    public function test_submission_requires_attendance(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+
+        // Enrolled but never marked hadir: the assignment stays locked.
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'https://drive.google.com/jawaban'])
+            ->assertSessionHasErrors('url');
+
+        $this->assertSame(0, AssignmentSubmission::count());
     }
 
     public function test_member_without_enrollment_gets_404(): void
@@ -197,7 +223,8 @@ class MemberSubmissionTest extends TestCase
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
-        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
 
         // The form shows a fixed https:// prefix, so members type just the link.
         $this->actingAs($user)
@@ -212,7 +239,8 @@ class MemberSubmissionTest extends TestCase
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
-        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
 
         // Normalization turns 'bukan-link' into https://bukan-link, which is a
         // syntactically valid URL - the dotted-host rule must still reject it.
@@ -227,7 +255,8 @@ class MemberSubmissionTest extends TestCase
     {
         [$user, $person] = $this->member();
         $assignment = $this->assignment();
-        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+        $this->attend($assignment, $enrollment);
 
         $this->actingAs($user)
             ->from('/akun?bagian=kelas')

@@ -30,6 +30,18 @@ class MemberAssignmentSubmissionController extends Controller
 
         abort_unless($enrollment !== null && $enrollment->isActive(), 404);
 
+        // Assignments unlock at the door: sending requires the mentor to have
+        // marked this member hadir for the session (PO rule 2026-07-20).
+        $hasAttended = $enrollment->attendances()
+            ->where('cohort_session_id', $assignment->session->id)
+            ->exists();
+
+        if (! $hasAttended) {
+            throw ValidationException::withMessages([
+                'url' => 'Tugas terbuka setelah kehadiranmu ditandai mentor di kelas.',
+            ]);
+        }
+
         // Spam-guard: while the latest submission awaits grading, no new rows
         // may be added — the member edits that row instead (update()).
         $latest = $assignment->submissions()
