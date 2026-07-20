@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\Admin\ApplicantController;
+use App\Http\Controllers\Api\Admin\AssignmentController;
 use App\Http\Controllers\Api\Admin\AttendanceController;
 use App\Http\Controllers\Api\Admin\CohortController;
 use App\Http\Controllers\Api\Admin\CohortSessionController;
@@ -54,6 +55,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         });
 
         Route::put('/sessions/{session}/attendance', [AttendanceController::class, 'update'])->middleware('permission:attendance.record');
+        Route::put('/sessions/{session}/assignment', [AssignmentController::class, 'upsert'])->middleware('permission:assignments.manage');
 
         Route::middleware('permission:programs.manage')->group(function () {
             Route::get('/programs', [ProgramController::class, 'index']);
