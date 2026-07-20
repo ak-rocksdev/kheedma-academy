@@ -190,18 +190,18 @@
                                                                  the venue name/address line already answers "di mana",
                                                                  the map is one tap away when needed. --}}
                                                             <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
-                                                                <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
+                                                                <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-2.5 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
                                                                     {{-- Mini "map tile": pin on soft brand ground, the visual cue on the left. --}}
                                                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
                                                                         <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6-5.1-6-9.9a6 6 0 1 1 12 0C18 15.9 12 21 12 21Z"/><circle cx="12" cy="11" r="2.3"/></svg>
                                                                     </span>
-                                                                    <span class="min-w-0 flex-1">
+                                                                    <span class="min-w-0 flex-1 basis-0 min-[420px]:basis-auto">
                                                                         <span class="block text-sm font-semibold text-teal-900">{{ $session->location_name ?: 'Lokasi kelas' }}</span>
-                                                                        <span class="block text-xs text-teal-800/70">{{ $session->location_address ?: 'Lihat lokasi di peta' }}</span>
+                                                                        <span class="block text-xs leading-relaxed text-teal-800/70">{{ $session->location_address ?: 'Lihat lokasi di peta' }}</span>
                                                                     </span>
                                                                     {{-- Labeled affordance: the verb tells what you get, the
                                                                          chevron tells how it behaves; the label flips when open. --}}
-                                                                    <span class="flex shrink-0 items-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-1.5 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40">
+                                                                    <span class="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-2 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40 min-[420px]:w-auto min-[420px]:py-1.5">
                                                                         <span class="group-open:hidden">Lihat peta</span>
                                                                         <span class="hidden group-open:inline">Tutup peta</span>
                                                                         <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -341,22 +341,26 @@
                                                     @endif
                                                     @if (isset($assignmentCards[$session->id]))
                                                         @php($tugas = $assignmentCards[$session->id])
-                                                        {{-- Tugas lives in its own tab; this row is the signpost. --}}
-                                                        <div class="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-teal-900/10 bg-white px-4 py-3">
-                                                            <span class="flex min-w-0 items-center gap-2 text-sm">
-                                                                <svg class="h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                                <span class="truncate font-medium text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
+                                                        {{-- Tugas lives in its own tab; this row is the signpost.
+                                                             Title on its own line, state and link below: at 390px a
+                                                             single row squeezed the title to one word per line. --}}
+                                                        <div class="mt-3 rounded-2xl border border-teal-900/10 bg-white px-4 py-3">
+                                                            <p class="flex items-start gap-2 text-sm">
+                                                                <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                <span class="min-w-0 flex-1 font-medium text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
+                                                            </p>
+                                                            <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                                                                 <span @class([
-                                                                    'hidden shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold sm:inline',
+                                                                    'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
                                                                     'bg-sand-100 text-teal-800/70' => $tugas['state'] === 'belum_dikerjakan',
                                                                     'bg-orange-100 text-orange-800' => $tugas['state'] === 'menunggu_dinilai',
                                                                     'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
                                                                 ])>{{ $tugas['state'] === 'dinilai' ? 'Nilai '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
-                                                            </span>
-                                                            <a href="{{ route('member.area', ['bagian' => 'tugas']) }}" class="flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-700 transition hover:text-orange-600">
-                                                                Lihat tugas
-                                                                <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                                                            </a>
+                                                                <a href="{{ route('member.area', ['bagian' => 'tugas']) }}" class="ml-auto flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-700 transition hover:text-orange-600">
+                                                                    Lihat tugas
+                                                                    <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                </a>
+                                                            </div>
                                                         </div>
                                                     @endif
                                                 </div>
@@ -568,9 +572,47 @@
                                     @if ($tugas['versions'] > 0)
                                         {{-- Riwayat kiriman: satu baris per kiriman; baris "berlaku"
                                              disorot — inilah nilai yang dihitung. --}}
-                                        <div class="mt-4 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
+                                        {{-- Mobile: a table forced the link to truncate and pushed the
+                                             status off-screen, so each kiriman becomes its own card. --}}
+                                        <ul class="mt-4 space-y-2 sm:hidden">
+                                            @foreach ($tugas['history'] as $i => $item)
+                                                <li @class([
+                                                    'rounded-2xl border p-4',
+                                                    'border-teal-600/30 bg-teal-50/60' => $i === $operativeIndex,
+                                                    'border-teal-900/10 bg-white' => $i !== $operativeIndex,
+                                                ])>
+                                                    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                                                        <span class="flex items-center gap-2">
+                                                            <span class="text-sm font-bold text-teal-900">Kiriman #{{ $tugas['versions'] - $i }}</span>
+                                                            @if ($i === $operativeIndex)
+                                                                <span class="rounded-full bg-teal-700 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-white">Berlaku</span>
+                                                            @endif
+                                                        </span>
+                                                        @if ($item['score'] !== null)
+                                                            <span class="rounded-full bg-teal-100 px-3 py-1 text-xs font-bold tabular-nums text-teal-800">Nilai {{ $item['score'] }}</span>
+                                                        @else
+                                                            <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-semibold text-orange-800">Menunggu dinilai</span>
+                                                        @endif
+                                                    </div>
+                                                    <a href="{{ $item['url'] }}" target="_blank" rel="noopener"
+                                                       class="mt-2 flex items-start gap-1.5 break-all text-sm font-medium text-teal-700 underline-offset-2 hover:underline">
+                                                        <svg class="mt-0.5 h-3.5 w-3.5 shrink-0" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16h9a1.5 1.5 0 0 0 1.5-1.5V12M12 4h4v4M16 4l-7 7"/></svg>
+                                                        <span>{{ preg_replace('#^https?://#i', '', $item['url']) }}</span>
+                                                    </a>
+                                                    <p class="mt-1.5 text-xs text-teal-800/70">Dikirim {{ $item['at']->locale('id')->translatedFormat('j M Y, H.i') }}</p>
+                                                    @if ($i === 0 && $tugas['can_edit'])
+                                                        <button type="button" data-modal-open="modal-edit-tugas-{{ $tugas['assignment']->id }}"
+                                                                class="mt-3 w-full rounded-full border border-teal-900/15 px-4 py-2.5 text-sm font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
+                                                            Edit kiriman
+                                                        </button>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+
+                                        <div class="mt-4 hidden overflow-hidden rounded-2xl border border-teal-900/10 bg-white sm:block">
                                             <div class="overflow-x-auto">
-                                            <table class="w-full min-w-[26rem] text-sm">
+                                            <table class="w-full text-sm">
                                                 <thead>
                                                     <tr class="bg-sand-50 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-teal-800/70">
                                                         <th class="px-4 py-2.5">Kiriman</th>
