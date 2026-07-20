@@ -12,7 +12,10 @@
     <section class="relative overflow-hidden">
         <div class="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-teal-100 blur-3xl"></div>
 
-        <div class="relative mx-auto max-w-2xl px-6 py-16 pb-32 md:py-20 md:pb-20">
+        {{-- max-w-4xl (was 2xl): the page outgrew a narrow column once the
+             class timeline and the tugas ledger arrived; 4xl fits the data
+             without stretching reading lines to the site shell's width. --}}
+        <div class="relative mx-auto max-w-4xl px-6 py-16 pb-32 md:py-20 md:pb-20">
             @if (session('joined'))
                 <div class="mb-8 rounded-xl border border-teal-600/30 bg-teal-50 px-5 py-4 text-sm text-teal-800">
                     Selamat datang di komunitas! Akunmu sudah aktif.
@@ -462,7 +465,8 @@
                                         {{-- Riwayat kiriman: satu baris per kiriman; baris "berlaku"
                                              disorot — inilah nilai yang dihitung. --}}
                                         <div class="mt-4 overflow-hidden rounded-2xl border border-teal-900/10 bg-white">
-                                            <table class="w-full text-sm">
+                                            <div class="overflow-x-auto">
+                                            <table class="w-full min-w-[26rem] text-sm">
                                                 <thead>
                                                     <tr class="bg-sand-50 text-left text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-teal-800/60">
                                                         <th class="px-4 py-2.5">Kiriman</th>
@@ -480,7 +484,7 @@
                                                                     <span class="ml-1.5 rounded-full bg-teal-700 px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wide text-white">Berlaku</span>
                                                                 @endif
                                                             </td>
-                                                            <td class="max-w-0 px-4 py-2.5">
+                                                            <td class="w-full max-w-0 px-4 py-2.5">
                                                                 <a href="{{ $item['url'] }}" target="_blank" rel="noopener" class="block truncate text-teal-700 hover:underline">{{ preg_replace('#^https?://#i', '', $item['url']) }}</a>
                                                             </td>
                                                             <td class="hidden whitespace-nowrap px-4 py-2.5 text-teal-800/60 sm:table-cell">{{ $item['at']->locale('id')->translatedFormat('j M Y H.i') }}</td>
@@ -489,7 +493,7 @@
                                                                     {{ $item['score'] ?? 'Menunggu' }}
                                                                     @if ($i === 0 && $tugas['can_edit'])
                                                                         <button type="button" data-modal-open="modal-edit-tugas-{{ $tugas['assignment']->id }}"
-                                                                                class="rounded-full border border-teal-900/15 px-2.5 py-0.5 text-[0.7rem] font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
+                                                                                class="whitespace-nowrap rounded-full border border-teal-900/15 px-2.5 py-0.5 text-[0.7rem] font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
                                                                             Edit kiriman
                                                                         </button>
                                                                     @endif
@@ -499,6 +503,7 @@
                                                     @endforeach
                                                 </tbody>
                                             </table>
+                                            </div>
                                         </div>
                                     @endif
 
@@ -591,18 +596,20 @@
             @else
                 <div class="mt-8 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">
                     <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Profil</h2>
-                    <dl class="mt-4 space-y-3 text-sm">
-                        <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/70">Nama</dt>
-                            <dd class="font-medium text-teal-900">{{ $user->name }}</dd>
+                    {{-- Two columns at the wider page width: keeps each
+                         label-value pair tight instead of stretching across. --}}
+                    <dl class="mt-4 grid gap-x-10 gap-y-4 text-sm sm:grid-cols-2">
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Nama</dt>
+                            <dd class="mt-0.5 font-medium text-teal-900">{{ $user->name }}</dd>
                         </div>
-                        <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/70">Email</dt>
-                            <dd class="font-medium text-teal-900">{{ $user->email }}</dd>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Email</dt>
+                            <dd class="mt-0.5 font-medium text-teal-900">{{ $user->email }}</dd>
                         </div>
-                        <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/70">Nomor HP</dt>
-                            <dd class="font-medium text-teal-900">{{ $person?->phone ?? '—' }}</dd>
+                        <div>
+                            <dt class="text-xs uppercase tracking-wide text-teal-800/50">Nomor HP</dt>
+                            <dd class="mt-0.5 font-medium text-teal-900">{{ $person?->phone ?? '—' }}</dd>
                         </div>
                     </dl>
                 </div>
