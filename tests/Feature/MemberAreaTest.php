@@ -11,6 +11,7 @@ use App\Models\CohortSession;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
+use App\Models\SessionConfirmation;
 use App\Models\StatusEvent;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
@@ -541,5 +542,57 @@ class MemberAreaTest extends TestCase
             ->assertOk()
             ->assertSee('Kirimanmu terkunci dan masuk antrean penilaian mentor.')
             ->assertDontSee('Edit kiriman');
+    }
+
+    public function test_upcoming_class_shows_confirmation_prompt(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create(['scheduled_at' => now()->addDays(3)]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Bisa hadir di kelas ini?')
+            ->assertSee('Insya Allah hadir')
+            ->assertSee('Berhalangan');
+    }
+
+    public function test_confirmed_class_shows_choice_as_changeable_chip(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $session = CohortSession::factory()->for($cohort)->create(['scheduled_at' => now()->addDays(3)]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+        SessionConfirmation::factory()->cannotAttend('Ada acara keluarga.')->create([
+            'cohort_session_id' => $session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kamu berhalangan hadir')
+            ->assertSee('Ada acara keluarga.')
+            ->assertSee('Ubah konfirmasi')
+            ->assertDontSee('Bisa hadir di kelas ini?');
+    }
+
+    public function test_started_class_shows_no_confirmation_prompt(): void
+    {
+        [$user, $person] = $this->member();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create(['scheduled_at' => now()->subHours(3)]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        StatusEvent::create(['enrollment_id' => $enrollment->id, 'status' => 'accepted', 'occurred_at' => now()]);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertDontSee('Bisa hadir di kelas ini?')
+            ->assertDontSee('Insya Allah hadir');
     }
 }

@@ -241,6 +241,74 @@
                                                             <p class="mt-2 text-sm text-teal-800/70">Lokasi kelas akan diumumkan.</p>
                                                         @endif
                                                     @endif
+
+                                                    @php($konfirmasi = $confirmationCards[$session->id] ?? null)
+                                                    @if ($konfirmasi && $konfirmasi['editable'])
+                                                        <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
+                                                            @if (session('konfirmasi_tersimpan') === $session->id)
+                                                                <p class="mb-2 text-xs font-semibold text-teal-700">Konfirmasimu tersimpan. Syukron!</p>
+                                                            @endif
+                                                            @if ($konfirmasi['status'] === null)
+                                                                <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
+                                                                <p class="mt-0.5 text-xs text-teal-800/60">Konfirmasimu membantu mentor menyiapkan kelas.</p>
+                                                                <div class="mt-3 flex flex-wrap gap-2">
+                                                                    <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once>
+                                                                        @csrf
+                                                                        <input type="hidden" name="status" value="attending">
+                                                                        <button type="submit" class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Insya Allah hadir</button>
+                                                                    </form>
+                                                                    <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
+                                                                            class="rounded-full border border-teal-900/15 px-4 py-2 text-sm font-semibold text-teal-800 transition hover:border-orange-400 hover:text-orange-600">Berhalangan</button>
+                                                                </div>
+                                                            @else
+                                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                                    @if ($konfirmasi['status'] === 'attending')
+                                                                        <p class="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700">
+                                                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                            Kamu konfirmasi hadir
+                                                                        </p>
+                                                                    @else
+                                                                        <p class="text-sm font-semibold text-orange-700">Kamu berhalangan hadir</p>
+                                                                    @endif
+                                                                    <div class="flex flex-wrap gap-2">
+                                                                        @if ($konfirmasi['status'] === 'cannot_attend')
+                                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once>
+                                                                                @csrf
+                                                                                <input type="hidden" name="status" value="attending">
+                                                                                <button type="submit" class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
+                                                                            </form>
+                                                                        @else
+                                                                            <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
+                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-orange-400 hover:text-orange-600">Ubah konfirmasi</button>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                @if ($konfirmasi['status'] === 'cannot_attend' && $konfirmasi['note'])
+                                                                    <p class="mt-2 border-l-2 border-orange-300 pl-3 text-xs italic text-teal-800/70">{{ $konfirmasi['note'] }}</p>
+                                                                @endif
+                                                            @endif
+                                                        </div>
+
+                                                        @php($confirmFailedHere = $errors->hasAny(['status', 'note']) && (int) old('_session_id') === $session->id)
+                                                        <x-modal id="modal-berhalangan-{{ $session->id }}" title="Berhalangan hadir?" :autoopen="$confirmFailedHere">
+                                                            <p class="rounded-xl bg-sand-50 px-4 py-3 text-sm text-teal-800/80">
+                                                                Kabari kendalamu, biar mentor carikan solusi. Kamu masih bisa mengubah konfirmasi ini sampai kelas dimulai.
+                                                            </p>
+                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once class="mt-3 space-y-2.5">
+                                                                @csrf
+                                                                <input type="hidden" name="status" value="cannot_attend">
+                                                                <input type="hidden" name="_session_id" value="{{ $session->id }}">
+                                                                <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Kendalamu (opsional)</label>
+                                                                <textarea name="note" rows="3" placeholder="Contoh: bentrok jam kerja, ada acara keluarga."
+                                                                          class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">{{ $confirmFailedHere ? old('note') : $konfirmasi['note'] }}</textarea>
+                                                                @if ($confirmFailedHere) <p class="text-xs text-red-600">{{ $errors->first('status') ?: $errors->first('note') }}</p> @endif
+                                                                <div class="flex justify-end gap-2 pt-2">
+                                                                    <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                                                    <button type="submit" class="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">Kirim konfirmasi</button>
+                                                                </div>
+                                                            </form>
+                                                        </x-modal>
+                                                    @endif
                                                     @if (isset($assignmentCards[$session->id]))
                                                         @php($tugas = $assignmentCards[$session->id])
                                                         {{-- Tugas lives in its own tab; this row is the signpost. --}}
