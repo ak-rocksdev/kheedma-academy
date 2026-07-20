@@ -31,7 +31,7 @@
                                             {{ $entry['chip']['label'] }}
                                         </span>
                                     @else
-                                        <span class="inline-block rounded-full bg-orange-100 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-orange-700">Dibuka</span>
+                                        <span class="inline-block rounded-full bg-orange-100 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-orange-800">Dibuka</span>
                                     @endif
                                     <h2 class="mt-3 text-xl font-bold text-teal-900">{{ $entry['program']->name }}</h2>
                                     @if ($entry['program']->tagline)
@@ -97,9 +97,9 @@
                                     <div class="flex flex-1 flex-col p-5">
                                         <h2 class="text-lg font-bold leading-snug text-teal-900/70">{{ $entry['program']->name }}</h2>
                                         @if ($entry['program']->tagline)
-                                            <p class="mt-1.5 text-sm leading-relaxed text-teal-800/50">{{ $entry['program']->tagline }}</p>
+                                            <p class="mt-1.5 text-sm leading-relaxed text-teal-800/70">{{ $entry['program']->tagline }}</p>
                                         @endif
-                                        <span class="mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold uppercase tracking-wide text-teal-700/60">
+                                        <span class="mt-auto flex items-center gap-1.5 pt-4 text-xs font-semibold uppercase tracking-wide text-teal-700">
                                             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                                                 <rect x="5" y="9" width="10" height="7" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke-linecap="round"/>
                                             </svg>

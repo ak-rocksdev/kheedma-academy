@@ -82,54 +82,54 @@
 
                     <dl class="space-y-3 rounded-2xl border border-teal-900/10 bg-white px-5 py-4 text-sm">
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nama lengkap</dt>
+                            <dt class="text-teal-800/70">Nama lengkap</dt>
                             <dd class="font-medium text-teal-900">{{ $person->name }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Nomor HP</dt>
+                            <dt class="text-teal-800/70">Nomor HP</dt>
                             <dd class="font-medium text-teal-900">{{ $person->phone }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Email</dt>
+                            <dt class="text-teal-800/70">Email</dt>
                             <dd class="font-medium text-teal-900">{{ $person->email }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-teal-800/60">Domisili</dt>
+                            <dt class="text-teal-800/70">Domisili</dt>
                             <dd class="font-medium text-teal-900">{{ $person->city?->name ?? '—' }}{{ $person->province ? ', '.$person->province->name : '' }}</dd>
                         </div>
                         @if ($person->tiktok_username)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">TikTok</dt>
+                                <dt class="text-teal-800/70">TikTok</dt>
                                 <dd class="font-medium text-teal-900">{{ $person->tiktok_username }}</dd>
                             </div>
                         @endif
                         @if ($person->instagram_username)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Instagram</dt>
+                                <dt class="text-teal-800/70">Instagram</dt>
                                 <dd class="font-medium text-teal-900">{{ $person->instagram_username }}</dd>
                             </div>
                         @endif
                         @if ($person->birth_date)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Tanggal lahir</dt>
+                                <dt class="text-teal-800/70">Tanggal lahir</dt>
                                 <dd class="font-medium text-teal-900">{{ $person->birth_date->locale('id')->translatedFormat('j F Y') }} ({{ $person->age }} tahun)</dd>
                             </div>
                         @endif
                         @if ($person->gender)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Jenis kelamin</dt>
+                                <dt class="text-teal-800/70">Jenis kelamin</dt>
                                 <dd class="font-medium text-teal-900">{{ $person->gender === 'male' ? 'Laki-laki' : 'Perempuan' }}</dd>
                             </div>
                         @endif
                         @if ($person->tiktok_followers !== null)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Followers TikTok</dt>
+                                <dt class="text-teal-800/70">Followers TikTok</dt>
                                 <dd class="font-medium text-teal-900">{{ number_format($person->tiktok_followers) }}</dd>
                             </div>
                         @endif
                         @if ($person->has_started_affiliate !== null)
                             <div class="flex justify-between gap-4">
-                                <dt class="text-teal-800/60">Affiliate TikTok</dt>
+                                <dt class="text-teal-800/70">Affiliate TikTok</dt>
                                 <dd class="font-medium text-teal-900">
                                     @if ($person->has_started_affiliate)
                                         Sudah &middot; Level {{ $person->affiliate_level }} &middot; {{ $gmvLabels[$person->affiliate_gmv_range] ?? $person->affiliate_gmv_range }}
@@ -207,7 +207,7 @@
                 </div>
 
                 <div>
-                    <label for="phone" class="block text-sm font-medium text-teal-800">Nomor HP <span class="text-teal-800/50">(WhatsApp aktif)</span></label>
+                    <label for="phone" class="block text-sm font-medium text-teal-800">Nomor HP <span class="text-teal-800/70">(WhatsApp aktif)</span></label>
                     <input id="phone" name="phone" type="tel" inputmode="tel" value="{{ old('phone', $person?->phone) }}" autocomplete="tel"
                            class="{{ $field }} @error('phone') border border-red-400 @else border border-teal-900/15 @enderror"
                            placeholder="0812xxxxxxx">
@@ -245,7 +245,7 @@
                     {{-- Helper doubles as a humanized echo ("25 Januari 1986") once a
                          valid date is in — catches day/month mix-ups at a glance. --}}
                     <p data-birth-date-echo data-default-text="Ketik langsung (contoh: 17-08-1998) atau buka kalender."
-                       class="mt-1.5 text-xs text-teal-800/60">Ketik langsung (contoh: 17-08-1998) atau buka kalender.</p>
+                       class="mt-1.5 text-xs text-teal-800/70">Ketik langsung (contoh: 17-08-1998) atau buka kalender.</p>
                     @error('birth_date') <p data-server-error-for="birth_date" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
@@ -267,9 +267,9 @@
 
                 @guest
                     <div>
-                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/50">(6 digit angka)</span></span>
+                        <span class="block text-sm font-medium text-teal-800">Buat PIN <span class="text-teal-800/70">(6 digit angka)</span></span>
                         <x-pin-input name="password" autocomplete="new-password" :invalid="$errors->has('password')" />
-                        <p class="mt-1.5 text-xs text-teal-800/50">PIN dipakai untuk masuk memantau status pendaftaran dan mengubah datamu nanti. Jangan bagikan ke siapa pun.</p>
+                        <p class="mt-1.5 text-xs text-teal-800/70">PIN dipakai untuk masuk memantau status pendaftaran dan mengubah datamu nanti. Jangan bagikan ke siapa pun.</p>
                         @error('password') <p data-server-error-for="password" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                 @endguest
@@ -303,13 +303,13 @@
 
                 <div class="grid gap-6 sm:grid-cols-2">
                     <div>
-                        <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/50">(opsional, tanpa @)</span></label>
+                        <label for="tiktok_username" class="block text-sm font-medium text-teal-800">Akun TikTok <span class="text-teal-800/70">(opsional, tanpa @)</span></label>
                         <input id="tiktok_username" name="tiktok_username" type="text" value="{{ old('tiktok_username', $person?->tiktok_username) }}"
                                class="{{ $field }} border border-teal-900/15" placeholder="username">
                         @error('tiktok_username') <p data-server-error-for="tiktok_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
                     </div>
                     <div>
-                        <label for="instagram_username" class="block text-sm font-medium text-teal-800">Akun Instagram <span class="text-teal-800/50">(opsional)</span></label>
+                        <label for="instagram_username" class="block text-sm font-medium text-teal-800">Akun Instagram <span class="text-teal-800/70">(opsional)</span></label>
                         <input id="instagram_username" name="instagram_username" type="text" value="{{ old('instagram_username', $person?->instagram_username) }}"
                                class="{{ $field }} border border-teal-900/15" placeholder="@username">
                         @error('instagram_username') <p data-server-error-for="instagram_username" class="mt-1.5 text-xs text-red-600">{{ $message }}</p> @enderror
@@ -403,7 +403,7 @@
                 </div>
 
                 @auth
-                    <p class="text-xs text-teal-800/60">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
+                    <p class="text-xs text-teal-800/70">Masuk sebagai <span class="font-semibold">{{ auth()->user()->name }}</span>. Perubahan data di atas akan tersimpan di akunmu.</p>
                 @endauth
 
                 <div class="pt-2">
@@ -418,7 +418,7 @@
             </form>
             @endif
 
-            <p class="mt-6 text-center text-xs text-teal-800/50">
+            <p class="mt-6 text-center text-xs text-teal-800/70">
                 Dengan mendaftar, kamu setuju mengikuti masa observasi terbimbing yang dipantau.
             </p>
         </div>
