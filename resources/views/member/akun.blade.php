@@ -422,7 +422,7 @@
 
                 @if ($affiliate->isNotEmpty())
                     <div class="mt-10">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untuk Anda</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untukmu</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($affiliate as $entry)
                                 @if ($entry['locked'])
