@@ -16,6 +16,7 @@ import { cohortStatusLabel, cohortStatusVariant } from '@/lib/status';
 import CohortFormDialog from '@/components/CohortFormDialog.vue';
 import SessionFormDialog from '@/components/SessionFormDialog.vue';
 import AssignmentFormDialog from '@/components/AssignmentFormDialog.vue';
+import GradingDialog from '@/components/GradingDialog.vue';
 
 const props = defineProps({ id: { type: [String, Number], required: true } });
 
@@ -76,6 +77,25 @@ function openAssignmentForm() {
 async function onAssignmentSaved(assignment) {
     if (selectedSession.value) selectedSession.value.assignment = assignment;
 }
+
+// Panel penilaian: sel Nilai di roster membuka riwayat + form nilai.
+const gradingTarget = ref(null);
+
+function openGrading(row) {
+    if (!selectedSession.value?.assignment || !auth.can('assignments.grade')) return;
+    gradingTarget.value = {
+        assignment: selectedSession.value.assignment,
+        enrollmentId: row.enrollment_id,
+        personName: row.person.name,
+    };
+}
+
+function assignmentStateFor(row) {
+    const id = selectedSession.value?.assignment?.id;
+    return id ? (row.assignment_states?.[id] ?? { state: 'belum_dikerjakan', score: null }) : null;
+}
+
+const STATE_LABELS = { belum_dikerjakan: 'Belum', menunggu_dinilai: 'Menunggu', dinilai: 'Dinilai' };
 
 const loading = ref(true);
 const error = ref('');
@@ -473,6 +493,8 @@ watch(() => props.id, () => load());
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
                             <th class="px-3 py-3 font-semibold sm:px-4">Peserta</th>
                             <th class="px-2 py-3 text-center font-semibold sm:px-3">Kehadiran</th>
+                            <th v-if="selectedSession?.assignment" class="px-2 py-3 text-center font-semibold sm:px-3">Nilai</th>
+                            <th v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 font-semibold sm:table-cell">Rata-rata</th>
                             <!-- Status hanya bermakna saat menyimpang; di layar sempit
                                  kolomnya dilipat (baris dropped sudah tampak pudar). -->
                             <th class="hidden px-3 py-3 font-semibold sm:table-cell">Status</th>
@@ -481,7 +503,7 @@ watch(() => props.id, () => load());
                     </thead>
                     <tbody>
                         <tr v-if="!roster.length">
-                            <td colspan="4" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
+                            <td :colspan="4 + (selectedSession?.assignment ? 1 : 0) + (cohort.min_average_score !== null ? 1 : 0)" class="px-4 py-10 text-center text-muted-foreground">Belum ada peserta.</td>
                         </tr>
                         <tr
                             v-for="row in roster"
@@ -509,6 +531,30 @@ watch(() => props.id, () => load());
                                     <Check v-if="isHadir(row, selectedSession)" class="size-3.5" />
                                     {{ isHadir(row, selectedSession) ? 'Hadir' : 'Tandai hadir' }}
                                 </button>
+                            </td>
+                            <td v-if="selectedSession?.assignment" class="px-2 py-3 text-center sm:px-3">
+                                <button
+                                    type="button"
+                                    class="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition"
+                                    :class="{
+                                        'border-border text-muted-foreground hover:border-teal-600/50': assignmentStateFor(row)?.state === 'belum_dikerjakan',
+                                        'border-orange-300 bg-orange-100 text-orange-700 hover:border-orange-400': assignmentStateFor(row)?.state === 'menunggu_dinilai',
+                                        'border-teal-300 bg-teal-100 text-teal-700 hover:border-teal-500': assignmentStateFor(row)?.state === 'dinilai',
+                                    }"
+                                    :disabled="!auth.can('assignments.grade')"
+                                    @click="openGrading(row)"
+                                >
+                                    {{ assignmentStateFor(row)?.state === 'dinilai' ? assignmentStateFor(row)?.score : STATE_LABELS[assignmentStateFor(row)?.state] }}
+                                </button>
+                            </td>
+                            <td v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 sm:table-cell">
+                                <template v-if="row.average !== null">
+                                    <span class="font-semibold text-foreground">{{ row.average }}</span>
+                                    <Badge :variant="row.qualifies ? 'success' : 'secondary'" class="ml-1.5">
+                                        {{ row.qualifies ? 'Memenuhi syarat' : 'Belum memenuhi' }}
+                                    </Badge>
+                                </template>
+                                <span v-else class="text-xs text-muted-foreground/50">—</span>
                             </td>
                             <td class="hidden px-3 py-3 sm:table-cell">
                                 <!-- Status default (accepted/belum ada) adalah derau; hanya
@@ -592,6 +638,8 @@ watch(() => props.id, () => load());
         />
 
         <AssignmentFormDialog v-model:open="assignmentFormOpen" :session="selectedSession" @saved="onAssignmentSaved" />
+
+        <GradingDialog :target="gradingTarget" @close="gradingTarget = null" @graded="load" />
 
         <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
