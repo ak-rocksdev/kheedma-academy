@@ -304,6 +304,21 @@ function initPinInputs() {
     });
 }
 
+/**
+ * Retake disclosure on the member assignment card: the graded state hides
+ * the resubmit form behind a button; clicking it reveals the confirm copy +
+ * form and retires the button. No state to persist — a reload collapses it
+ * again, which is the point.
+ */
+function initRetakeToggles() {
+    document.querySelectorAll('[data-retake-toggle]').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+            toggle.parentElement.querySelector('[data-retake-form]')?.removeAttribute('hidden');
+            toggle.setAttribute('hidden', '');
+        });
+    });
+}
+
 /** Close any header account menu when clicking anywhere outside it. */
 function initAccountMenu() {
     const menus = document.querySelectorAll('details.account-menu');
@@ -542,6 +557,7 @@ function initLockModal() {
 initRegionSelects();
 initBirthDatePicker();
 initPinInputs();
+initRetakeToggles();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

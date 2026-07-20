@@ -293,21 +293,45 @@
                                                                     'menunggu_dinilai' => 'Perbaiki kiriman',
                                                                     default => 'Kirim ulang untuk perbaiki nilai',
                                                                 })
-                                                                <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-4 space-y-2">
-                                                                    @csrf
-                                                                    <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
-                                                                    <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $formLabel }}</label>
-                                                                    <input type="url" name="url" value="{{ $failedHere ? old('url') : '' }}" placeholder="https://drive.google.com/…" inputmode="url"
-                                                                           class="w-full rounded-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-                                                                    @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
-                                                                    <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
-                                                                           class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-                                                                    @if ($failedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
-                                                                    <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $formLabel }}</button>
-                                                                    @if ($tugas['versions'] > 1)
-                                                                        <p class="text-xs text-teal-800/50">Kiriman ke-{{ $tugas['versions'] }}. Nilai lama tetap berlaku sampai versi baru dinilai.</p>
+                                                                @php($retakeCollapsed = $tugas['state'] === 'dinilai' && ! $failedHere)
+
+                                                                {{-- Graded state hides the form behind a confirm step: the score
+                                                                     is the destination, retaking is a deliberate choice. --}}
+                                                                @if ($retakeCollapsed)
+                                                                    <button type="button" data-retake-toggle
+                                                                            class="mt-4 inline-flex items-center gap-2 rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-700 transition hover:border-teal-600/40 hover:text-orange-600">
+                                                                        {{ $formLabel }}
+                                                                    </button>
+                                                                @endif
+
+                                                                <div @if ($retakeCollapsed) data-retake-form hidden @endif>
+                                                                    @if ($tugas['state'] === 'dinilai')
+                                                                        <p class="mt-4 rounded-xl border border-orange-300/60 bg-orange-50 px-4 py-3 text-sm text-orange-800">
+                                                                            Yakin mau kirim ulang? Nilai {{ $tugas['score'] }} tetap berlaku sampai kiriman barumu dinilai mentor.
+                                                                        </p>
                                                                     @endif
-                                                                </form>
+                                                                    <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-3 space-y-2">
+                                                                        @csrf
+                                                                        <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
+                                                                        <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $formLabel }}</label>
+                                                                        {{-- Input group: the https:// prefix is fixed chrome, the member
+                                                                             types (or pastes) the link itself; the server normalizes. --}}
+                                                                        <div class="flex w-full">
+                                                                            <span class="inline-flex items-center rounded-l-lg border border-r-0 {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-sand-50 px-3 text-sm text-teal-800/60">https://</span>
+                                                                            <input type="text" name="url" value="{{ $failedHere ? preg_replace('#^https?://#i', '', old('url', '')) : '' }}" placeholder="drive.google.com/…" inputmode="url"
+                                                                                   autocapitalize="off" autocorrect="off" spellcheck="false"
+                                                                                   class="w-full min-w-0 rounded-r-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                                                        </div>
+                                                                        @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
+                                                                        <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
+                                                                               class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                                                        @if ($failedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
+                                                                        <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $formLabel }}</button>
+                                                                        @if ($tugas['versions'] > 1)
+                                                                            <p class="text-xs text-teal-800/50">Kiriman ke-{{ $tugas['versions'] }}. Nilai lama tetap berlaku sampai versi baru dinilai.</p>
+                                                                        @endif
+                                                                    </form>
+                                                                </div>
 
                                                                 {{-- Compact own history (spec): every version with time + grade. --}}
                                                                 @if ($tugas['versions'] > 1)

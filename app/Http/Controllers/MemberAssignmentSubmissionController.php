@@ -26,8 +26,25 @@ class MemberAssignmentSubmissionController extends Controller
 
         abort_unless($enrollment !== null && $enrollment->isActive(), 404);
 
+        // The form shows a fixed "https://" prefix, so members type (or paste)
+        // the link without worrying about the scheme; normalize before
+        // validating so both shapes pass the same rules.
+        $request->merge(['url' => $this->normalizedUrl($request->input('url'))]);
+
         $data = $request->validate([
-            'url' => ['required', 'url:https', 'max:500'],
+            'url' => [
+                'required',
+                'url:https',
+                'max:500',
+                // A URL host without a dot ("https://bukan-link") is technically
+                // valid but never a real answer link.
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    $host = parse_url((string) $value, PHP_URL_HOST);
+                    if ($host === null || $host === false || ! str_contains($host, '.')) {
+                        $fail('Formatnya harus link, contoh: https://drive.google.com/…');
+                    }
+                },
+            ],
             'note' => ['nullable', 'string', 'max:1000'],
         ], [
             'url.required' => 'Link jawaban wajib diisi.',
@@ -43,5 +60,17 @@ class MemberAssignmentSubmissionController extends Controller
         $submission->save();
 
         return back()->with('tugas_terkirim', $assignment->id);
+    }
+
+    /** Prepend https:// when the member typed a bare link (the UI shows the prefix). */
+    private function normalizedUrl(?string $url): string
+    {
+        $url = trim((string) $url);
+
+        if ($url === '' || preg_match('#^https?://#i', $url)) {
+            return $url;
+        }
+
+        return 'https://'.$url;
     }
 }

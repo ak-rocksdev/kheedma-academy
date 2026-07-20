@@ -113,6 +113,36 @@ class MemberSubmissionTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_bare_link_without_scheme_is_normalized_to_https(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+
+        // The form shows a fixed https:// prefix, so members type just the link.
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'drive.google.com/jawaban-polos'])
+            ->assertRedirect()
+            ->assertSessionHas('tugas_terkirim', $assignment->id);
+
+        $this->assertSame('https://drive.google.com/jawaban-polos', AssignmentSubmission::sole()->url);
+    }
+
+    public function test_url_host_needs_a_real_domain(): void
+    {
+        [$user, $person] = $this->member();
+        $assignment = $this->assignment();
+        Enrollment::create(['people_id' => $person->id, 'cohort_id' => $assignment->session->cohort_id]);
+
+        // Normalization turns 'bukan-link' into https://bukan-link, which is a
+        // syntactically valid URL - the dotted-host rule must still reject it.
+        $this->actingAs($user)
+            ->post(route('member.assignment.submit', $assignment), ['url' => 'bukan-link'])
+            ->assertSessionHasErrors('url');
+
+        $this->assertSame(0, AssignmentSubmission::count());
+    }
+
     public function test_url_must_be_a_valid_https_link(): void
     {
         [$user, $person] = $this->member();
