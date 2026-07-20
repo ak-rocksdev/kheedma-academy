@@ -135,7 +135,6 @@ const confirmationRecap = computed(() => {
     return { ...c, belum: Math.max(0, activeRosterCount.value - responded) };
 });
 
-
 // Mirrors Cohort::startCountdownLabel(): final week only, display-side.
 const countdownLabel = computed(() => {
     const iso = cohort.value?.start_date;

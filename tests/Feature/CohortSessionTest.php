@@ -11,6 +11,7 @@ use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\SessionConfirmation;
+use App\Models\StatusEvent;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -247,6 +248,13 @@ class CohortSessionTest extends TestCase
         SessionConfirmation::factory()->create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollA->id]);
         SessionConfirmation::factory()->cannotAttend('Bentrok kerja.')->create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollB->id]);
 
+        // Dropped after confirming: the stale intent must not inflate the
+        // recap or leak the person's name into the entries list.
+        $personC = Person::create(['name' => 'Citra Uji', 'phone' => '+62833333333', 'email' => fake()->unique()->safeEmail()]);
+        $enrollC = Enrollment::create(['people_id' => $personC->id, 'cohort_id' => $cohort->id]);
+        SessionConfirmation::factory()->create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollC->id]);
+        StatusEvent::create(['enrollment_id' => $enrollC->id, 'status' => 'dropped', 'occurred_at' => now()]);
+
         $res = $this->actingAs($this->admin())->getJson("/api/admin/cohorts/{$cohort->id}")->assertOk();
 
         $row = collect($res->json('sessions'))->firstWhere('id', $session->id);
@@ -254,6 +262,7 @@ class CohortSessionTest extends TestCase
         $this->assertSame(1, $row['confirmations']['cannot_attend']);
         $names = collect($row['confirmations']['entries'])->pluck('name');
         $this->assertTrue($names->contains('Aisyah Uji'));
+        $this->assertFalse($names->contains('Citra Uji'));
         $this->assertSame('Bentrok kerja.', collect($row['confirmations']['entries'])->firstWhere('name', 'Budi Uji')['note']);
     }
 
