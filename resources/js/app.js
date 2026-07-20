@@ -316,6 +316,14 @@ function initModals() {
         return;
     }
 
+    // A backdrop-blur ancestor (e.g. a member-area card) becomes the
+    // containing block for fixed-position descendants, shrinking the overlay
+    // to that card instead of the viewport. Hoisting every modal to <body>
+    // before wiring events removes that ancestor, restoring true viewport
+    // centering — the same idea as the admin SPA's Teleport-to-body modals.
+    // IDs stay global, so data-modal-open lookups by id are unaffected.
+    modals.forEach((modal) => document.body.appendChild(modal));
+
     function open(modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
