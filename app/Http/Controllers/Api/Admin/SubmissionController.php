@@ -44,7 +44,7 @@ class SubmissionController extends Controller
     {
         $data = $request->validate([
             'score' => ['required', 'integer', 'min:0', 'max:100'],
-            'feedback' => ['nullable', 'string', 'max:2000'],
+            'feedback' => ['sometimes', 'nullable', 'string', 'max:2000'],
         ], [
             'score.required' => 'Nilai wajib diisi.',
             'score.integer' => 'Nilai harus angka bulat 0 sampai 100.',
@@ -53,7 +53,9 @@ class SubmissionController extends Controller
         ]);
 
         $submission->score = $data['score'];
-        $submission->feedback = $data['feedback'] ?? null;
+        if (array_key_exists('feedback', $data)) {
+            $submission->feedback = $data['feedback'];
+        }
         $submission->graded_by = $request->user()->id;
         $submission->graded_at = now();
         $submission->save();

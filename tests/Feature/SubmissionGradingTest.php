@@ -155,4 +155,29 @@ class SubmissionGradingTest extends TestCase
             ->patchJson("/api/admin/submissions/{$submission->id}/grade", ['score' => 90])
             ->assertForbidden();
     }
+
+    public function test_regrading_without_feedback_key_preserves_stored_feedback(): void
+    {
+        [$assignment, $enrollment] = $this->assignmentWithEnrollment();
+        $submission = AssignmentSubmission::factory()->create([
+            'assignment_id' => $assignment->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+
+        $this->actingAs($this->mentor())
+            ->patchJson("/api/admin/submissions/{$submission->id}/grade", ['score' => 80, 'feedback' => 'Catatan penting.'])
+            ->assertOk();
+
+        // Score-only correction must not wipe the feedback...
+        $this->actingAs($this->mentor())
+            ->patchJson("/api/admin/submissions/{$submission->id}/grade", ['score' => 85])
+            ->assertOk();
+        $this->assertSame('Catatan penting.', $submission->fresh()->feedback);
+
+        // ...while an explicit null still clears it.
+        $this->actingAs($this->mentor())
+            ->patchJson("/api/admin/submissions/{$submission->id}/grade", ['score' => 85, 'feedback' => null])
+            ->assertOk();
+        $this->assertNull($submission->fresh()->feedback);
+    }
 }
