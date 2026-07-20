@@ -1,5 +1,6 @@
 <script setup>
 import { watch, onUnmounted } from 'vue';
+import { X } from 'lucide-vue-next';
 
 const open = defineModel('open', { type: Boolean, default: false });
 defineProps({
@@ -31,7 +32,15 @@ onUnmounted(() => document.removeEventListener('keydown', onKey));
                 class="relative z-10 max-h-[calc(100dvh-2rem)] w-full overflow-y-auto rounded-xl border border-border bg-card p-6 shadow-xl"
                 :class="wide ? 'max-w-3xl' : 'max-w-md'"
             >
-                <h2 v-if="title" class="text-lg font-bold text-foreground">{{ title }}</h2>
+                <button
+                    type="button"
+                    aria-label="Tutup"
+                    class="absolute right-4 top-4 flex size-8 items-center justify-center rounded-full text-muted-foreground transition hover:bg-accent hover:text-foreground"
+                    @click="open = false"
+                >
+                    <X class="size-4" />
+                </button>
+                <h2 v-if="title" class="pr-10 text-lg font-bold text-foreground">{{ title }}</h2>
                 <div class="mt-4">
                     <slot />
                 </div>
