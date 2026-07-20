@@ -37,6 +37,12 @@
                                     @if ($entry['program']->tagline)
                                         <p class="mt-1.5 text-sm leading-relaxed text-teal-800/70">{{ $entry['program']->tagline }}</p>
                                     @endif
+                                    @if ($entry['class_count'] > 0)
+                                        <p class="mt-2 inline-flex items-center gap-1.5 text-xs font-semibold text-teal-700">
+                                            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>
+                                            {{ $entry['class_count'] }} kelas dalam satu pendaftaran
+                                        </p>
+                                    @endif
                                 </div>
                                 <svg class="h-5 w-5 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>

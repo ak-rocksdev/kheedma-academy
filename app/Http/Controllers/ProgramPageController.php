@@ -23,6 +23,8 @@ class ProgramPageController extends Controller
             ->map(fn (Program $program) => [
                 'program' => $program,
                 'chip' => $this->stateChip($person, $program),
+                // "N kelas" tells the visitor one registration covers a series.
+                'class_count' => $program->openCohort()?->sessions()->count() ?? 0,
             ]);
 
         // Affiliate classes are ALWAYS listed while active (teaser value),
