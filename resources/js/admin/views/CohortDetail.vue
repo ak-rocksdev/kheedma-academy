@@ -315,7 +315,7 @@ watch(() => props.id, () => load());
         <template v-else-if="cohort">
             <div class="mt-4 flex flex-wrap items-end justify-between gap-4">
                 <div>
-                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">{{ cohort.program?.name ?? 'Angkatan' }}</p>
+                    <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-700">{{ cohort.program?.name ?? 'Angkatan' }}</p>
                     <h1 class="mt-2 text-2xl font-bold text-foreground">{{ cohort.name }}</h1>
                     <p class="mt-1 text-sm text-muted-foreground">
                         Mentor: {{ cohort.mentor?.name ?? '—' }} · {{ roster.length }} peserta
@@ -365,7 +365,7 @@ watch(() => props.id, () => load());
                         >
                             <FileText class="size-3.5" /> Materi kelas
                         </a>
-                        <p v-else class="mt-0.5 text-muted-foreground/60 italic">Materi belum diisi.</p>
+                        <p v-else class="mt-0.5 text-muted-foreground italic">Materi belum diisi.</p>
                         <div class="mt-2">
                             <button
                                 type="button"
@@ -389,10 +389,10 @@ watch(() => props.id, () => load());
                         <p class="mt-0.5 text-muted-foreground">
                             <template v-if="cohort.registration_opens_at || cohort.registration_closes_at">
                                 <span class="font-semibold text-foreground">{{ cohort.registration_opens_at ? fmtDateTime(cohort.registration_opens_at) : '—' }}</span>
-                                <span class="text-muted-foreground/70"> s.d. </span>
+                                <span class="text-muted-foreground"> s.d. </span>
                                 <span class="font-semibold text-foreground">{{ cohort.registration_closes_at ? fmtDateTime(cohort.registration_closes_at) : 'tanpa batas' }}</span>
                             </template>
-                            <span v-else class="text-muted-foreground/60 italic">Jendela belum diatur.</span>
+                            <span v-else class="text-muted-foreground italic">Jendela belum diatur.</span>
                         </p>
                         <div class="mt-2">
                             <Badge :variant="cohort.registration_open ? 'default' : 'secondary'">
@@ -465,11 +465,11 @@ watch(() => props.id, () => load());
                                 <p class="mt-0.5 font-semibold text-foreground">{{ selectedSession.assignment.title }}</p>
                                 <p class="mt-1 line-clamp-2 text-sm text-muted-foreground">{{ plainExcerpt(selectedSession.assignment.body) }}</p>
                             </template>
-                            <p v-else class="mt-0.5 text-sm text-muted-foreground/70 italic">Belum ada tugas untuk kelas ini.</p>
+                            <p v-else class="mt-0.5 text-sm text-muted-foreground italic">Belum ada tugas untuk kelas ini.</p>
                         </div>
                     </div>
                     <div class="flex shrink-0 items-center gap-2">
-                        <Badge v-if="selectedSession.assignment?.pending_count" variant="secondary" class="bg-orange-100 text-orange-700">
+                        <Badge v-if="selectedSession.assignment?.pending_count" variant="secondary" class="bg-orange-100 text-orange-800">
                             {{ selectedSession.assignment.pending_count }} menunggu dinilai
                         </Badge>
                         <Button v-if="auth.can('assignments.manage')" variant="outline" size="sm" @click="openAssignmentForm">
@@ -504,7 +504,7 @@ watch(() => props.id, () => load());
                         <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground [&::-webkit-details-marker]:hidden">
                             <span class="font-semibold uppercase tracking-wide">Konfirmasi kehadiran</span>
                             <span class="font-semibold text-teal-700">{{ confirmationRecap.attending }} hadir</span>
-                            <span class="font-semibold text-orange-600">{{ confirmationRecap.cannot_attend }} berhalangan</span>
+                            <span class="font-semibold text-orange-700">{{ confirmationRecap.cannot_attend }} berhalangan</span>
                             <span>{{ confirmationRecap.belum }} belum konfirmasi</span>
                             <span class="ml-auto text-[0.7rem] underline-offset-2 group-open:hidden">Lihat nama</span>
                             <span class="ml-auto hidden text-[0.7rem] group-open:inline">Tutup</span>
@@ -512,7 +512,7 @@ watch(() => props.id, () => load());
                         <ul class="mt-2 space-y-1">
                             <li v-for="(entry, i) in selectedSession.confirmations.entries" :key="i" class="flex flex-wrap items-baseline gap-x-2">
                                 <span class="font-medium text-foreground">{{ entry.name }}</span>
-                                <span :class="entry.status === 'attending' ? 'text-teal-700' : 'text-orange-600'">
+                                <span :class="entry.status === 'attending' ? 'text-teal-700' : 'text-orange-700'">
                                     {{ entry.status === 'attending' ? 'hadir' : 'berhalangan' }}
                                 </span>
                                 <span v-if="entry.note" class="text-muted-foreground">· {{ entry.note }}</span>
@@ -521,6 +521,7 @@ watch(() => props.id, () => load());
                         </ul>
                     </details>
                 </div>
+                <div class="overflow-x-auto">
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -555,7 +556,7 @@ watch(() => props.id, () => load());
                                     v-if="selectedSession"
                                     type="button"
                                     :disabled="!canToggle(row)"
-                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed sm:px-3.5"
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 sm:px-3.5"
                                     :class="isHadir(row, selectedSession)
                                         ? 'border-teal-600 bg-teal-600 text-white'
                                         : 'border-border text-muted-foreground hover:border-teal-600/50 hover:text-foreground'"
@@ -571,7 +572,7 @@ watch(() => props.id, () => load());
                                 <button
                                     v-if="assignmentStateFor(row)?.state === 'menunggu_dinilai'"
                                     type="button"
-                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600"
+                                    class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-orange-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-orange-600 disabled:cursor-not-allowed disabled:opacity-50"
                                     :disabled="!auth.can('assignments.grade')"
                                     @click="openGrading(row)"
                                 >
@@ -580,7 +581,7 @@ watch(() => props.id, () => load());
                                 <button
                                     v-else-if="assignmentStateFor(row)?.state === 'dinilai'"
                                     type="button"
-                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500 hover:bg-teal-200"
+                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500 hover:bg-teal-200 disabled:cursor-not-allowed disabled:opacity-50"
                                     :disabled="!auth.can('assignments.grade')"
                                     title="Lihat atau perbarui nilai"
                                     @click="openGrading(row)"
@@ -588,7 +589,7 @@ watch(() => props.id, () => load());
                                     {{ assignmentStateFor(row)?.score }}
                                     <Pencil class="size-3 opacity-50 transition group-hover/nilai:opacity-100" />
                                 </button>
-                                <span v-else class="text-xs text-muted-foreground/50">Belum kirim</span>
+                                <span v-else class="text-xs text-muted-foreground">Belum kirim</span>
                             </td>
                             <td v-if="cohort.min_average_score !== null" class="hidden px-3 py-3 sm:table-cell">
                                 <template v-if="row.average !== null">
@@ -597,7 +598,7 @@ watch(() => props.id, () => load());
                                         {{ row.qualifies ? 'Memenuhi syarat' : 'Belum memenuhi' }}
                                     </Badge>
                                 </template>
-                                <span v-else class="text-xs text-muted-foreground/50">—</span>
+                                <span v-else class="text-xs text-muted-foreground">—</span>
                             </td>
                             <td class="hidden px-3 py-3 sm:table-cell">
                                 <!-- Status default (accepted/belum ada) adalah derau; hanya
@@ -605,7 +606,7 @@ watch(() => props.id, () => load());
                                 <Badge v-if="row.latest_status && row.latest_status !== 'accepted'" :variant="statusVariant(row.latest_status)">
                                     {{ statusLabel(row.latest_status) }}
                                 </Badge>
-                                <span v-else class="text-xs text-muted-foreground/50">—</span>
+                                <span v-else class="text-xs text-muted-foreground">—</span>
                             </td>
                             <td class="px-2 py-3 text-right whitespace-nowrap sm:px-3">
                                 <Button
@@ -634,6 +635,7 @@ watch(() => props.id, () => load());
                         </tr>
                     </tbody>
                 </table>
+                </div>
 
                 <div class="flex flex-wrap items-center justify-between gap-2 border-t border-border px-4 py-2.5 text-xs text-muted-foreground">
                     <span v-if="auth.can('attendance.record')">Ketuk tombol kehadiran untuk mencatat hadir. Tersimpan otomatis.</span>

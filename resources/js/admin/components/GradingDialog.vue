@@ -102,7 +102,7 @@ async function saveGrade() {
                             Kiriman {{ history.length }} · terbaru
                         </p>
                         <Badge v-if="latest.score !== null" variant="success">Sudah dinilai · {{ latest.score }}</Badge>
-                        <Badge v-else variant="secondary" class="bg-orange-100 text-orange-700">Menunggu dinilai</Badge>
+                        <Badge v-else variant="secondary" class="bg-orange-100 text-orange-800">Menunggu dinilai</Badge>
                     </div>
 
                     <a :href="latest.url" target="_blank" rel="noopener"
@@ -111,7 +111,7 @@ async function saveGrade() {
                         <span class="flex shrink-0 items-center gap-1 text-xs font-semibold"><ExternalLink class="size-3.5" /> Buka link</span>
                     </a>
                     <p v-if="latest.note" class="mt-2 border-l-2 border-teal-600/40 pl-3 text-sm italic text-muted-foreground">"{{ latest.note }}"</p>
-                    <p class="mt-2 text-xs text-muted-foreground/80">Dikirim {{ fmtDateTime(latest.created_at) }}<template v-if="latest.graded_by"> · dinilai {{ latest.graded_by }}</template></p>
+                    <p class="mt-2 text-xs text-muted-foreground">Dikirim {{ fmtDateTime(latest.created_at) }}<template v-if="latest.graded_by"> · dinilai {{ latest.graded_by }}</template></p>
 
                     <form class="mt-4 border-t border-teal-900/10 pt-4" @submit.prevent="saveGrade">
                         <div class="flex flex-wrap items-end gap-4">
@@ -142,14 +142,14 @@ async function saveGrade() {
                 <div v-if="older.length" class="mt-4">
                     <p class="text-[0.65rem] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Riwayat sebelumnya</p>
                     <ul class="mt-2 max-h-40 space-y-1.5 overflow-y-auto">
-                        <li v-for="(s, i) in older" :key="s.id" class="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2 text-xs opacity-75">
+                        <li v-for="(s, i) in older" :key="s.id" class="flex items-center justify-between gap-3 rounded-lg border border-border/70 px-3 py-2 text-xs">
                             <a :href="s.url" target="_blank" rel="noopener" class="inline-flex min-w-0 items-center gap-1.5 font-medium text-teal-700 hover:underline">
                                 <ExternalLink class="size-3 shrink-0" /><span class="truncate">{{ s.url }}</span>
                             </a>
                             <span class="flex shrink-0 items-center gap-2 text-muted-foreground">
                                 {{ fmtDateTime(s.created_at) }}
                                 <Badge v-if="s.score !== null" variant="secondary">{{ s.score }}</Badge>
-                                <span v-else class="text-muted-foreground/60">tanpa nilai</span>
+                                <span v-else class="text-muted-foreground">tanpa nilai</span>
                             </span>
                         </li>
                     </ul>
