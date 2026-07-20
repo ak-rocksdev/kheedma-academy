@@ -1626,7 +1626,11 @@ In the `@foreach ($cohort->sessions as $session)` loop, AFTER the venue block (a
 ```blade
 @if (isset($assignmentCards[$session->id]))
     @php($tugas = $assignmentCards[$session->id])
-    <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white" {{ session('tugas_terkirim') === $tugas['assignment']->id || $errors->has('url') ? 'open' : '' }}>
+    {{-- Validation errors are global per redirect; the hidden _assignment_id
+         marker scopes reopen + old() prefill to the card that actually
+         failed, so sibling cards stay untouched. --}}
+    @php($failedHere = $errors->has('url') && (int) old('_assignment_id') === $tugas['assignment']->id)
+    <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white" {{ session('tugas_terkirim') === $tugas['assignment']->id || $failedHere ? 'open' : '' }}>
         <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
             <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
                 <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/><path d="m10 13 1.5 1.5L15 11" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1678,11 +1682,12 @@ In the `@foreach ($cohort->sessions as $session)` loop, AFTER the venue block (a
             })
             <form method="POST" action="{{ route('member.assignment.submit', $tugas['assignment']) }}" data-submit-once class="mt-4 space-y-2">
                 @csrf
+                <input type="hidden" name="_assignment_id" value="{{ $tugas['assignment']->id }}">
                 <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">{{ $formLabel }}</label>
-                <input type="url" name="url" value="{{ old('url') }}" placeholder="https://drive.google.com/…" inputmode="url"
-                       class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
-                @error('url') <p class="text-xs text-red-600">{{ $message }}</p> @enderror
-                <input type="text" name="note" value="{{ old('note') }}" placeholder="Catatan untuk mentor (opsional)"
+                <input type="url" name="url" value="{{ $failedHere ? old('url') : '' }}" placeholder="https://drive.google.com/…" inputmode="url"
+                       class="w-full rounded-lg border {{ $failedHere ? 'border-red-400' : 'border-teal-900/15' }} bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
+                <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
                        class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
                 <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $formLabel }}</button>
                 @if ($tugas['versions'] > 1)
