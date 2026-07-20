@@ -194,4 +194,24 @@ class ProgramManagementTest extends TestCase
             ->assertJsonPath('program.type', 'general')
             ->assertJsonPath('program.level', null);
     }
+
+    public function test_min_average_score_round_trips_and_validates(): void
+    {
+        $program = Program::factory()->active()->create();
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['min_average_score' => 75])
+            ->assertOk()
+            ->assertJsonPath('program.min_average_score', 75);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['min_average_score' => 101])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['min_average_score']);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/programs/{$program->id}", ['min_average_score' => null])
+            ->assertOk()
+            ->assertJsonPath('program.min_average_score', null);
+    }
 }

@@ -68,6 +68,7 @@ watch(open, (isOpen) => {
         type: props.program?.type ?? 'general',
         level: props.program?.level ?? '',
         locked_message: props.program?.locked_message ?? '',
+        min_average_score: props.program?.min_average_score ?? '',
     };
     thumbnailUrl.value = props.program?.thumbnail_url ?? null;
     formErrors.value = {};
@@ -114,6 +115,7 @@ async function save() {
             type: form.value.type,
             level: form.value.type === 'affiliate_community' ? Number(form.value.level) : undefined,
             locked_message: form.value.locked_message || null,
+            min_average_score: form.value.min_average_score === '' ? null : Number(form.value.min_average_score),
         };
         const res = isEditing.value
             ? await programsApi.update(props.program.id, payload) // slug omitted: never changes once published
@@ -259,6 +261,12 @@ onUnmounted(() => document.removeEventListener('keydown', onPreviewKey));
                         {{ option.label }}
                     </ToggleGroupItem>
                 </ToggleGroup>
+            </div>
+            <div>
+                <label class="text-xs text-muted-foreground">Nilai rata-rata minimum</label>
+                <Input v-model="form.min_average_score" type="number" min="1" max="100" placeholder="Contoh: 75" class="mt-1.5" />
+                <p class="mt-1 text-xs text-muted-foreground">Kosongkan jika kelulusan tidak diukur dengan nilai.</p>
+                <p v-if="formErrors.min_average_score" class="mt-1 text-xs text-destructive">{{ formErrors.min_average_score[0] }}</p>
             </div>
             <div>
                 <label class="text-xs text-muted-foreground">Mode seleksi</label>
