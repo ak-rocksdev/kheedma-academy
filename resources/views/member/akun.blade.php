@@ -146,23 +146,23 @@
                                             @foreach ($cohort->sessions as $session)
                                                 <div class="rounded-2xl border border-teal-900/10 bg-white p-4">
                                                     <div class="flex flex-wrap items-start justify-between gap-2">
-                                                        <p class="font-semibold text-teal-900">{{ $session->title }}</p>
+                                                        <p class="text-lg font-bold leading-snug text-teal-900">{{ $session->title }}</p>
                                                         <span @class([
-                                                            'shrink-0 rounded-full px-3 py-1 text-xs font-semibold',
+                                                            'shrink-0 rounded-full px-3 py-1 text-[0.8125rem] font-semibold',
                                                             'bg-teal-100 text-teal-700' => ! $session->isOnline(),
                                                             'bg-sand-100 text-teal-800/70' => $session->isOnline(),
                                                         ])>{{ $session->isOnline() ? 'Online' : 'Tatap muka' }}</span>
                                                     </div>
 
                                                     @if ($session->scheduledLabel())
-                                                        <div class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-teal-800/80">
+                                                        <div class="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-base text-teal-800/80">
                                                             <span>{{ $session->scheduledLabel() }}</span>
                                                             @if ($session->countdownLabel())
-                                                                <span class="rounded-full bg-orange-500/15 px-2.5 py-0.5 text-xs font-bold text-orange-700">{{ $session->countdownLabel() }}</span>
+                                                                <span class="rounded-full bg-orange-500/15 px-2.5 py-1 text-[0.8125rem] font-bold text-orange-700">{{ $session->countdownLabel() }}</span>
                                                             @endif
                                                             @if ($session->googleCalendarUrl())
                                                                 <a href="{{ $session->googleCalendarUrl() }}" target="_blank" rel="noopener"
-                                                                   class="text-xs font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
+                                                                   class="inline-flex min-h-11 items-center text-sm font-semibold text-teal-700 underline-offset-4 transition hover:text-orange-600 hover:underline">
                                                                     + Tambahkan ke Google Calendar
                                                                 </a>
                                                             @endif
@@ -170,10 +170,10 @@
                                                     @endif
 
                                                     @if ($session->isOnline())
-                                                        <p class="mt-2 text-sm font-medium text-teal-900">Kelas online</p>
+                                                        <p class="mt-2 text-base font-medium text-teal-900">Kelas online</p>
                                                         @if ($session->meeting_url)
                                                             <a href="{{ $session->meeting_url }}" target="_blank" rel="noopener"
-                                                               class="mt-3 inline-flex items-center gap-2 rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">
+                                                               class="mt-3 inline-flex min-h-11 items-center gap-2 rounded-full bg-teal-700 px-5 py-2.5 text-base font-semibold text-white transition hover:bg-teal-900">
                                                                 <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2.5" y="6" width="13" height="12" rx="2.5"/><path d="m15.5 10 5-3v10l-5-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                 Gabung meeting
                                                             </a>
@@ -195,13 +195,13 @@
                                                                     <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
                                                                         <svg class="h-5 w-5 text-orange-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21s-6-5.1-6-9.9a6 6 0 1 1 12 0C18 15.9 12 21 12 21Z"/><circle cx="12" cy="11" r="2.3"/></svg>
                                                                     </span>
-                                                                    <span class="min-w-0 flex-1 basis-0 min-[420px]:basis-auto">
-                                                                        <span class="block text-sm font-semibold text-teal-900">{{ $session->location_name ?: 'Lokasi kelas' }}</span>
-                                                                        <span class="block text-xs leading-relaxed text-teal-800/70">{{ $session->location_address ?: 'Lihat lokasi di peta' }}</span>
+                                                                    <span class="min-w-0 flex-1">
+                                                                        <span class="block text-base font-semibold text-teal-900">{{ $session->location_name ?: 'Lokasi kelas' }}</span>
+                                                                        <span class="block text-sm leading-relaxed text-teal-800/70">{{ $session->location_address ?: 'Lihat lokasi di peta' }}</span>
                                                                     </span>
                                                                     {{-- Labeled affordance: the verb tells what you get, the
                                                                          chevron tells how it behaves; the label flips when open. --}}
-                                                                    <span class="flex w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-teal-900/15 px-3 py-2 text-xs font-semibold text-teal-700 transition group-hover:border-teal-600/40 min-[420px]:w-auto min-[420px]:py-1.5">
+                                                                    <span class="flex min-h-11 w-full shrink-0 items-center justify-center gap-1.5 rounded-full border border-teal-900/15 px-4 text-sm font-semibold text-teal-700 transition group-hover:border-teal-600/40 min-[420px]:w-auto">
                                                                         <span class="group-open:hidden">Lihat peta</span>
                                                                         <span class="hidden group-open:inline">Tutup peta</span>
                                                                         <svg class="h-3.5 w-3.5 transition-transform group-open:rotate-180" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 8 4 4 4-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -232,10 +232,10 @@
                                                         @elseif ($session->location_name || $session->location_address)
                                                             {{-- Coordinates absent (legacy/manual entry): plain text location. --}}
                                                             @if ($session->location_name)
-                                                                <p class="mt-2 font-semibold text-teal-900">{{ $session->location_name }}</p>
+                                                                <p class="mt-2 text-base font-semibold text-teal-900">{{ $session->location_name }}</p>
                                                             @endif
                                                             @if ($session->location_address)
-                                                                <p class="text-sm text-teal-800/70">{{ $session->location_address }}</p>
+                                                                <p class="text-sm leading-relaxed text-teal-800/70">{{ $session->location_address }}</p>
                                                             @endif
                                                         @else
                                                             <p class="mt-2 text-sm text-teal-800/70">Lokasi kelas akan diumumkan.</p>
@@ -244,7 +244,7 @@
                                                         {{-- Fixed offline-benefits copy (spec: deliberately not CMS-editable). --}}
                                                         <div class="mt-3 rounded-2xl bg-teal-900/[0.04] px-4 py-3.5">
                                                             <p class="text-xs font-bold uppercase tracking-wide text-teal-800/70">Kenapa hadir offline?</p>
-                                                            <ul class="mt-2 space-y-1.5 text-sm text-teal-800/80">
+                                                            <ul class="mt-2.5 space-y-2 text-base text-teal-800/80">
                                                                 <li class="flex items-start gap-2">
                                                                     <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                     Pemantauan langsung dari mentor
@@ -265,36 +265,36 @@
                                                     @if ($konfirmasi && $konfirmasi['editable'])
                                                         <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
                                                             @if ($konfirmasi['status'] === null)
-                                                                <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
-                                                                <p class="mt-0.5 text-xs text-teal-800/70">Konfirmasimu membantu mentor menyiapkan kelas.</p>
+                                                                <p class="text-base font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
+                                                                <p class="mt-1 text-sm text-teal-800/70">Konfirmasimu membantu mentor menyiapkan kelas.</p>
                                                                 <div class="mt-3 flex flex-wrap gap-2">
                                                                     <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
-                                                                            class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Bisa hadir</button>
+                                                                            class="min-h-11 rounded-full bg-teal-700 px-5 text-base font-semibold text-white transition hover:bg-teal-900">Bisa hadir</button>
                                                                     <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
-                                                                            class="rounded-full border border-teal-900/15 px-4 py-2 text-sm font-semibold text-teal-800 transition hover:border-orange-400 hover:text-orange-600">Berhalangan</button>
+                                                                            class="min-h-11 rounded-full border border-teal-900/15 px-5 text-base font-semibold text-teal-800 transition hover:border-orange-400 hover:text-orange-600">Berhalangan</button>
                                                                 </div>
                                                             @else
                                                                 <div class="flex flex-wrap items-center justify-between gap-2">
                                                                     @if ($konfirmasi['status'] === 'attending')
-                                                                        <p class="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700">
+                                                                        <p class="inline-flex items-center gap-1.5 text-base font-semibold text-teal-700">
                                                                             <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                             Kamu konfirmasi hadir
                                                                         </p>
                                                                     @else
-                                                                        <p class="text-sm font-semibold text-orange-700">Kamu berhalangan hadir</p>
+                                                                        <p class="text-base font-semibold text-orange-700">Kamu berhalangan hadir</p>
                                                                     @endif
                                                                     <div class="flex flex-wrap gap-2">
                                                                         @if ($konfirmasi['status'] === 'cannot_attend')
                                                                             <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
-                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
+                                                                                    class="min-h-11 rounded-full border border-teal-900/15 px-4 text-sm font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
                                                                         @else
                                                                             <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
-                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-orange-400 hover:text-orange-600">Ubah konfirmasi</button>
+                                                                                    class="min-h-11 rounded-full border border-teal-900/15 px-4 text-sm font-semibold text-teal-700 transition hover:border-orange-400 hover:text-orange-600">Ubah konfirmasi</button>
                                                                         @endif
                                                                     </div>
                                                                 </div>
                                                                 @if ($konfirmasi['status'] === 'cannot_attend' && $konfirmasi['note'])
-                                                                    <p class="mt-2 border-l-2 border-orange-300 pl-3 text-xs italic text-teal-800/70">{{ $konfirmasi['note'] }}</p>
+                                                                    <p class="mt-2.5 border-l-2 border-orange-300 pl-3 text-sm italic text-teal-800/70">{{ $konfirmasi['note'] }}</p>
                                                                 @endif
                                                             @endif
                                                         </div>
@@ -345,18 +345,18 @@
                                                              Title on its own line, state and link below: at 390px a
                                                              single row squeezed the title to one word per line. --}}
                                                         <div class="mt-3 rounded-2xl border border-teal-900/10 bg-white px-4 py-3">
-                                                            <p class="flex items-start gap-2 text-sm">
+                                                            <p class="flex items-start gap-2.5 text-base">
                                                                 <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700/70" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 5h6m-7 3h8a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Zm1-3h4a1 1 0 0 1 1 1v2H9V3a1 1 0 0 1 1-1Z" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                 <span class="min-w-0 flex-1 font-medium text-teal-900">Tugas: {{ $tugas['assignment']->title }}</span>
                                                             </p>
                                                             <div class="mt-2.5 flex flex-wrap items-center gap-x-3 gap-y-2">
                                                                 <span @class([
-                                                                    'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
+                                                                    'shrink-0 rounded-full px-2.5 py-1 text-[0.8125rem] font-semibold',
                                                                     'bg-sand-100 text-teal-800/70' => $tugas['state'] === 'belum_dikerjakan',
                                                                     'bg-orange-100 text-orange-800' => $tugas['state'] === 'menunggu_dinilai',
                                                                     'bg-teal-100 text-teal-700' => $tugas['state'] === 'dinilai',
                                                                 ])>{{ $tugas['state'] === 'dinilai' ? 'Nilai '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
-                                                                <a href="{{ route('member.area', ['bagian' => 'tugas']) }}" class="ml-auto flex shrink-0 items-center gap-1 text-xs font-semibold text-teal-700 transition hover:text-orange-600">
+                                                                <a href="{{ route('member.area', ['bagian' => 'tugas']) }}" class="ml-auto flex min-h-11 shrink-0 items-center gap-1 text-sm font-semibold text-teal-700 transition hover:text-orange-600">
                                                                     Lihat tugas
                                                                     <svg class="h-3.5 w-3.5" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                                                 </a>
