@@ -127,6 +127,13 @@ const hadirCount = computed(() =>
     selectedSession.value ? roster.value.filter((r) => isHadir(r, selectedSession.value)).length : 0
 );
 
+// Konfirmasi kehadiran recap: intent signal for the mentor, read-only here.
+const confirmationRecap = computed(() => {
+    const c = selectedSession.value?.confirmations;
+    if (!c) return null;
+    const responded = c.attending + c.cannot_attend;
+    return { ...c, belum: Math.max(0, activeRosterCount.value - responded) };
+});
 
 // Mirrors Cohort::startCountdownLabel(): final week only, display-side.
 const countdownLabel = computed(() => {
@@ -492,6 +499,28 @@ watch(() => props.id, () => load());
                         </div>
                     </div>
                 </div>
+                <div v-if="confirmationRecap" class="border-b border-border px-4 py-2.5 text-xs sm:px-6">
+                    <details class="group">
+                        <summary class="flex cursor-pointer list-none flex-wrap items-center gap-x-3 gap-y-1 text-muted-foreground [&::-webkit-details-marker]:hidden">
+                            <span class="font-semibold uppercase tracking-wide">Konfirmasi kehadiran</span>
+                            <span class="font-semibold text-teal-700">{{ confirmationRecap.attending }} hadir</span>
+                            <span class="font-semibold text-orange-600">{{ confirmationRecap.cannot_attend }} berhalangan</span>
+                            <span>{{ confirmationRecap.belum }} belum konfirmasi</span>
+                            <span class="ml-auto text-[0.7rem] underline-offset-2 group-open:hidden">Lihat nama</span>
+                            <span class="ml-auto hidden text-[0.7rem] group-open:inline">Tutup</span>
+                        </summary>
+                        <ul class="mt-2 space-y-1">
+                            <li v-for="(entry, i) in selectedSession.confirmations.entries" :key="i" class="flex flex-wrap items-baseline gap-x-2">
+                                <span class="font-medium text-foreground">{{ entry.name }}</span>
+                                <span :class="entry.status === 'attending' ? 'text-teal-700' : 'text-orange-600'">
+                                    {{ entry.status === 'attending' ? 'hadir' : 'berhalangan' }}
+                                </span>
+                                <span v-if="entry.note" class="text-muted-foreground">· {{ entry.note }}</span>
+                            </li>
+                            <li v-if="!selectedSession.confirmations.entries.length" class="text-muted-foreground">Belum ada yang konfirmasi.</li>
+                        </ul>
+                    </details>
+                </div>
                 <table class="w-full text-sm">
                     <thead>
                         <tr class="border-b border-border text-left text-xs uppercase tracking-wide text-muted-foreground">
@@ -658,7 +687,8 @@ watch(() => props.id, () => load());
         <Dialog :open="deleteTarget !== null" title="Hapus kelas ini?" @update:open="deleteTarget = null">
             <p class="text-sm text-muted-foreground">
                 Menghapus "{{ deleteTarget?.title }}" juga menghapus {{ deleteTarget?.attendances_count ?? 0 }}
-                catatan kehadiran kelas ini. Tindakan ini tidak bisa dibatalkan.
+                catatan kehadiran, semua konfirmasi kehadiran, dan tugas kelas ini beserta kirimannya.
+                Tindakan ini tidak bisa dibatalkan.
             </p>
             <Alert v-if="deleteError" class="mt-3">{{ deleteError }}</Alert>
             <div class="mt-4 flex justify-end gap-2">

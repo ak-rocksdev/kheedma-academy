@@ -44,6 +44,11 @@ class CohortSession extends Model
         return $this->hasMany(Attendance::class);
     }
 
+    public function confirmations(): HasMany
+    {
+        return $this->hasMany(SessionConfirmation::class);
+    }
+
     public function assignment(): HasOne
     {
         return $this->hasOne(Assignment::class);

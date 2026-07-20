@@ -240,6 +240,104 @@
                                                         @else
                                                             <p class="mt-2 text-sm text-teal-800/70">Lokasi kelas akan diumumkan.</p>
                                                         @endif
+
+                                                        {{-- Fixed offline-benefits copy (spec: deliberately not CMS-editable). --}}
+                                                        <div class="mt-3 rounded-2xl bg-teal-900/[0.04] px-4 py-3.5">
+                                                            <p class="text-xs font-bold uppercase tracking-wide text-teal-800/70">Kenapa hadir offline?</p>
+                                                            <ul class="mt-2 space-y-1.5 text-sm text-teal-800/80">
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Pemantauan langsung dari mentor
+                                                                </li>
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Review editing videomu oleh mentor
+                                                                </li>
+                                                                <li class="flex items-start gap-2">
+                                                                    <svg class="mt-0.5 h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                    Praktik posting sosmed langsung di kelas
+                                                                </li>
+                                                            </ul>
+                                                        </div>
+                                                    @endif
+
+                                                    @php($konfirmasi = $confirmationCards[$session->id] ?? null)
+                                                    @if ($konfirmasi && $konfirmasi['editable'])
+                                                        <div class="mt-3 rounded-2xl border border-teal-900/10 bg-sand-50/60 px-4 py-3.5">
+                                                            @if ($konfirmasi['status'] === null)
+                                                                <p class="text-sm font-semibold text-teal-900">Bisa hadir di kelas ini?</p>
+                                                                <p class="mt-0.5 text-xs text-teal-800/60">Konfirmasimu membantu mentor menyiapkan kelas.</p>
+                                                                <div class="mt-3 flex flex-wrap gap-2">
+                                                                    <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
+                                                                            class="rounded-full bg-teal-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Bisa hadir</button>
+                                                                    <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
+                                                                            class="rounded-full border border-teal-900/15 px-4 py-2 text-sm font-semibold text-teal-800 transition hover:border-orange-400 hover:text-orange-600">Berhalangan</button>
+                                                                </div>
+                                                            @else
+                                                                <div class="flex flex-wrap items-center justify-between gap-2">
+                                                                    @if ($konfirmasi['status'] === 'attending')
+                                                                        <p class="inline-flex items-center gap-1.5 text-sm font-semibold text-teal-700">
+                                                                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                            Kamu konfirmasi hadir
+                                                                        </p>
+                                                                    @else
+                                                                        <p class="text-sm font-semibold text-orange-700">Kamu berhalangan hadir</p>
+                                                                    @endif
+                                                                    <div class="flex flex-wrap gap-2">
+                                                                        @if ($konfirmasi['status'] === 'cannot_attend')
+                                                                            <button type="button" data-modal-open="modal-hadir-{{ $session->id }}"
+                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-teal-600/40">Ubah konfirmasi: jadi hadir</button>
+                                                                        @else
+                                                                            <button type="button" data-modal-open="modal-berhalangan-{{ $session->id }}"
+                                                                                    class="rounded-full border border-teal-900/15 px-3.5 py-1.5 text-xs font-semibold text-teal-700 transition hover:border-orange-400 hover:text-orange-600">Ubah konfirmasi</button>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                                @if ($konfirmasi['status'] === 'cannot_attend' && $konfirmasi['note'])
+                                                                    <p class="mt-2 border-l-2 border-orange-300 pl-3 text-xs italic text-teal-800/70">{{ $konfirmasi['note'] }}</p>
+                                                                @endif
+                                                            @endif
+                                                        </div>
+
+                                                        @php($confirmFailedHere = $errors->hasAny(['status', 'note']) && (int) old('_session_id') === $session->id)
+                                                        <x-modal id="modal-berhalangan-{{ $session->id }}" title="Berhalangan hadir?" :autoopen="$confirmFailedHere">
+                                                            <p class="rounded-xl bg-sand-50 px-4 py-3 text-sm text-teal-800/80">
+                                                                Kabari kendalamu, biar mentor carikan solusi. Kamu masih bisa mengubah konfirmasi ini sampai kelas dimulai.
+                                                            </p>
+                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once class="mt-3 space-y-2.5">
+                                                                @csrf
+                                                                <input type="hidden" name="status" value="cannot_attend">
+                                                                <input type="hidden" name="_session_id" value="{{ $session->id }}">
+                                                                <label class="block text-xs font-semibold uppercase tracking-wide text-teal-800/60">Kendalamu (opsional)</label>
+                                                                <textarea name="note" rows="3" placeholder="Contoh: bentrok jam kerja, ada keperluan lain, dll."
+                                                                          class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">{{ $confirmFailedHere ? old('note') : $konfirmasi['note'] }}</textarea>
+                                                                @if ($confirmFailedHere) <p class="text-xs text-red-600">{{ $errors->first('status') ?: $errors->first('note') }}</p> @endif
+                                                                <div class="flex justify-end gap-2 pt-2">
+                                                                    <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                                                    <button type="submit" class="rounded-full bg-orange-500 px-5 py-2 text-sm font-semibold text-white transition hover:bg-orange-600">Kirim konfirmasi</button>
+                                                                </div>
+                                                            </form>
+                                                        </x-modal>
+
+                                                        {{-- Confirm-hadir dialog: every confirmation passes through an
+                                                             explicit dialog (PO 2026-07-20), house take on SweetAlert. --}}
+                                                        <x-modal id="modal-hadir-{{ $session->id }}" title="Konfirmasi hadir?">
+                                                            <div class="text-center">
+                                                                <span class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-teal-100">
+                                                                    <svg class="h-7 w-7 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 10.5l4 4 8-9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                                                </span>
+                                                                <p class="mt-3 text-sm leading-relaxed text-teal-800/80">
+                                                                    Kamu akan terkonfirmasi hadir di <span class="font-semibold text-teal-900">{{ $session->title }}</span>.
+                                                                    Masih bisa diubah sampai kelas dimulai.
+                                                                </p>
+                                                            </div>
+                                                            <form method="POST" action="{{ route('member.session.confirm', $session) }}" data-submit-once class="mt-4 flex justify-center gap-2">
+                                                                @csrf
+                                                                <input type="hidden" name="status" value="attending">
+                                                                <button type="button" data-modal-close class="rounded-full border border-teal-900/15 px-5 py-2 text-sm font-semibold text-teal-800 transition hover:border-teal-600/40">Batal</button>
+                                                                <button type="submit" class="rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">Ya, saya hadir</button>
+                                                            </form>
+                                                        </x-modal>
                                                     @endif
                                                     @if (isset($assignmentCards[$session->id]))
                                                         @php($tugas = $assignmentCards[$session->id])
@@ -321,7 +419,7 @@
 
                 @if ($affiliate->isNotEmpty())
                     <div class="mt-10">
-                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untuk Anda</h2>
+                        <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untukmu</h2>
                         <div class="mt-4 space-y-3">
                             @foreach ($affiliate as $entry)
                                 @if ($entry['locked'])
@@ -434,11 +532,6 @@
                                         ])>{{ $tugas['state'] === 'dinilai' ? 'Dinilai · '.$tugas['score'] : ($tugas['state'] === 'menunggu_dinilai' ? 'Menunggu dinilai' : 'Belum dikerjakan') }}</span>
                                     </div>
 
-                                    @if (session('tugas_terkirim') === $tugas['assignment']->id)
-                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Jawabanmu terkirim. Mentor akan menilainya segera.</p>
-                                    @elseif (session('tugas_diperbarui') === $tugas['assignment']->id)
-                                        <p class="mt-3 rounded-xl border border-teal-600/30 bg-teal-50 px-4 py-3 text-sm text-teal-800">Kirimanmu diperbarui.</p>
-                                    @endif
                                     @if ($tugas['state'] === 'menunggu_dinilai')
                                         <p class="mt-3 text-sm font-medium text-orange-700">Jawabanmu sudah terkirim, menunggu dinilai mentor.</p>
                                         @if ($tugas['can_edit'])

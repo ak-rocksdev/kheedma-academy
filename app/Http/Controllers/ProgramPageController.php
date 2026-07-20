@@ -23,6 +23,8 @@ class ProgramPageController extends Controller
             ->map(fn (Program $program) => [
                 'program' => $program,
                 'chip' => $this->stateChip($person, $program),
+                // "N kelas" tells the visitor one registration covers a series.
+                'class_count' => $program->openCohort()?->sessions()->count() ?? 0,
             ]);
 
         // Affiliate classes are ALWAYS listed while active (teaser value),
@@ -53,11 +55,29 @@ class ProgramPageController extends Controller
         $locked = ! $this->eligibility->canAccess($person, $program);
         $applicationState = $person?->applicationStateFor($program) ?? 'none';
 
+        // Public class list: the visitor learns the batch contains many
+        // classes before registering. Guest-safe by construction — only
+        // title/schedule/type are mapped; venue and links never leave here.
+        $openCohort = $isOpen ? $program->openCohort() : null;
+        $openClasses = $openCohort
+            ? $openCohort->sessions()
+                // reorder() clears the relation's baked-in position-first sort so
+                // the schedule (nulls last) actually governs, per the spec.
+                ->reorder()->orderByRaw('scheduled_at IS NULL, scheduled_at')
+                ->get()
+                ->map(fn ($session) => [
+                    'title' => $session->title,
+                    'schedule' => $session->scheduledLabel(),
+                    'is_online' => $session->isOnline(),
+                ])->all()
+            : [];
+
         return view('funnel.program', [
             'program' => $program,
             'sections' => $program->sections,
             'isOpen' => $isOpen,
-            'openCohort' => $isOpen ? $program->openCohort() : null,
+            'openCohort' => $openCohort,
+            'openClasses' => $openClasses,
             'locked' => $locked,
             'lockedMessage' => $program->locked_message ?? config('kheedma.default_locked_message'),
             'lockReason' => $this->eligibility->lockReason($person, $program),

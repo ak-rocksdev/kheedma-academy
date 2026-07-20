@@ -32,7 +32,10 @@ class CohortController extends Controller
     {
         $cohort->load(['mentor:id,name', 'program:id,name,min_average_score'])->loadCount('enrollments');
 
-        $sessions = $cohort->sessions()->withCount('attendances')->with('assignment.updater:id,name')->get();
+        $sessions = $cohort->sessions()
+            ->withCount('attendances')
+            ->with(['assignment.updater:id,name', 'confirmations.enrollment.person:id,name'])
+            ->get();
         $assignments = $sessions->pluck('assignment')->filter()->values();
 
         $enrollments = $cohort->enrollments()
@@ -49,6 +52,10 @@ class CohortController extends Controller
             ->groupBy(fn ($s) => $s->assignment_id.':'.$s->enrollment_id);
 
         $threshold = $cohort->program?->min_average_score;
+
+        // A dropped member's stale intent must not inflate the recap or leak
+        // their name; only active enrollments count.
+        $activeEnrollmentIds = $enrollments->filter(fn ($e) => $e->isActive())->pluck('id')->flip();
 
         $roster = $enrollments->map(function ($e) use ($assignments, $submissions, $threshold, $scoring, $cohort) {
             $states = [];
@@ -83,21 +90,34 @@ class CohortController extends Controller
 
         return response()->json([
             'cohort' => array_merge($this->row($cohort), ['min_average_score' => $threshold]),
-            'sessions' => $sessions->map(fn ($s) => [
-                'id' => $s->id,
-                'title' => $s->title,
-                'scheduled_at' => $s->scheduled_at?->toIso8601String(),
-                'position' => (int) $s->position,
-                'attendances_count' => (int) $s->attendances_count,
-                'type' => $s->type,
-                'location_name' => $s->location_name,
-                'location_address' => $s->location_address,
-                'location_lat' => $s->location_lat,
-                'location_lng' => $s->location_lng,
-                'meeting_url' => $s->meeting_url,
-                'maps_url' => $s->mapsUrl(),
-                'assignment' => $s->assignment ? AssignmentController::row($s->assignment) : null,
-            ]),
+            'sessions' => $sessions->map(function ($s) use ($activeEnrollmentIds) {
+                $confirmations = $s->confirmations->filter(fn ($c) => $activeEnrollmentIds->has($c->enrollment_id));
+
+                return [
+                    'id' => $s->id,
+                    'title' => $s->title,
+                    'scheduled_at' => $s->scheduled_at?->toIso8601String(),
+                    'position' => (int) $s->position,
+                    'attendances_count' => (int) $s->attendances_count,
+                    'type' => $s->type,
+                    'location_name' => $s->location_name,
+                    'location_address' => $s->location_address,
+                    'location_lat' => $s->location_lat,
+                    'location_lng' => $s->location_lng,
+                    'meeting_url' => $s->meeting_url,
+                    'maps_url' => $s->mapsUrl(),
+                    'assignment' => $s->assignment ? AssignmentController::row($s->assignment) : null,
+                    'confirmations' => [
+                        'attending' => $confirmations->where('status', 'attending')->count(),
+                        'cannot_attend' => $confirmations->where('status', 'cannot_attend')->count(),
+                        'entries' => $confirmations->map(fn ($c) => [
+                            'name' => $c->enrollment->person?->name ?? '-',
+                            'status' => $c->status,
+                            'note' => $c->note,
+                        ])->values(),
+                    ],
+                ];
+            }),
             'roster' => $roster,
             // Whole-number averages (e.g. 80.0) must keep their decimal so
             // the field round-trips as a float, not silently become an int.

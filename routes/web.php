@@ -6,6 +6,7 @@ use App\Http\Controllers\MemberAreaController;
 use App\Http\Controllers\MemberAssignmentSubmissionController;
 use App\Http\Controllers\MemberAuthController;
 use App\Http\Controllers\MemberPasswordController;
+use App\Http\Controllers\MemberSessionConfirmationController;
 use App\Http\Controllers\ProgramPageController;
 use App\Http\Middleware\RedirectNonStaffFromAdmin;
 use Illuminate\Support\Facades\Route;
@@ -48,6 +49,9 @@ Route::post('/akun/tugas/{assignment}', [MemberAssignmentSubmissionController::c
 Route::patch('/akun/tugas/kiriman/{submission}', [MemberAssignmentSubmissionController::class, 'update'])
     ->middleware(['auth', 'throttle:10,1'])
     ->name('member.submission.update');
+Route::post('/akun/kelas/{session}/konfirmasi', [MemberSessionConfirmationController::class, 'store'])
+    ->middleware(['auth', 'throttle:10,1'])
+    ->name('member.session.confirm');
 
 /*
  | Member password reset. The GET reset route MUST be named password.reset —

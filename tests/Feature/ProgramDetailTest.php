@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
@@ -152,5 +153,59 @@ class ProgramDetailTest extends TestCase
         $this->actingAs($this->admin())
             ->getJson('/api/admin/programs/999999')
             ->assertNotFound();
+    }
+
+    public function test_guest_sees_class_list_titles_dates_and_type_only(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->create([
+            'title' => 'Kelas 1: Riset Produk',
+            'scheduled_at' => now()->addDays(5)->setTime(9, 0),
+            'type' => 'offline',
+            'location_name' => 'Kantor Rahasia',
+            'location_address' => 'Jl. Tersembunyi 1',
+        ]);
+        CohortSession::factory()->for($cohort)->create([
+            'title' => 'Kelas 2: Praktik Posting',
+            'scheduled_at' => now()->addDays(12)->setTime(9, 0),
+            'type' => 'online',
+            'meeting_url' => 'https://meet.google.com/rahasia',
+        ]);
+
+        $this->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSee('Kelas 1: Riset Produk')
+            ->assertSee('Kelas 2: Praktik Posting')
+            ->assertSee('Tatap muka')
+            ->assertSee('Online')
+            ->assertDontSee('Kantor Rahasia')
+            ->assertDontSee('Jl. Tersembunyi 1')
+            ->assertDontSee('meet.google.com', false);
+    }
+
+    public function test_class_list_orders_by_schedule_with_unscheduled_last(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+        // Positions deliberately contradict the schedule; the schedule must win.
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Belum Terjadwal', 'scheduled_at' => null, 'position' => 0]);
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Pekan Depan', 'scheduled_at' => now()->addWeek(), 'position' => 9]);
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Besok', 'scheduled_at' => now()->addDay(), 'position' => 5]);
+
+        $this->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSeeInOrder(['Kelas Besok', 'Kelas Pekan Depan', 'Kelas Belum Terjadwal']);
+    }
+
+    public function test_closed_program_shows_no_class_list(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]); // no open window
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Tersembunyi Uji']);
+
+        $this->get(route('program.show', $program))
+            ->assertOk()
+            ->assertDontSee('Kelas Tersembunyi Uji');
     }
 }

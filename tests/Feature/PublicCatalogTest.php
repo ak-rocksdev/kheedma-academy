@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Application;
 use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
@@ -190,7 +191,7 @@ class PublicCatalogTest extends TestCase
         $this->actingAs($user)
             ->get('/akun?bagian=kelas')
             ->assertOk()
-            ->assertSee('Program untuk Anda')
+            ->assertSee('Program untukmu')
             ->assertSee('Affiliate Kelas Satu')
             ->assertSee('data-lock-trigger', false);
     }
@@ -246,5 +247,17 @@ class PublicCatalogTest extends TestCase
             ->get(route('program.show', $program))
             ->assertOk()
             ->assertSee('Kamu sudah terdaftar di program ini.');
+    }
+
+    public function test_chooser_card_shows_class_count(): void
+    {
+        $program = Program::factory()->active()->create(['name' => 'Program Hitung Kelas']);
+        $cohort = Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+        CohortSession::factory()->for($cohort)->count(4)->create();
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('Program Hitung Kelas')
+            ->assertSee('4 kelas');
     }
 }

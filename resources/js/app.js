@@ -316,6 +316,14 @@ function initModals() {
         return;
     }
 
+    // A backdrop-blur ancestor (e.g. a member-area card) becomes the
+    // containing block for fixed-position descendants, shrinking the overlay
+    // to that card instead of the viewport. Hoisting every modal to <body>
+    // before wiring events removes that ancestor, restoring true viewport
+    // centering — the same idea as the admin SPA's Teleport-to-body modals.
+    // IDs stay global, so data-modal-open lookups by id are unaffected.
+    modals.forEach((modal) => document.body.appendChild(modal));
+
     function open(modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -589,10 +597,40 @@ function initLockModal() {
     });
 }
 
+/* Toasts (x-toast-stack): each card slides in, self-dismisses after a
+   beat, and the X closes it early. Server flashes render them; this only
+   handles the lifecycle. */
+function initToasts() {
+    document.querySelectorAll('[data-toast]').forEach((toast) => {
+        const leave = () => {
+            if (toast.hasAttribute('data-leaving')) return;
+            toast.setAttribute('data-leaving', '');
+            // The timer bar's own animationend bubbles up here, so only the
+            // exit animation may remove the card.
+            toast.addEventListener('animationend', (e) => {
+                if (e.animationName === 'kh-toast-out') toast.remove();
+            });
+            setTimeout(() => toast.remove(), 600); // reduced-motion fallback
+        };
+
+        toast.querySelector('[data-toast-close]')?.addEventListener('click', leave);
+
+        // The timer bar IS the clock: it pauses on hover via CSS, so its
+        // own completion — not a fixed setTimeout — decides when to leave.
+        const timer = toast.querySelector('[data-toast-timer]');
+        if (timer) {
+            timer.addEventListener('animationend', leave, { once: true });
+        } else {
+            setTimeout(leave, 5000);
+        }
+    });
+}
+
 initRegionSelects();
 initBirthDatePicker();
 initPinInputs();
 initModals();
+initToasts();
 initSubmitOnce();
 initPasswordToggles();
 initAccountMenu();

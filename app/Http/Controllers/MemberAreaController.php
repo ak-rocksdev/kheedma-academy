@@ -76,7 +76,7 @@ class MemberAreaController extends Controller
         // Kelasmu: the member's own active enrollments, with cohort logistics.
         $enrolledClasses = $person
             ? $person->enrollments()
-                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions.assignment', 'latestStatusEvent', 'attendances'])
+                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions.assignment', 'latestStatusEvent', 'attendances', 'sessionConfirmations'])
                 ->withCount('attendances')
                 ->get()
                 ->filter(fn (Enrollment $e) => $e->isActive())
@@ -127,6 +127,23 @@ class MemberAreaController extends Controller
                         'at' => $s->created_at,
                         'score' => $s->score,
                     ])->values()->all(),
+                ];
+            }
+        }
+
+        // Confirmation state per class, keyed by session id. Editable until
+        // the class starts; unscheduled classes stay editable (spec Phase B).
+        $confirmationCards = [];
+        foreach ($enrolledClasses as $enrollment) {
+            foreach ($enrollment->cohort->sessions as $session) {
+                $row = $enrollment->sessionConfirmations->firstWhere('cohort_session_id', $session->id);
+                $confirmationCards[$session->id] = [
+                    'status' => $row?->status,
+                    'note' => $row?->note,
+                    // Editable until the class starts; once the mentor marked this member
+                    // hadir the fact exists and the intent prompt is moot (PO 2026-07-20).
+                    'editable' => ($session->scheduled_at === null || $session->scheduled_at->isFuture())
+                        && ! $enrollment->attendances->contains('cohort_session_id', $session->id),
                 ];
             }
         }
@@ -201,6 +218,7 @@ class MemberAreaController extends Controller
             'openClasses' => $openClasses,
             'enrolledClasses' => $enrolledClasses,
             'assignmentCards' => $assignmentCards,
+            'confirmationCards' => $confirmationCards,
             'programProgress' => $programProgress,
             'kelasNotice' => $kelasNotice,
             'activeTab' => $activeTab,
