@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use App\Models\Enrollment;
 use App\Models\Program;
+use App\Support\AssignmentScoring;
 use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,7 +15,7 @@ use Illuminate\View\View;
 class MemberAreaController extends Controller
 {
     /** Minimal member home: identity + membership; products/announcements land later. */
-    public function index(Request $request): View|RedirectResponse
+    public function index(Request $request, AssignmentScoring $scoring): View|RedirectResponse
     {
         $user = $request->user();
 
@@ -75,12 +76,84 @@ class MemberAreaController extends Controller
         // Kelasmu: the member's own active enrollments, with cohort logistics.
         $enrolledClasses = $person
             ? $person->enrollments()
-                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions', 'latestStatusEvent'])
+                ->with(['cohort.program', 'cohort.mentor:id,name', 'cohort.sessions.assignment', 'latestStatusEvent'])
                 ->withCount('attendances')
                 ->get()
                 ->filter(fn (Enrollment $e) => $e->isActive())
                 ->values()
             : collect();
+
+        // Assignment cards, keyed by session id: everything the Blade shows is
+        // computed here (house rule: view logic lives in the controller).
+        $assignmentCards = [];
+        foreach ($enrolledClasses as $enrollment) {
+            foreach ($enrollment->cohort->sessions as $session) {
+                if ($session->assignment === null) {
+                    continue;
+                }
+                $assignment = $session->assignment;
+                $rows = $assignment->submissions()
+                    ->where('enrollment_id', $enrollment->id)
+                    ->orderByDesc('id')
+                    ->get();
+                $latest = $rows->first();
+                $lastGraded = $rows->whereNotNull('score')->first();
+
+                $assignmentCards[$session->id] = [
+                    'assignment' => $assignment,
+                    'state' => $scoring->submissionState($assignment, $enrollment),
+                    'score' => $lastGraded?->score,
+                    'feedback' => $lastGraded?->feedback,
+                    'latest_url' => $latest?->url,
+                    'latest_at' => $latest?->created_at,
+                    'versions' => $rows->count(),
+                    // Compact own history for the card (spec: versions with time +
+                    // grade if any), oldest last.
+                    'history' => $rows->map(fn ($s) => [
+                        'url' => $s->url,
+                        'at' => $s->created_at,
+                        'score' => $s->score,
+                    ])->values()->all(),
+                ];
+            }
+        }
+
+        // Progress per enrolled program that carries a threshold: the average is
+        // per person per program (AssignmentScoring), same rounded value the gate
+        // compares. rows = every assignment across the person's active
+        // enrollments of that program.
+        $programProgress = $enrolledClasses
+            ->groupBy(fn ($e) => $e->cohort->program_id)
+            ->map(function ($group) use ($person, $scoring) {
+                $program = $group->first()->cohort->program;
+                if ($program->min_average_score === null) {
+                    return null;
+                }
+                $rows = [];
+                foreach ($group as $enrollment) {
+                    foreach ($enrollment->cohort->sessions as $session) {
+                        if ($session->assignment === null) {
+                            continue;
+                        }
+                        $rows[] = [
+                            'title' => $session->title,
+                            'state' => $scoring->submissionState($session->assignment, $enrollment),
+                            'score' => $scoring->effectiveScore($session->assignment, $enrollment),
+                        ];
+                    }
+                }
+                $average = $scoring->averageFor($person, $program);
+
+                return [
+                    'program' => $program,
+                    'average' => $average,
+                    'threshold' => (int) $program->min_average_score,
+                    'qualifies' => $average !== null && $average >= $program->min_average_score,
+                    'rows' => $rows,
+                ];
+            })
+            ->filter()
+            ->values();
 
         // Kelas tab: what to say when there is no enrolled class yet — an
         // in-review or accepted-awaiting-placement member must never face a
@@ -110,6 +183,8 @@ class MemberAreaController extends Controller
             'affiliate' => $affiliate,
             'openClasses' => $openClasses,
             'enrolledClasses' => $enrolledClasses,
+            'assignmentCards' => $assignmentCards,
+            'programProgress' => $programProgress,
             'kelasNotice' => $kelasNotice,
             'activeTab' => $activeTab,
         ]);
