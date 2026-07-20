@@ -203,10 +203,11 @@ white/70 cards, `font-display` uppercase eyebrow labels, warm "kamu" copy, no em
    body, then by state —
    - *belum dikerjakan*: submit form (URL input + optional note textarea + "Kirim jawaban").
    - *menunggu dinilai*: confirmation state showing the submitted link + time, copy
-     "Jawabanmu sudah terkirim, menunggu dinilai mentor." — plus a modest "Perbaiki
-     kiriman" affordance (a student who pasted the wrong link must not be stuck waiting
-     for a grade before fixing it; append-only rows already support this, the mentor
-     simply grades the newest version).
+     "Jawabanmu sudah terkirim, menunggu dinilai mentor." AMENDED (PO 2026-07-20,
+     supersedes the original "Perbaiki kiriman" resend): while waiting, NO new rows can
+     be sent (spam-guard for the mentor queue); instead the newest waiting row carries
+     an in-place "Edit kiriman" action (same row updated, not appended) valid for 6
+     hours from that submission's send time, after which the card reads locked.
    - *dinilai*: the score displayed prominently, mentor feedback in a quoted block, and a
      "Kirim ulang untuk perbaiki nilai" affordance reopening the submit form (new version).
    Own submission history shown compactly (versions with time + grade if any).
