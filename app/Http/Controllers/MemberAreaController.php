@@ -143,6 +143,10 @@ class MemberAreaController extends Controller
                     }
                 }
                 $average = $scoring->averageFor($person, $program);
+                if ($average === null) {
+                    // No assignments yet: the gate falls back to attendance, so showing a score judgement here would contradict it.
+                    return null;
+                }
 
                 return [
                     'program' => $program,

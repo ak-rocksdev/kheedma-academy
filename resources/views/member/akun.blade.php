@@ -242,7 +242,7 @@
                                                         {{-- Validation errors are global per redirect; the hidden _assignment_id
                                                              marker scopes reopen + old() prefill to the card that actually
                                                              failed, so sibling cards stay untouched. --}}
-                                                        @php($failedHere = $errors->has('url') && (int) old('_assignment_id') === $tugas['assignment']->id)
+                                                        @php($failedHere = $errors->hasAny(['url', 'note']) && (int) old('_assignment_id') === $tugas['assignment']->id)
                                                         <details class="kh-collapsible group mt-3 overflow-hidden rounded-2xl border border-teal-900/10 bg-white" {{ session('tugas_terkirim') === $tugas['assignment']->id || $failedHere ? 'open' : '' }}>
                                                             <summary class="flex cursor-pointer list-none items-center gap-3 px-4 py-3 transition hover:bg-sand-50 [&::-webkit-details-marker]:hidden">
                                                                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-100 via-sand-50 to-orange-200/70 ring-1 ring-inset ring-teal-900/10">
@@ -302,6 +302,7 @@
                                                                     @if ($failedHere) <p class="text-xs text-red-600">{{ $errors->first('url') }}</p> @endif
                                                                     <input type="text" name="note" value="{{ $failedHere ? old('note') : '' }}" placeholder="Catatan untuk mentor (opsional)"
                                                                            class="w-full rounded-lg border border-teal-900/15 bg-white px-3.5 py-2.5 text-sm text-teal-900 outline-none transition placeholder:text-teal-900/30 focus:border-teal-600 focus:ring-2 focus:ring-teal-600/20">
+                                                                    @if ($failedHere && $errors->has('note')) <p class="text-xs text-red-600">{{ $errors->first('note') }}</p> @endif
                                                                     <button type="submit" class="inline-flex items-center gap-2 rounded-full bg-teal-700 px-5 py-2 text-sm font-semibold text-white transition hover:bg-teal-900">{{ $formLabel }}</button>
                                                                     @if ($tugas['versions'] > 1)
                                                                         <p class="text-xs text-teal-800/50">Kiriman ke-{{ $tugas['versions'] }}. Nilai lama tetap berlaku sampai versi baru dinilai.</p>
