@@ -551,13 +551,13 @@ watch(() => props.id, () => load());
                                 <button
                                     v-else-if="assignmentStateFor(row)?.state === 'dinilai'"
                                     type="button"
-                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500"
+                                    class="group/nilai inline-flex items-center gap-1.5 rounded-full border border-teal-300 bg-teal-100 px-3 py-1.5 text-xs font-bold tabular-nums text-teal-700 transition hover:border-teal-500 hover:bg-teal-200"
                                     :disabled="!auth.can('assignments.grade')"
                                     title="Lihat atau perbarui nilai"
                                     @click="openGrading(row)"
                                 >
                                     {{ assignmentStateFor(row)?.score }}
-                                    <Pencil class="size-3 opacity-0 transition group-hover/nilai:opacity-70" />
+                                    <Pencil class="size-3 opacity-50 transition group-hover/nilai:opacity-100" />
                                 </button>
                                 <span v-else class="text-xs text-muted-foreground/50">Belum kirim</span>
                             </td>
