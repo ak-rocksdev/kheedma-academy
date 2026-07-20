@@ -184,6 +184,20 @@ class ProgramDetailTest extends TestCase
             ->assertDontSee('meet.google.com', false);
     }
 
+    public function test_class_list_orders_by_schedule_with_unscheduled_last(): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
+        // Positions deliberately contradict the schedule; the schedule must win.
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Belum Terjadwal', 'scheduled_at' => null, 'position' => 0]);
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Pekan Depan', 'scheduled_at' => now()->addWeek(), 'position' => 9]);
+        CohortSession::factory()->for($cohort)->create(['title' => 'Kelas Besok', 'scheduled_at' => now()->addDay(), 'position' => 5]);
+
+        $this->get(route('program.show', $program))
+            ->assertOk()
+            ->assertSeeInOrder(['Kelas Besok', 'Kelas Pekan Depan', 'Kelas Belum Terjadwal']);
+    }
+
     public function test_closed_program_shows_no_class_list(): void
     {
         $program = Program::factory()->active()->create();
