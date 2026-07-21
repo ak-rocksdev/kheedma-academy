@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Cohort;
@@ -16,8 +17,10 @@ class EnrollmentController extends Controller
     /**
      * Enroll a person into a cohort — either from an accepted application
      * (door 1: Applicants) or directly by person id (door 2: cohort roster).
+     * A person enrolled without an account gets one provisioned so every
+     * participant can log in.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, ProvisionParticipantAccount $provisioner): JsonResponse
     {
         $data = $request->validate([
             'cohort_id' => ['required', 'exists:cohorts,id'],
@@ -55,6 +58,7 @@ class EnrollmentController extends Controller
         ]);
 
         $person = Person::findOrFail($personId);
+        $generatedPin = $provisioner->ensureAccountFor($person);
 
         return response()->json([
             'enrollment' => [
@@ -62,6 +66,7 @@ class EnrollmentController extends Controller
                 'cohort_id' => $enrollment->cohort_id,
                 'person' => ['id' => $person->id, 'name' => $person->name],
             ],
+            'generated_password' => $generatedPin,
         ], 201);
     }
 
