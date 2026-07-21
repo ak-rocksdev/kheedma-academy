@@ -52,7 +52,7 @@ class EnrollmentController extends Controller
         // Enrolment, its status event, and the provisioned login commit as one:
         // a failed account provision rolls the enrolment back rather than
         // leaving a participant who cannot log in.
-        [$enrollment, $generatedPin] = DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner) {
+        return DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner) {
             $enrollment = Enrollment::create([
                 'people_id' => $person->id,
                 'cohort_id' => $cohort->id,
@@ -64,17 +64,15 @@ class EnrollmentController extends Controller
                 'created_by' => $request->user()->id,
             ]);
 
-            return [$enrollment, $provisioner->ensureAccountFor($person)];
+            return response()->json([
+                'enrollment' => [
+                    'id' => $enrollment->id,
+                    'cohort_id' => $enrollment->cohort_id,
+                    'person' => ['id' => $person->id, 'name' => $person->name],
+                ],
+                'generated_password' => $provisioner->ensureAccountFor($person),
+            ], 201);
         });
-
-        return response()->json([
-            'enrollment' => [
-                'id' => $enrollment->id,
-                'cohort_id' => $enrollment->cohort_id,
-                'person' => ['id' => $person->id, 'name' => $person->name],
-            ],
-            'generated_password' => $generatedPin,
-        ], 201);
     }
 
     /** Undo a mistaken enroll — only while no attendance/history has accrued. */

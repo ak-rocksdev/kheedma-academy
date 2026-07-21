@@ -47,8 +47,9 @@ class ProvisionParticipantAccount
      * using their stored name/email and a generated 6-digit PIN. Used when an
      * admin enrols someone directly (no funnel application), so every enrolled
      * participant can log in. Returns the plain PIN to relay, or null when the
-     * person already had an account. Idempotent and safe to call inside a
-     * caller's transaction (the enrolment can then roll back with it).
+     * person already had an account. Idempotent. Call within the caller's
+     * transaction: it owns the atomicity, so the enrolment rolls back with a
+     * failed provision.
      */
     public function ensureAccountFor(Person $person): ?string
     {
@@ -57,8 +58,7 @@ class ProvisionParticipantAccount
         }
 
         $pin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-        DB::transaction(fn () => $this->createParticipantLogin($person, $pin));
+        $this->createParticipantLogin($person, $pin);
 
         return $pin;
     }
