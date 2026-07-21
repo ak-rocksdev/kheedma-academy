@@ -52,6 +52,17 @@
                         <x-cta :href="route('member.area')" label="Buka Akun Saya" />
                     </div>
                 </div>
+            @elseif (! $canJoin)
+                <div class="mt-10 rounded-3xl border border-teal-900/10 bg-white/70 p-6 text-center shadow-sm backdrop-blur sm:p-8">
+                    <span class="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-sand-100 text-teal-700">
+                        <svg class="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4" stroke-linecap="round"/></svg>
+                    </span>
+                    <h2 class="mt-4 text-lg font-bold text-teal-900">Khusus untuk lulusan program</h2>
+                    <p class="mx-auto mt-2 max-w-md text-sm leading-relaxed text-teal-800/70">
+                        Komunitas ini untuk kamu yang sudah menyelesaikan semua kelas di satu angkatan program. Selesaikan dulu programmu, lalu kamu bisa gabung.
+                    </p>
+                    <a href="{{ route('daftar') }}" class="mt-5 inline-flex items-center rounded-full bg-teal-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-teal-900">Lihat program</a>
+                </div>
             @elseif ($confirming && ! $errors->any())
                 {{-- Logged-in members confirm their stored data instead of retyping it. --}}
                 <form method="POST" data-submit-once action="{{ route('komunitas.join') }}" class="mt-10 space-y-6 rounded-3xl border border-teal-900/10 bg-white/70 p-6 shadow-sm backdrop-blur sm:p-8">

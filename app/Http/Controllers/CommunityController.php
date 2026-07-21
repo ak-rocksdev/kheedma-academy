@@ -28,6 +28,7 @@ class CommunityController extends Controller
 
         $person = $user?->person;
         $alreadyMember = (bool) $person?->communityMembership;
+        $canJoin = app(ProgramEligibility::class)->canJoinCommunity($person);
 
         // Logged-in members CONFIRM their stored data instead of retyping it;
         // ?ubah=1 opens the editable form when something needs updating. A
@@ -41,7 +42,7 @@ class CommunityController extends Controller
 
         $sections = $focusedEdit ? collect() : ContentSection::forCommunity()->get();
 
-        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit', 'sections'));
+        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit', 'sections', 'canJoin'));
     }
 
     /**

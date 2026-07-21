@@ -255,6 +255,7 @@ class CommunityJoinTest extends TestCase
     public function test_member_with_incomplete_profile_gets_the_editable_form(): void
     {
         $user = $this->participantWithProfile(['birth_date' => null, 'gender' => null, 'followed_socials' => null]);
+        $this->completeGeneralIntake($user->person);
 
         $this->actingAs($user)->get('/komunitas')
             ->assertOk()
@@ -329,5 +330,26 @@ class CommunityJoinTest extends TestCase
             ->assertRedirect();
 
         $this->assertSame(1, $user->person->fresh()->communityMembership()->count());
+    }
+
+    public function test_ineligible_viewer_sees_locked_community_notice(): void
+    {
+        $user = $this->participantWithProfile();
+        // No completed general intake, so this participant may not join yet.
+
+        $this->actingAs($user)->get(route('komunitas'))
+            ->assertOk()
+            ->assertSee('Khusus untuk lulusan program')
+            ->assertDontSee('name="motivation"', false);
+    }
+
+    public function test_graduate_sees_the_join_form(): void
+    {
+        $user = $this->participantWithProfile();
+        $this->completeGeneralIntake($user->person);
+
+        $this->actingAs($user)->get(route('komunitas'))
+            ->assertOk()
+            ->assertSee('name="phone"', false);
     }
 }
