@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Enrollment;
@@ -52,7 +53,7 @@ class ApplicantController extends Controller
      * cohort also places the person there (enrollment + status event) in the
      * same transaction: "diterima" means "punya kursi", not a limbo state.
      */
-    public function update(Request $request, Application $application): JsonResponse
+    public function update(Request $request, Application $application, ProvisionParticipantAccount $provisioner): JsonResponse
     {
         $data = $request->validate([
             'status' => ['sometimes', 'in:pending,accepted,rejected'],
@@ -63,7 +64,7 @@ class ApplicantController extends Controller
             $data['reviewed_at'] = $data['status'] === 'pending' ? null : now();
         }
 
-        DB::transaction(function () use ($request, $application, $data) {
+        DB::transaction(function () use ($request, $application, $data, $provisioner) {
             $wasAccepted = $application->status === 'accepted';
 
             $application->update($data);
@@ -85,6 +86,11 @@ class ApplicantController extends Controller
                     'occurred_at' => now(),
                     'created_by' => $request->user()->id,
                 ]);
+
+                // Applications are always born with an account, but enforce the
+                // "every enrolled participant can log in" invariant here too so
+                // a future account-less application path cannot slip through.
+                $provisioner->ensureAccountFor($application->person);
             }
         });
 

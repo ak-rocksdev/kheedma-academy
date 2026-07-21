@@ -36,20 +36,47 @@ class ProvisionParticipantAccount
                 'email' => $identity['email'],
             ])->save();
 
-            $user = User::create([
-                'name' => $identity['name'],
-                'email' => $identity['email'],
-                'password' => Hash::make($identity['password']),
-                'is_active' => true,
-            ]);
-            $user->assignRole('participant');
-
-            $person->user_id = $user->id;
-            $person->save();
-
-            return $user;
+            return $this->createParticipantLogin($person, $identity['password']);
         });
 
         return [$person->fresh(), $user];
+    }
+
+    /**
+     * Give an already-existing Person a participant login if they lack one,
+     * using their stored name/email and a generated 6-digit PIN. Used when an
+     * admin enrols someone directly (no funnel application), so every enrolled
+     * participant can log in. Returns the plain PIN to relay, or null when the
+     * person already had an account. Idempotent. Call within the caller's
+     * transaction: it owns the atomicity, so the enrolment rolls back with a
+     * failed provision.
+     */
+    public function ensureAccountFor(Person $person): ?string
+    {
+        if ($person->user_id !== null) {
+            return null;
+        }
+
+        $pin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $this->createParticipantLogin($person, $pin);
+
+        return $pin;
+    }
+
+    /** Create the participant User, assign the role, and link it to the Person. */
+    private function createParticipantLogin(Person $person, string $plainPin): User
+    {
+        $user = User::create([
+            'name' => $person->name,
+            'email' => $person->email,
+            'password' => Hash::make($plainPin),
+            'is_active' => true,
+        ]);
+        $user->assignRole('participant');
+
+        $person->user_id = $user->id;
+        $person->save();
+
+        return $user;
     }
 }

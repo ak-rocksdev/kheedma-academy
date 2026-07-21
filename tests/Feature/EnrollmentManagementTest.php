@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Models\Application;
 use App\Models\Attendance;
 use App\Models\Cohort;
@@ -84,6 +85,65 @@ class EnrollmentManagementTest extends TestCase
             ->postJson('/api/admin/enrollments', ['cohort_id' => $cohort->id, 'application_id' => $pending->id])
             ->assertStatus(422)
             ->assertJsonValidationErrors('cohort_id');
+    }
+
+    public function test_enrolling_an_account_less_person_provisions_an_account(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person(); // no user account
+
+        $this->assertNull($person->user_id);
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', ['cohort_id' => $cohort->id, 'people_id' => $person->id])
+            ->assertCreated();
+
+        $person->refresh();
+        $this->assertNotNull($person->user_id, 'the enrolled person should now have an account');
+        $this->assertTrue($person->user->hasRole('participant'));
+        // The generated PIN is returned so the admin can relay it.
+        $pin = $response->json('generated_password');
+        $this->assertNotNull($pin);
+        $this->assertMatchesRegularExpression('/^\\d{6}$/', $pin);
+    }
+
+    public function test_enrolling_someone_who_already_has_an_account_generates_no_pin(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person();
+        $user = User::factory()->create();
+        $user->assignRole('participant');
+        $person->user()->associate($user)->save();
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', ['cohort_id' => $cohort->id, 'people_id' => $person->id])
+            ->assertCreated();
+
+        $this->assertNull($response->json('generated_password'));
+        $this->assertSame($user->id, $person->fresh()->user_id);
+    }
+
+    public function test_enrollment_rolls_back_when_account_provisioning_fails(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person();
+
+        // Force the login provision to fail; the enrolment must not persist.
+        $this->mock(ProvisionParticipantAccount::class)
+            ->shouldReceive('ensureAccountFor')
+            ->andThrow(new \RuntimeException('provision failed'));
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', ['cohort_id' => $cohort->id, 'people_id' => $person->id])
+            ->assertStatus(500);
+
+        $this->assertSame(0, Enrollment::where('people_id', $person->id)->count());
     }
 
     public function test_duplicate_enrollment_is_rejected(): void

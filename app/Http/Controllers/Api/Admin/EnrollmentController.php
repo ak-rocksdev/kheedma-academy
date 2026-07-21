@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\Admin;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Cohort;
@@ -9,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\Person;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class EnrollmentController extends Controller
@@ -16,8 +18,10 @@ class EnrollmentController extends Controller
     /**
      * Enroll a person into a cohort — either from an accepted application
      * (door 1: Applicants) or directly by person id (door 2: cohort roster).
+     * A person enrolled without an account gets one provisioned so every
+     * participant can log in.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, ProvisionParticipantAccount $provisioner): JsonResponse
     {
         $data = $request->validate([
             'cohort_id' => ['required', 'exists:cohorts,id'],
@@ -43,26 +47,32 @@ class EnrollmentController extends Controller
             throw ValidationException::withMessages(['people_id' => 'Peserta sudah terdaftar di angkatan ini.']);
         }
 
-        $enrollment = Enrollment::create([
-            'people_id' => $personId,
-            'cohort_id' => $cohort->id,
-            'application_id' => $application?->id,
-        ]);
-        $enrollment->statusEvents()->create([
-            'status' => 'accepted',
-            'occurred_at' => now(),
-            'created_by' => $request->user()->id,
-        ]);
-
         $person = Person::findOrFail($personId);
 
-        return response()->json([
-            'enrollment' => [
-                'id' => $enrollment->id,
-                'cohort_id' => $enrollment->cohort_id,
-                'person' => ['id' => $person->id, 'name' => $person->name],
-            ],
-        ], 201);
+        // Enrolment, its status event, and the provisioned login commit as one:
+        // a failed account provision rolls the enrolment back rather than
+        // leaving a participant who cannot log in.
+        return DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner) {
+            $enrollment = Enrollment::create([
+                'people_id' => $person->id,
+                'cohort_id' => $cohort->id,
+                'application_id' => $application?->id,
+            ]);
+            $enrollment->statusEvents()->create([
+                'status' => 'accepted',
+                'occurred_at' => now(),
+                'created_by' => $request->user()->id,
+            ]);
+
+            return response()->json([
+                'enrollment' => [
+                    'id' => $enrollment->id,
+                    'cohort_id' => $enrollment->cohort_id,
+                    'person' => ['id' => $person->id, 'name' => $person->name],
+                ],
+                'generated_password' => $provisioner->ensureAccountFor($person),
+            ], 201);
+        });
     }
 
     /** Undo a mistaken enroll — only while no attendance/history has accrued. */
