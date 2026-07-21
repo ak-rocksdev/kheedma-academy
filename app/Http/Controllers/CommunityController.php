@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ProvisionParticipantAccount;
 use App\Http\Requests\CommunityJoinRequest;
 use App\Models\ContentSection;
+use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -100,6 +101,12 @@ class CommunityController extends Controller
 
             Auth::login($account);
             $request->session()->regenerate();
+        }
+
+        if (! $person->isCommunityMember() && ! app(ProgramEligibility::class)->canJoinCommunity($person)) {
+            return redirect()
+                ->route('komunitas')
+                ->with('community_notice', 'Komunitas khusus untuk lulusan program. Selesaikan dulu semua kelas di satu angkatan.');
         }
 
         $person->communityMembership()->firstOrCreate(
