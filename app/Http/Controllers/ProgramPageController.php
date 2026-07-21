@@ -20,6 +20,11 @@ class ProgramPageController extends Controller
         // Card chips carry the visitor's own relation to each program, so the
         // catalog answers "di mana posisiku?" before any click.
         $programs = Program::openForRegistration()->where('type', 'general')->latest()->get()
+            // Hide a program the visitor is already enrolled in: they chose
+            // their intake, so its next open intake is not for them (guests
+            // keep seeing everything).
+            ->reject(fn (Program $program) => $person?->applicationStateFor($program) === 'enrolled')
+            ->values()
             ->map(fn (Program $program) => [
                 'program' => $program,
                 'chip' => $this->stateChip($person, $program),

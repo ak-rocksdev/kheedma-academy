@@ -131,6 +131,30 @@ class ProgramEligibilityTest extends TestCase
         $this->assertSame('needs_general', $eligibility->lockReason($person, $level1));
     }
 
+    public function test_partial_attendance_of_a_cohort_does_not_unlock(): void
+    {
+        $eligibility = app(ProgramEligibility::class);
+        $general = Program::factory()->active()->create();
+        $level1 = Program::factory()->affiliate(1)->active()->create();
+
+        $person = $this->makePerson();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $sessions = CohortSession::factory()->count(4)->for($cohort)->create();
+        // Attended 2 of 4 classes: the intake is not finished.
+        Attendance::create(['cohort_session_id' => $sessions[0]->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $sessions[1]->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertFalse($eligibility->canAccess($person, $level1));
+        $this->assertSame('needs_general', $eligibility->lockReason($person, $level1));
+
+        // Finishing the remaining classes unlocks it.
+        Attendance::create(['cohort_session_id' => $sessions[2]->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $sessions[3]->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertNull($eligibility->lockReason($person, $level1));
+    }
+
     public function test_meeting_the_score_bar_unlocks_level_1(): void
     {
         $general = Program::factory()->active()->create(['min_average_score' => 75]);
@@ -138,8 +162,10 @@ class ProgramEligibilityTest extends TestCase
         $cohort = Cohort::factory()->create(['program_id' => $general->id]);
         $person = $this->makePerson();
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
-        $assignment = Assignment::factory()->for(CohortSession::factory()->for($cohort)->create(), 'session')->create();
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
         AssignmentSubmission::factory()->graded(80)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
 
         $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level1));
     }
@@ -180,8 +206,10 @@ class ProgramEligibilityTest extends TestCase
         $cohort = Cohort::factory()->create(['program_id' => $level1->id]);
         $person = $this->makePerson();
         $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
-        $assignment = Assignment::factory()->for(CohortSession::factory()->for($cohort)->create(), 'session')->create();
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
         AssignmentSubmission::factory()->graded(72)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
 
         $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level2));
     }

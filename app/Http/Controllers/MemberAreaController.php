@@ -62,6 +62,11 @@ class MemberAreaController extends Controller
             ->where('type', 'general')
             ->latest()
             ->get()
+            // Already enrolled means the member picked their intake; re-offering
+            // the program's next intake here reads as "peserta" of an angkatan
+            // they never chose (bug 2026-07-21).
+            ->reject(fn (Program $program) => $person?->applicationStateFor($program) === 'enrolled')
+            ->values()
             ->map(function (Program $program) use ($person) {
                 $state = $person?->applicationStateFor($program) ?? 'none';
 
