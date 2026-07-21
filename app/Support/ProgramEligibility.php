@@ -48,6 +48,29 @@ class ProgramEligibility
             : 'needs_previous_level';
     }
 
+    /** Whether the person may join the affiliate community (become a member). */
+    public function canJoinCommunity(?Person $person): bool
+    {
+        return $this->joinLockReason($person) === null;
+    }
+
+    /**
+     * null when the person may join; otherwise guest | needs_general.
+     * Joining requires completing a Program Umum intake (attending every class
+     * of one cohort) and, where that program sets a score bar with soal,
+     * clearing it - the same measure `passesAny` applies over general programs.
+     */
+    public function joinLockReason(?Person $person): ?string
+    {
+        if ($person === null) {
+            return 'guest';
+        }
+
+        return $this->passesAny($person, fn (Builder $q) => $q->where('type', 'general'))
+            ? null
+            : 'needs_general';
+    }
+
     /**
      * The person passes ANY prerequisite program matching the scope: they must
      * have COMPLETED an intake of it (attended every class of one cohort), and

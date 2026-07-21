@@ -213,4 +213,46 @@ class ProgramEligibilityTest extends TestCase
 
         $this->assertNull(app(ProgramEligibility::class)->lockReason($person, $level2));
     }
+
+    public function test_guest_cannot_join_community(): void
+    {
+        $this->assertFalse(app(ProgramEligibility::class)->canJoinCommunity(null));
+        $this->assertSame('guest', app(ProgramEligibility::class)->joinLockReason(null));
+    }
+
+    public function test_graduate_of_general_can_join_community(): void
+    {
+        $general = Program::factory()->active()->create();
+        $person = $this->makePerson();
+        $this->attendProgram($person, $general);
+
+        $this->assertTrue(app(ProgramEligibility::class)->canJoinCommunity($person));
+        $this->assertNull(app(ProgramEligibility::class)->joinLockReason($person));
+    }
+
+    public function test_partial_general_attendance_cannot_join_community(): void
+    {
+        $general = Program::factory()->active()->create();
+        $person = $this->makePerson();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $sessions = CohortSession::factory()->count(3)->for($cohort)->create();
+        Attendance::create(['cohort_session_id' => $sessions[0]->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertSame('needs_general', app(ProgramEligibility::class)->joinLockReason($person));
+    }
+
+    public function test_below_the_score_bar_cannot_join_community(): void
+    {
+        $general = Program::factory()->active()->create(['min_average_score' => 75]);
+        $person = $this->makePerson();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        $assignment = Assignment::factory()->for($session, 'session')->create();
+        AssignmentSubmission::factory()->graded(60)->create(['assignment_id' => $assignment->id, 'enrollment_id' => $enrollment->id]);
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertSame('needs_general', app(ProgramEligibility::class)->joinLockReason($person));
+    }
 }
