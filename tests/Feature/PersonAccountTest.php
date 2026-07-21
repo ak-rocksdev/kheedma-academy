@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\CommunityMembership;
 use App\Models\Person;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -157,5 +158,20 @@ class PersonAccountTest extends TestCase
             ->assertOk()
             ->assertJsonPath('person.account.is_active', true)
             ->assertJsonPath('person.account.email', $user->email);
+    }
+
+    public function test_is_community_member_reflects_membership(): void
+    {
+        $person = Person::create([
+            'name' => 'Uji Member',
+            'phone' => '+628'.fake()->unique()->numerify('##########'),
+            'email' => fake()->unique()->safeEmail(),
+        ]);
+
+        $this->assertFalse($person->isCommunityMember());
+
+        CommunityMembership::create(['people_id' => $person->id]);
+
+        $this->assertTrue($person->fresh()->isCommunityMember());
     }
 }

@@ -93,6 +93,16 @@ class Person extends Model
         return $this->hasOne(CommunityMembership::class, 'people_id');
     }
 
+    /** Community membership is the gate to the affiliate ladder. */
+    public function isCommunityMember(): bool
+    {
+        // Honor an eager-loaded relation (the chooser/member-area load it and
+        // call this per affiliate program) instead of re-querying per call.
+        return $this->relationLoaded('communityMembership')
+            ? $this->communityMembership !== null
+            : $this->communityMembership()->exists();
+    }
+
     /** Optional login account (role: participant), provisioned only when needed. */
     public function user(): BelongsTo
     {
