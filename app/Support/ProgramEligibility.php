@@ -24,7 +24,7 @@ class ProgramEligibility
         return $this->lockReason($person, $program) === null;
     }
 
-    /** null when accessible; otherwise guest | needs_general | needs_previous_level. */
+    /** null when accessible; otherwise guest | needs_membership | needs_previous_level. */
     public function lockReason(?Person $person, Program $program): ?string
     {
         if (! $program->isAffiliate()) {
@@ -35,12 +35,16 @@ class ProgramEligibility
             return 'guest';
         }
 
+        // Community classes are members-only. Membership already implies a
+        // finished Program Umum intake, so Level 1 needs nothing further.
+        if (! $person->isCommunityMember()) {
+            return 'needs_membership';
+        }
+
         $level = $program->level ?? 1;
 
         if ($level <= 1) {
-            return $this->passesAny($person, fn (Builder $q) => $q->where('type', 'general'))
-                ? null
-                : 'needs_general';
+            return null;
         }
 
         return $this->passesAny($person, fn (Builder $q) => $q->where('type', 'affiliate_community')->where('level', $level - 1))
