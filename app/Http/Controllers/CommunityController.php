@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Actions\ProvisionParticipantAccount;
 use App\Http\Requests\CommunityJoinRequest;
 use App\Models\ContentSection;
+use App\Support\ProgramEligibility;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,6 +28,7 @@ class CommunityController extends Controller
 
         $person = $user?->person;
         $alreadyMember = (bool) $person?->communityMembership;
+        $canJoin = app(ProgramEligibility::class)->canJoinCommunity($person);
 
         // Logged-in members CONFIRM their stored data instead of retyping it;
         // ?ubah=1 opens the editable form when something needs updating. A
@@ -40,7 +42,7 @@ class CommunityController extends Controller
 
         $sections = $focusedEdit ? collect() : ContentSection::forCommunity()->get();
 
-        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit', 'sections'));
+        return view('funnel.community', compact('person', 'alreadyMember', 'confirming', 'focusedEdit', 'sections', 'canJoin'));
     }
 
     /**
@@ -100,6 +102,12 @@ class CommunityController extends Controller
 
             Auth::login($account);
             $request->session()->regenerate();
+        }
+
+        // Not a graduate yet: bounce to /komunitas, which shows the "Khusus"
+        // lock explaining what to finish first.
+        if (! $person->isCommunityMember() && ! app(ProgramEligibility::class)->canJoinCommunity($person)) {
+            return redirect()->route('komunitas');
         }
 
         $person->communityMembership()->firstOrCreate(

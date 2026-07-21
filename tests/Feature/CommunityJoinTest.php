@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Models\Attendance;
+use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\CommunityMembership;
+use App\Models\Enrollment;
 use App\Models\Person;
+use App\Models\Program;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -41,6 +46,10 @@ class CommunityJoinTest extends TestCase
 
     public function test_join_creates_person_account_membership_and_logs_in(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', $this->validPayload())
             ->assertRedirect('/akun');
 
@@ -58,6 +67,10 @@ class CommunityJoinTest extends TestCase
 
     public function test_join_persists_the_affiliate_profile(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', [
             ...$this->validPayload(),
             'tiktok_username' => 'sitiaminah',
@@ -77,6 +90,10 @@ class CommunityJoinTest extends TestCase
 
     public function test_join_nulls_affiliate_dependents_without_tiktok(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', [
             ...$this->validPayload(),
             'tiktok_username' => '',
@@ -99,6 +116,7 @@ class CommunityJoinTest extends TestCase
         $existing = Person::create([
             'name' => 'Siti Lama', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
         ]);
+        $this->completeGeneralIntake($existing);
 
         $this->post('/komunitas', $this->validPayload())->assertRedirect('/akun');
 
@@ -108,6 +126,10 @@ class CommunityJoinTest extends TestCase
 
     public function test_phone_that_already_has_an_account_is_rejected(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', $this->validPayload());
         Auth::logout();
 
@@ -191,6 +213,10 @@ class CommunityJoinTest extends TestCase
 
     public function test_member_sees_confirmation_instead_of_blank_form(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', $this->validPayload())->assertRedirect('/akun');
 
         $this->get('/komunitas')
@@ -203,6 +229,7 @@ class CommunityJoinTest extends TestCase
     {
         $user = $this->participantWithProfile();
         $person = $user->person;
+        $this->completeGeneralIntake($person);
 
         $this->actingAs($user)->get('/komunitas')
             ->assertOk()
@@ -228,6 +255,7 @@ class CommunityJoinTest extends TestCase
     public function test_member_with_incomplete_profile_gets_the_editable_form(): void
     {
         $user = $this->participantWithProfile(['birth_date' => null, 'gender' => null, 'followed_socials' => null]);
+        $this->completeGeneralIntake($user->person);
 
         $this->actingAs($user)->get('/komunitas')
             ->assertOk()
@@ -241,5 +269,87 @@ class CommunityJoinTest extends TestCase
         $admin = User::factory()->admin()->create();
 
         $this->actingAs($admin)->get('/komunitas')->assertRedirect('/admin');
+    }
+
+    /** validPayload() without 'password': a logged-in participant's PIN is prohibited, not required. */
+    private function loggedInJoinPayload(): array
+    {
+        $payload = $this->validPayload();
+        unset($payload['password']);
+
+        return $payload;
+    }
+
+    /** A finished Program Umum intake: attended every session of one cohort (mirrors ProgramEligibilityTest::attendProgram). */
+    private function completeGeneralIntake(Person $person): void
+    {
+        $program = Program::factory()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create([
+            'people_id' => $person->id,
+            'cohort_id' => $cohort->id,
+        ]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create([
+            'cohort_session_id' => $session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+    }
+
+    public function test_non_graduate_cannot_join_community(): void
+    {
+        $user = $this->participantWithProfile();
+        // No completed general intake.
+
+        $this->actingAs($user)
+            ->post(route('komunitas.join'), $this->loggedInJoinPayload())
+            ->assertRedirect();
+
+        $this->assertNull($user->person->fresh()->communityMembership);
+    }
+
+    public function test_graduate_can_join_community(): void
+    {
+        $user = $this->participantWithProfile();
+        $this->completeGeneralIntake($user->person);
+
+        $this->actingAs($user)
+            ->post(route('komunitas.join'), $this->loggedInJoinPayload())
+            ->assertRedirect();
+
+        $this->assertNotNull($user->person->fresh()->communityMembership);
+    }
+
+    public function test_existing_member_join_is_idempotent(): void
+    {
+        $user = $this->participantWithProfile();
+        CommunityMembership::create(['people_id' => $user->person->id]);
+
+        $this->actingAs($user)
+            ->post(route('komunitas.join'), $this->loggedInJoinPayload())
+            ->assertRedirect();
+
+        $this->assertSame(1, $user->person->fresh()->communityMembership()->count());
+    }
+
+    public function test_ineligible_viewer_sees_locked_community_notice(): void
+    {
+        $user = $this->participantWithProfile();
+        // No completed general intake, so this participant may not join yet.
+
+        $this->actingAs($user)->get(route('komunitas'))
+            ->assertOk()
+            ->assertSee('Khusus untuk lulusan program')
+            ->assertDontSee('name="motivation"', false);
+    }
+
+    public function test_graduate_sees_the_join_form(): void
+    {
+        $user = $this->participantWithProfile();
+        $this->completeGeneralIntake($user->person);
+
+        $this->actingAs($user)->get(route('komunitas'))
+            ->assertOk()
+            ->assertSee('name="phone"', false);
     }
 }

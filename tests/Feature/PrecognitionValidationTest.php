@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Attendance;
 use App\Models\Cohort;
+use App\Models\CohortSession;
 use App\Models\CommunityMembership;
+use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
@@ -143,8 +146,28 @@ class PrecognitionValidationTest extends TestCase
         $this->assertSame(1, User::role('participant')->count());
     }
 
+    /** A finished Program Umum intake: attended every session of one cohort (mirrors ProgramEligibilityTest::attendProgram). */
+    private function completeGeneralIntake(Person $person): void
+    {
+        $program = Program::factory()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create([
+            'people_id' => $person->id,
+            'cohort_id' => $cohort->id,
+        ]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create([
+            'cohort_session_id' => $session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
+    }
+
     public function test_normal_post_still_creates_everything(): void
     {
+        $this->completeGeneralIntake(Person::create([
+            'name' => 'Siti Aminah', 'phone' => '+6281298765432', 'email' => 'siti.lama@example.test',
+        ]));
+
         $this->post('/komunitas', $this->communityPayload())
             ->assertRedirect('/akun');
 
