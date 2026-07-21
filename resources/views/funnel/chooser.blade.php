@@ -10,7 +10,7 @@
                 <p class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Pendaftaran</p>
                 <h1 class="mt-3 text-3xl font-bold leading-tight text-teal-900 sm:text-4xl">Pilih jalurmu.</h1>
                 <p class="mx-auto mt-4 max-w-lg text-base leading-relaxed text-teal-800/80">
-                    Ikuti program yang sedang dibuka, atau mulai lebih dulu dari komunitas.
+                    Mulai dari program yang sedang dibuka. Komunitas affiliator menanti setelah kamu menyelesaikannya.
                 </p>
             </div>
 
