@@ -104,10 +104,10 @@ class CommunityController extends Controller
             $request->session()->regenerate();
         }
 
+        // Not a graduate yet: bounce to /komunitas, which shows the "Khusus"
+        // lock explaining what to finish first.
         if (! $person->isCommunityMember() && ! app(ProgramEligibility::class)->canJoinCommunity($person)) {
-            return redirect()
-                ->route('komunitas')
-                ->with('community_notice', 'Komunitas khusus untuk lulusan program. Selesaikan dulu semua kelas di satu angkatan.');
+            return redirect()->route('komunitas');
         }
 
         $person->communityMembership()->firstOrCreate(
