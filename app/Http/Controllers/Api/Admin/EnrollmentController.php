@@ -10,6 +10,7 @@ use App\Models\Enrollment;
 use App\Models\Person;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class EnrollmentController extends Controller
@@ -46,19 +47,25 @@ class EnrollmentController extends Controller
             throw ValidationException::withMessages(['people_id' => 'Peserta sudah terdaftar di angkatan ini.']);
         }
 
-        $enrollment = Enrollment::create([
-            'people_id' => $personId,
-            'cohort_id' => $cohort->id,
-            'application_id' => $application?->id,
-        ]);
-        $enrollment->statusEvents()->create([
-            'status' => 'accepted',
-            'occurred_at' => now(),
-            'created_by' => $request->user()->id,
-        ]);
-
         $person = Person::findOrFail($personId);
-        $generatedPin = $provisioner->ensureAccountFor($person);
+
+        // Enrolment, its status event, and the provisioned login commit as one:
+        // a failed account provision rolls the enrolment back rather than
+        // leaving a participant who cannot log in.
+        [$enrollment, $generatedPin] = DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner) {
+            $enrollment = Enrollment::create([
+                'people_id' => $person->id,
+                'cohort_id' => $cohort->id,
+                'application_id' => $application?->id,
+            ]);
+            $enrollment->statusEvents()->create([
+                'status' => 'accepted',
+                'occurred_at' => now(),
+                'created_by' => $request->user()->id,
+            ]);
+
+            return [$enrollment, $provisioner->ensureAccountFor($person)];
+        });
 
         return response()->json([
             'enrollment' => [

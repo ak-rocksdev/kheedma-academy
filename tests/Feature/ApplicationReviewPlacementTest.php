@@ -74,6 +74,21 @@ class ApplicationReviewPlacementTest extends TestCase
         $this->assertSame($admin->id, $enrollment->latestStatusEvent->created_by);
     }
 
+    public function test_accepting_provisions_a_login_for_an_account_less_person(): void
+    {
+        [$application, $cohort] = $this->pendingApplication();
+        $person = $application->person;
+        $this->assertNull($person->user_id);
+
+        $this->actingAs($this->admin())
+            ->patchJson("/api/admin/applications/{$application->id}", ['status' => 'accepted'])
+            ->assertOk();
+
+        $person->refresh();
+        $this->assertNotNull($person->user_id, 'an accepted, enrolled person must have a login');
+        $this->assertTrue($person->user->hasRole('participant'));
+    }
+
     public function test_accepting_is_idempotent_when_already_enrolled_in_that_cohort(): void
     {
         [$application, $cohort] = $this->pendingApplication();

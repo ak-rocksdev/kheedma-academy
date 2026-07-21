@@ -36,18 +36,7 @@ class ProvisionParticipantAccount
                 'email' => $identity['email'],
             ])->save();
 
-            $user = User::create([
-                'name' => $identity['name'],
-                'email' => $identity['email'],
-                'password' => Hash::make($identity['password']),
-                'is_active' => true,
-            ]);
-            $user->assignRole('participant');
-
-            $person->user_id = $user->id;
-            $person->save();
-
-            return $user;
+            return $this->createParticipantLogin($person, $identity['password']);
         });
 
         return [$person->fresh(), $user];
@@ -58,7 +47,8 @@ class ProvisionParticipantAccount
      * using their stored name/email and a generated 6-digit PIN. Used when an
      * admin enrols someone directly (no funnel application), so every enrolled
      * participant can log in. Returns the plain PIN to relay, or null when the
-     * person already had an account.
+     * person already had an account. Idempotent and safe to call inside a
+     * caller's transaction (the enrolment can then roll back with it).
      */
     public function ensureAccountFor(Person $person): ?string
     {
@@ -68,19 +58,25 @@ class ProvisionParticipantAccount
 
         $pin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
-        DB::transaction(function () use ($person, $pin): void {
-            $user = User::create([
-                'name' => $person->name,
-                'email' => $person->email,
-                'password' => Hash::make($pin),
-                'is_active' => true,
-            ]);
-            $user->assignRole('participant');
-
-            $person->user_id = $user->id;
-            $person->save();
-        });
+        DB::transaction(fn () => $this->createParticipantLogin($person, $pin));
 
         return $pin;
+    }
+
+    /** Create the participant User, assign the role, and link it to the Person. */
+    private function createParticipantLogin(Person $person, string $plainPin): User
+    {
+        $user = User::create([
+            'name' => $person->name,
+            'email' => $person->email,
+            'password' => Hash::make($plainPin),
+            'is_active' => true,
+        ]);
+        $user->assignRole('participant');
+
+        $person->user_id = $user->id;
+        $person->save();
+
+        return $user;
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Actions\ProvisionParticipantAccount;
 use App\Models\Application;
 use App\Models\Attendance;
 use App\Models\Cohort;
@@ -124,6 +125,25 @@ class EnrollmentManagementTest extends TestCase
 
         $this->assertNull($response->json('generated_password'));
         $this->assertSame($user->id, $person->fresh()->user_id);
+    }
+
+    public function test_enrollment_rolls_back_when_account_provisioning_fails(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person();
+
+        // Force the login provision to fail; the enrolment must not persist.
+        $this->mock(ProvisionParticipantAccount::class)
+            ->shouldReceive('ensureAccountFor')
+            ->andThrow(new \RuntimeException('provision failed'));
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', ['cohort_id' => $cohort->id, 'people_id' => $person->id])
+            ->assertStatus(500);
+
+        $this->assertSame(0, Enrollment::where('people_id', $person->id)->count());
     }
 
     public function test_duplicate_enrollment_is_rejected(): void
