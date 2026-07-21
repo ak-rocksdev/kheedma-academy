@@ -421,6 +421,13 @@
                     </div>
                 @endif
 
+                @if ($canJoinCommunity && ! $membership)
+                    <a href="{{ url('/komunitas') }}" class="mt-4 flex items-center justify-between gap-3 rounded-2xl border border-teal-600/30 bg-teal-50 px-4 py-3.5 transition hover:border-teal-600/50">
+                        <span class="text-sm font-semibold text-teal-800">Gabung komunitas untuk membuka kelas berjenjang.</span>
+                        <svg class="h-4 w-4 shrink-0 text-teal-700" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="m8 6 4 4-4 4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </a>
+                @endif
+
                 @if ($affiliate->isNotEmpty())
                     <div class="mt-10">
                         <h2 class="text-sm font-semibold uppercase tracking-wide text-teal-800/70">Program untukmu</h2>

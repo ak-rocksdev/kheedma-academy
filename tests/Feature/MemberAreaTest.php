@@ -8,6 +8,7 @@ use App\Models\AssignmentSubmission;
 use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
+use App\Models\CommunityMembership;
 use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
@@ -42,6 +43,22 @@ class MemberAreaTest extends TestCase
         $person->save();
 
         return [$user, $person];
+    }
+
+    /** "Pernah diikuti": enrollment + satu kehadiran di kelas Program Umum (mirrors ProgramEligibilityTest::attendProgram). */
+    private function completeGeneralIntake(Person $person): void
+    {
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create([
+            'people_id' => $person->id,
+            'cohort_id' => $cohort->id,
+        ]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create([
+            'cohort_session_id' => $session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
     }
 
     public function test_member_area_lists_open_classes_with_register_link(): void
@@ -648,5 +665,30 @@ class MemberAreaTest extends TestCase
         $this->actingAs($user)->get('/akun?bagian=kelas')
             ->assertOk()
             ->assertDontSee('Kenapa hadir offline?');
+    }
+
+    public function test_member_area_shows_join_invite_to_a_graduate_non_member(): void
+    {
+        [$user, $person] = $this->member();
+        $this->completeGeneralIntake($person); // graduate, not yet a member
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Gabung komunitas'); // invite copy
+    }
+
+    public function test_member_area_unlocks_level_1_for_a_member(): void
+    {
+        [$user, $person] = $this->member();
+        CommunityMembership::create(['people_id' => $person->id]);
+        $level1 = Program::factory()->affiliate(1)->active()->create(['name' => 'Kelas Komunitas L1']);
+
+        $this->actingAs($user)->get('/akun?bagian=kelas')
+            ->assertOk()
+            ->assertSee('Kelas Komunitas L1')
+            // Bare 'Terkunci' also lives in the page's hidden lock-modal
+            // template (funnel/partials/lock-modal.blade.php, always
+            // included by the layout), so target the per-card label.
+            ->assertDontSee('Level 1 · Terkunci');
     }
 }

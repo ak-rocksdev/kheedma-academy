@@ -53,6 +53,7 @@ class MemberAreaController extends Controller
                 'reason' => $eligibility->lockReason($person, $program),
                 'message' => $program->locked_message ?? config('kheedma.default_locked_message'),
             ]);
+        $canJoinCommunity = $eligibility->canJoinCommunity($person);
 
         // General classes currently open for registration: the member-area door
         // into the same funnel form (which short-circuits to a confirm card for
@@ -220,6 +221,7 @@ class MemberAreaController extends Controller
             'membership' => $person?->communityMembership,
             'applications' => ($person?->applications ?? collect())->map(fn ($a) => $this->applicationCard($a)),
             'affiliate' => $affiliate,
+            'canJoinCommunity' => $canJoinCommunity,
             'openClasses' => $openClasses,
             'enrolledClasses' => $enrolledClasses,
             'assignmentCards' => $assignmentCards,
