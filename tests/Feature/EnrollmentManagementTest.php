@@ -14,6 +14,7 @@ use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class EnrollmentManagementTest extends TestCase
@@ -103,10 +104,48 @@ class EnrollmentManagementTest extends TestCase
         $person->refresh();
         $this->assertNotNull($person->user_id, 'the enrolled person should now have an account');
         $this->assertTrue($person->user->hasRole('participant'));
-        // The generated PIN is returned so the admin can relay it.
-        $pin = $response->json('generated_password');
-        $this->assertNotNull($pin);
-        $this->assertMatchesRegularExpression('/^\\d{6}$/', $pin);
+        // The starter PIN is returned so the admin can relay it; without an
+        // explicit PIN it is the well-known default (PO decision 2026-07-20).
+        $this->assertSame(ProvisionParticipantAccount::DEFAULT_PIN, $response->json('generated_password'));
+        $this->assertTrue(Hash::check(ProvisionParticipantAccount::DEFAULT_PIN, $person->user->password));
+    }
+
+    public function test_admin_can_set_the_initial_pin_when_enrolling(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person(); // no user account
+
+        $response = $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', [
+                'cohort_id' => $cohort->id,
+                'people_id' => $person->id,
+                'password' => '654321',
+            ])
+            ->assertCreated();
+
+        $this->assertSame('654321', $response->json('generated_password'));
+        $this->assertTrue(Hash::check('654321', $person->fresh()->user->password));
+    }
+
+    public function test_initial_pin_must_be_six_digits(): void
+    {
+        $admin = $this->admin();
+        $program = Program::factory()->active()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $person = $this->person();
+
+        $this->actingAs($admin)
+            ->postJson('/api/admin/enrollments', [
+                'cohort_id' => $cohort->id,
+                'people_id' => $person->id,
+                'password' => 'abc123',
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors('password');
+
+        $this->assertNull($person->fresh()->user_id, 'a failed validation must not provision an account');
     }
 
     public function test_enrolling_someone_who_already_has_an_account_generates_no_pin(): void

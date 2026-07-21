@@ -43,21 +43,28 @@ class ProvisionParticipantAccount
     }
 
     /**
-     * Give an already-existing Person a participant login if they lack one,
-     * using their stored name/email and a generated 6-digit PIN. Used when an
-     * admin enrols someone directly (no funnel application), so every enrolled
-     * participant can log in. Returns the plain PIN to relay, or null when the
-     * person already had an account. Idempotent. Call within the caller's
-     * transaction: it owns the atomicity, so the enrolment rolls back with a
-     * failed provision.
+     * The well-known starter PIN for admin-provisioned accounts (PO decision
+     * 2026-07-20): operationally simpler than relaying a random PIN — the
+     * admin just tells the participant "PIN awalmu 123456".
      */
-    public function ensureAccountFor(Person $person): ?string
+    public const DEFAULT_PIN = '123456';
+
+    /**
+     * Give an already-existing Person a participant login if they lack one,
+     * using their stored name/email and the supplied 6-digit PIN (falls back
+     * to DEFAULT_PIN). Used when an admin enrols someone directly (no funnel
+     * application), so every enrolled participant can log in. Returns the
+     * plain PIN to relay, or null when the person already had an account.
+     * Idempotent. Call within the caller's transaction: it owns the
+     * atomicity, so the enrolment rolls back with a failed provision.
+     */
+    public function ensureAccountFor(Person $person, ?string $pin = null): ?string
     {
         if ($person->user_id !== null) {
             return null;
         }
 
-        $pin = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $pin ??= self::DEFAULT_PIN;
         $this->createParticipantLogin($person, $pin);
 
         return $pin;

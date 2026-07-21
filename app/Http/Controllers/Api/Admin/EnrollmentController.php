@@ -27,6 +27,9 @@ class EnrollmentController extends Controller
             'cohort_id' => ['required', 'exists:cohorts,id'],
             'application_id' => ['required_without:people_id', 'nullable', 'exists:applications,id'],
             'people_id' => ['required_without:application_id', 'nullable', 'exists:people,id'],
+            'password' => ['sometimes', 'nullable', 'digits:6'],
+        ], [
+            'password.digits' => 'PIN harus 6 digit angka.',
         ]);
 
         $cohort = Cohort::findOrFail($data['cohort_id']);
@@ -52,7 +55,7 @@ class EnrollmentController extends Controller
         // Enrolment, its status event, and the provisioned login commit as one:
         // a failed account provision rolls the enrolment back rather than
         // leaving a participant who cannot log in.
-        return DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner) {
+        return DB::transaction(function () use ($request, $cohort, $person, $application, $provisioner, $data) {
             $enrollment = Enrollment::create([
                 'people_id' => $person->id,
                 'cohort_id' => $cohort->id,
@@ -70,7 +73,7 @@ class EnrollmentController extends Controller
                     'cohort_id' => $enrollment->cohort_id,
                     'person' => ['id' => $person->id, 'name' => $person->name],
                 ],
-                'generated_password' => $provisioner->ensureAccountFor($person),
+                'generated_password' => $provisioner->ensureAccountFor($person, $data['password'] ?? null),
             ], 201);
         });
     }

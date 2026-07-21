@@ -13,6 +13,7 @@ import { statusVariant, statusLabel } from '@/lib/status';
 import { fmtDate } from '@/lib/format';
 import ApplicationDecisionToggle from '@/components/ApplicationDecisionToggle.vue';
 import EnrollToCohortDialog from '@/components/EnrollToCohortDialog.vue';
+import EnrollPersonDialog from '@/components/EnrollPersonDialog.vue';
 import RejectApplicationDialog from '@/components/RejectApplicationDialog.vue';
 
 const GMV_LABELS = { '0-50': '0-50 Juta', '50-100': '50-100 Juta', '100+': 'Di atas 100 Juta' };
@@ -119,6 +120,14 @@ function offerEnroll(app) {
 
 async function onEnrollClosed() {
     enrollFor.value = null;
+    await load();
+}
+
+// --- Daftarkan langsung ke angkatan (tanpa lamaran) -------------------------
+
+const enrollPersonFor = ref(null); // person row; non-null opens the dialog
+
+async function onDirectEnrolled() {
     await load();
 }
 
@@ -290,7 +299,12 @@ async function submitReset() {
             </div>
 
             <!-- Enrollments -->
-            <h2 class="mt-8 font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
+            <div class="mt-8 flex items-center justify-between gap-3">
+                <h2 class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Keikutsertaan</h2>
+                <Button v-if="auth.can('enrollments.manage')" variant="outline" size="sm" @click="enrollPersonFor = person">
+                    Daftarkan ke Angkatan
+                </Button>
+            </div>
             <div class="mt-3 rounded-xl border border-border bg-card">
                 <div v-if="!person.enrollments.length" class="px-5 py-6 text-sm text-muted-foreground">Belum pernah ditempatkan ke angkatan.</div>
                 <div
@@ -312,6 +326,13 @@ async function submitReset() {
                 :exclude-cohort-ids="(person?.enrollments ?? []).map((en) => en.cohort_id)"
                 @close="onEnrollClosed"
                 @enrolled="onEnrollClosed"
+            />
+
+            <EnrollPersonDialog
+                :person="enrollPersonFor"
+                :exclude-cohort-ids="(person?.enrollments ?? []).map((en) => en.cohort_id)"
+                @close="enrollPersonFor = null"
+                @enrolled="onDirectEnrolled"
             />
 
             <!-- Konfirmasi tolak pendaftaran (alasan opsional; peringatan bila sudah ditempatkan/hadir) -->
