@@ -162,6 +162,20 @@ class ProgramEligibilityTest extends TestCase
         $this->assertSame('needs_general', app(ProgramEligibility::class)->joinLockReason($person));
     }
 
+    public function test_threshold_without_soal_still_lets_a_graduate_join(): void
+    {
+        // Misconfiguration guard: a score bar is set but no soal exist yet, so
+        // the average is null and completion alone governs the join.
+        $general = Program::factory()->active()->create(['min_average_score' => 75]);
+        $person = $this->makePerson();
+        $cohort = Cohort::factory()->create(['program_id' => $general->id]);
+        $enrollment = Enrollment::create(['people_id' => $person->id, 'cohort_id' => $cohort->id]);
+        $session = CohortSession::factory()->for($cohort)->create();
+        Attendance::create(['cohort_session_id' => $session->id, 'enrollment_id' => $enrollment->id]);
+
+        $this->assertNull(app(ProgramEligibility::class)->joinLockReason($person));
+    }
+
     public function test_below_the_score_bar_cannot_join_community(): void
     {
         $general = Program::factory()->active()->create(['min_average_score' => 75]);
