@@ -52,21 +52,36 @@
                     </a>
                 @endforeach
 
-                <a href="{{ url('/komunitas') }}"
-                   class="block rounded-3xl border border-teal-900/10 bg-teal-900 p-6 shadow-sm transition hover:bg-teal-800 hover:shadow-md sm:p-8">
-                    <div class="flex items-center justify-between gap-4">
-                        <div>
-                            <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-orange-300">Gratis</span>
-                            <h2 class="mt-3 text-xl font-bold text-white">Gabung Komunitas Affiliator</h2>
-                            <p class="mt-1.5 text-sm leading-relaxed text-white/70">
-                                Belum siap ikut program? Mulai dari komunitas: materi, kabar terbaru, dan teman seperjalanan.
-                            </p>
+                @if ($canJoinCommunity)
+                    <a href="{{ url('/komunitas') }}"
+                       class="block rounded-3xl border border-teal-900/10 bg-teal-900 p-6 shadow-sm transition hover:bg-teal-800 hover:shadow-md sm:p-8">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <span class="inline-block rounded-full bg-white/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-orange-300">Khusus lulusan</span>
+                                <h2 class="mt-3 text-xl font-bold text-white">Gabung Komunitas Affiliator</h2>
+                                <p class="mt-1.5 text-sm leading-relaxed text-white/70">
+                                    Kamu sudah menyelesaikan program. Lanjutkan seriusmu di komunitas: kelas berjenjang, pendampingan, dan jalur karier affiliator.
+                                </p>
+                            </div>
+                            <svg class="h-5 w-5 shrink-0 text-white" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                         </div>
-                        <svg class="h-5 w-5 shrink-0 text-white" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M4 10h12M11 5l5 5-5 5" stroke-linecap="round" stroke-linejoin="round"/>
-                        </svg>
+                    </a>
+                @else
+                    <div class="block rounded-3xl border border-teal-900/10 bg-teal-900/90 p-6 shadow-sm sm:p-8">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <span class="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-[0.65rem] font-semibold uppercase tracking-wide text-orange-300">
+                                    <svg class="h-3 w-3" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="9" width="10" height="7" rx="1.5"/><path d="M7 9V6.5a3 3 0 0 1 6 0V9" stroke-linecap="round"/></svg>
+                                    Khusus lulusan
+                                </span>
+                                <h2 class="mt-3 text-xl font-bold text-white">Komunitas Affiliator</h2>
+                                <p class="mt-1.5 text-sm leading-relaxed text-white/70">
+                                    Terbuka setelah kamu menyelesaikan semua kelas di satu angkatan program. Di sinilah kelas berjenjang dan jalur karier affiliator berlanjut.
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                </a>
+                @endif
             </div>
 
             {{-- Jenjang kelas komunitas: sengaja DI BAWAH kartu gabung, karena
@@ -77,7 +92,7 @@
                 <div class="mt-12">
                     <p class="font-display text-xs uppercase tracking-[0.3em] text-teal-700">Kheedma Affiliate Community</p>
                     <p class="mt-2 text-sm leading-relaxed text-teal-800/70">
-                        Jenjang kelas komunitas. Terbuka bertahap setelah kamu menyelesaikan program.
+                        Jenjang kelas komunitas. Terbuka setelah kamu gabung komunitas.
                     </p>
 
                     <div class="-mx-6 mt-5 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-3 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

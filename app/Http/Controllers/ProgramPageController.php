@@ -16,6 +16,7 @@ class ProgramPageController extends Controller
     public function chooser(): View
     {
         $person = Auth::user()?->person;
+        $person?->loadMissing('communityMembership');
 
         // Card chips carry the visitor's own relation to each program, so the
         // catalog answers "di mana posisiku?" before any click.
@@ -47,7 +48,9 @@ class ProgramPageController extends Controller
                 'chip' => $this->stateChip($person, $program),
             ]);
 
-        return view('funnel.chooser', compact('programs', 'affiliate'));
+        $canJoinCommunity = $this->eligibility->canJoinCommunity($person);
+
+        return view('funnel.chooser', compact('programs', 'affiliate', 'canJoinCommunity'));
     }
 
     /** Program promo landing. Locked affiliate classes render as a teaser. */

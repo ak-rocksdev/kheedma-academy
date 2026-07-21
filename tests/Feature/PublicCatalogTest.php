@@ -3,8 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\Application;
+use App\Models\Attendance;
 use App\Models\Cohort;
 use App\Models\CohortSession;
+use App\Models\Enrollment;
 use App\Models\Person;
 use App\Models\Program;
 use App\Models\User;
@@ -23,6 +25,40 @@ class PublicCatalogTest extends TestCase
         Cohort::factory()->openWindow()->create(['program_id' => $program->id]);
 
         return $program;
+    }
+
+    /** Logged-in participant with a Person profile, no membership or intake yet. */
+    private function participant(): array
+    {
+        $this->seed(RoleSeeder::class);
+
+        $user = User::factory()->create();
+        $user->assignRole('participant');
+        $person = Person::create([
+            'name' => 'Peserta '.fake()->unique()->numberBetween(1, 99999),
+            'phone' => '+628'.fake()->unique()->numerify('##########'),
+            'email' => fake()->unique()->safeEmail(),
+        ]);
+        $person->user()->associate($user); // user_id is guarded by design
+        $person->save();
+
+        return [$user, $person];
+    }
+
+    /** Completes a general program intake: enrollment + attendance of every session. */
+    private function completeGeneralIntake(Person $person): void
+    {
+        $program = Program::factory()->create();
+        $cohort = Cohort::factory()->create(['program_id' => $program->id]);
+        $enrollment = Enrollment::create([
+            'people_id' => $person->id,
+            'cohort_id' => $cohort->id,
+        ]);
+        $session = CohortSession::factory()->create(['cohort_id' => $cohort->id]);
+        Attendance::create([
+            'cohort_session_id' => $session->id,
+            'enrollment_id' => $enrollment->id,
+        ]);
     }
 
     public function test_chooser_lists_only_open_programs(): void
@@ -52,6 +88,27 @@ class PublicCatalogTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee('Komunitas');
+    }
+
+    public function test_join_card_is_khusus_and_locked_for_a_non_graduate(): void
+    {
+        [$user] = $this->participant();
+        // No completed general intake, not a member.
+
+        $this->actingAs($user)->get('/daftar')
+            ->assertOk()
+            ->assertSee('Khusus')
+            ->assertDontSee('Gratis');
+    }
+
+    public function test_join_card_invites_a_graduate(): void
+    {
+        [$user, $person] = $this->participant();
+        $this->completeGeneralIntake($person);
+
+        $this->actingAs($user)->get('/daftar')
+            ->assertOk()
+            ->assertSee('Gabung Komunitas');
     }
 
     public function test_landing_shows_cta_when_open(): void
