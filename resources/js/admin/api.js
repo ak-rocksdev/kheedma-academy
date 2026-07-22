@@ -200,6 +200,9 @@ export const communityMembers = {
     list(query = '') {
         return api(`/admin/community-members${query}`);
     },
+    remove(id) {
+        return api(`/admin/community-members/${id}`, { method: 'DELETE' });
+    },
 };
 
 export const cohorts = {

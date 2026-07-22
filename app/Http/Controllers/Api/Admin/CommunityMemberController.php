@@ -43,4 +43,16 @@ class CommunityMemberController extends Controller
 
         return response()->json($members);
     }
+
+    /**
+     * Revoke a membership: the person and their account stay, only their
+     * member status goes, so the community join gate applies to them again
+     * (they can rejoin once they qualify).
+     */
+    public function destroy(CommunityMembership $membership): JsonResponse
+    {
+        $membership->delete();
+
+        return response()->json(null, 204);
+    }
 }

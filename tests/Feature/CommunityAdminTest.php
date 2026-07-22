@@ -56,4 +56,27 @@ class CommunityAdminTest extends TestCase
 
         $this->actingAs($mentor)->getJson('/api/admin/community-members')->assertForbidden();
     }
+
+    public function test_admin_can_remove_a_member_keeping_the_person(): void
+    {
+        $membership = $this->member('Ahmad Fauzi', '+628111111100');
+
+        $this->actingAs(User::factory()->admin()->create())
+            ->deleteJson("/api/admin/community-members/{$membership->id}")
+            ->assertNoContent();
+
+        $this->assertModelMissing($membership);
+        $this->assertModelExists($membership->person);
+    }
+
+    public function test_mentor_cannot_remove_a_member(): void
+    {
+        $membership = $this->member('Ahmad Fauzi', '+628111111100');
+
+        $this->actingAs(User::factory()->mentor()->create())
+            ->deleteJson("/api/admin/community-members/{$membership->id}")
+            ->assertForbidden();
+
+        $this->assertModelExists($membership);
+    }
 }

@@ -88,6 +88,7 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
         });
 
         Route::get('/community-members', [CommunityMemberController::class, 'index'])->middleware('permission:community.view');
+        Route::delete('/community-members/{membership}', [CommunityMemberController::class, 'destroy'])->middleware('permission:community.manage');
 
         Route::middleware('permission:enrollments.manage')->group(function () {
             Route::post('/enrollments', [EnrollmentController::class, 'store']);

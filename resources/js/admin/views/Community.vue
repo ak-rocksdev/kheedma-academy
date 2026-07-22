@@ -1,12 +1,16 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
-import { Phone } from 'lucide-vue-next';
+import { Phone, UserMinus } from 'lucide-vue-next';
 import { communityMembers as communityApi } from '@/api';
+import { useAuthStore } from '@/stores/auth';
 import { Alert } from '@/components/ui/alert';
+import { Dialog } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { fmtDate } from '@/lib/format';
+
+const auth = useAuthStore();
 
 const items = ref([]);
 const meta = ref({ current_page: 1, last_page: 1, total: 0 });
@@ -48,6 +52,30 @@ watch(q, () => {
     clearTimeout(debounce);
     debounce = setTimeout(() => fetchPage(1), 300);
 });
+
+// Keluarkan anggota: revoke the membership only; the person and their
+// account stay, and the join gate applies to them again.
+const removeTarget = ref(null);
+const removeError = ref('');
+const removing = ref(false);
+
+function openRemove(member) {
+    removeError.value = '';
+    removeTarget.value = member;
+}
+
+async function confirmRemove() {
+    removing.value = true;
+    try {
+        await communityApi.remove(removeTarget.value.id);
+        removeTarget.value = null;
+        await fetchPage(meta.value.current_page);
+    } catch (e) {
+        if (!e.sessionExpired) removeError.value = e.message ?? 'Gagal mengeluarkan anggota.';
+    } finally {
+        removing.value = false;
+    }
+}
 </script>
 
 <template>
@@ -86,6 +114,15 @@ watch(q, () => {
                         <Badge variant="secondary">{{ REFERRAL_LABELS[member.referral_source] ?? member.referral_source ?? '—' }}</Badge>
                         <span class="ml-auto text-[11px] text-muted-foreground">Bergabung {{ fmtDate(member.joined_at) }}</span>
                     </div>
+                    <Button
+                        v-if="auth.can('community.manage')"
+                        variant="outline"
+                        size="sm"
+                        class="mt-2.5 text-red-700"
+                        @click="openRemove(member)"
+                    >
+                        <UserMinus class="mr-1 h-3.5 w-3.5" /> Keluarkan
+                    </Button>
                 </li>
             </ul>
 
@@ -96,11 +133,12 @@ watch(q, () => {
                         <th class="px-4 py-3 font-semibold">Kontak</th>
                         <th class="px-4 py-3 font-semibold">Sumber</th>
                         <th class="px-4 py-3 font-semibold">Bergabung</th>
+                        <th v-if="auth.can('community.manage')" class="px-4 py-3"><span class="sr-only">Aksi</span></th>
                     </tr>
                 </thead>
                 <tbody>
-                    <tr v-if="loading"><td colspan="4" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
-                    <tr v-else-if="!items.length"><td colspan="4" class="px-4 py-10 text-center text-muted-foreground">Belum ada anggota.</td></tr>
+                    <tr v-if="loading"><td colspan="5" class="px-4 py-10 text-center text-muted-foreground">Memuat…</td></tr>
+                    <tr v-else-if="!items.length"><td colspan="5" class="px-4 py-10 text-center text-muted-foreground">Belum ada anggota.</td></tr>
                     <tr v-for="member in items" :key="member.id" class="border-b border-border last:border-0">
                         <td class="px-4 py-3 font-medium text-foreground">{{ member.person.name }}</td>
                         <td class="px-4 py-3 text-muted-foreground">
@@ -111,6 +149,11 @@ watch(q, () => {
                             <Badge variant="secondary">{{ REFERRAL_LABELS[member.referral_source] ?? member.referral_source ?? '—' }}</Badge>
                         </td>
                         <td class="px-4 py-3 text-muted-foreground">{{ fmtDate(member.joined_at) }}</td>
+                        <td v-if="auth.can('community.manage')" class="px-4 py-3 text-right">
+                            <Button variant="outline" size="sm" class="text-red-700" @click="openRemove(member)">
+                                <UserMinus class="mr-1 h-3.5 w-3.5" /> Keluarkan
+                            </Button>
+                        </td>
                     </tr>
                 </tbody>
             </table>
@@ -123,5 +166,19 @@ watch(q, () => {
                 <Button variant="outline" size="sm" :disabled="meta.current_page >= meta.last_page" @click="fetchPage(meta.current_page + 1)">Berikutnya</Button>
             </div>
         </div>
+
+        <Dialog :open="removeTarget !== null" title="Keluarkan dari komunitas?" @update:open="removeTarget = null">
+            <p class="text-sm text-muted-foreground">
+                {{ removeTarget?.person.name }} akan dikeluarkan dari komunitas. Data orang dan akunnya tetap ada,
+                tapi ia harus memenuhi syarat kelulusan lagi untuk bisa bergabung kembali.
+            </p>
+            <Alert v-if="removeError" class="mt-3">{{ removeError }}</Alert>
+            <div class="mt-4 flex justify-end gap-2">
+                <Button variant="outline" size="sm" @click="removeTarget = null">Batal</Button>
+                <Button variant="destructive" size="sm" :disabled="removing" @click="confirmRemove">
+                    {{ removing ? 'Mengeluarkan…' : 'Keluarkan' }}
+                </Button>
+            </div>
+        </Dialog>
     </div>
 </template>
