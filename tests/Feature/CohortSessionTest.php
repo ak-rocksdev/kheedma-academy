@@ -78,6 +78,24 @@ class CohortSessionTest extends TestCase
             ->assertJsonPath('roster.0.attended_session_ids.0', $session->id);
     }
 
+    public function test_cohort_detail_orders_sessions_by_schedule_not_position(): void
+    {
+        [$cohort] = $this->cohortWithEnrollment();
+        // The prod shape that surfaced the bug: the legacy backfilled session
+        // carries position 1 while admin-created ones default to 0, so a
+        // position-first sort banishes the earliest class to the end.
+        $first = CohortSession::factory()->create(['cohort_id' => $cohort->id, 'title' => 'Kelas 1', 'scheduled_at' => now()->addDays(1), 'position' => 1]);
+        $unscheduled = CohortSession::factory()->create(['cohort_id' => $cohort->id, 'title' => 'Kelas TBA', 'scheduled_at' => null, 'position' => 0]);
+        $second = CohortSession::factory()->create(['cohort_id' => $cohort->id, 'title' => 'Kelas 2', 'scheduled_at' => now()->addDays(8), 'position' => 0]);
+
+        $this->actingAs($this->admin())
+            ->getJson("/api/admin/cohorts/{$cohort->id}")
+            ->assertOk()
+            ->assertJsonPath('sessions.0.id', $first->id)
+            ->assertJsonPath('sessions.1.id', $second->id)
+            ->assertJsonPath('sessions.2.id', $unscheduled->id);
+    }
+
     public function test_deleting_a_session_cascades_its_attendance(): void
     {
         [$cohort, $enrollment] = $this->cohortWithEnrollment();

@@ -66,7 +66,15 @@ class Cohort extends Model
      */
     public function sessions(): HasMany
     {
-        return $this->hasMany(CohortSession::class)->orderBy('position')->orderBy('scheduled_at')->chaperone();
+        // Schedule-first, unscheduled last: the admin controls order through
+        // dates, not the vestigial position column (the 2026-07-15 backfill
+        // left legacy sessions at position 1, which a position-first sort
+        // banished to the end). Position only breaks schedule ties.
+        return $this->hasMany(CohortSession::class)
+            ->orderByRaw('scheduled_at IS NULL')
+            ->orderBy('scheduled_at')
+            ->orderBy('position')
+            ->chaperone();
     }
 
     /**

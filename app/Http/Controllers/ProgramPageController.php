@@ -69,9 +69,6 @@ class ProgramPageController extends Controller
         $openCohort = $isOpen ? $program->openCohort() : null;
         $openClasses = $openCohort
             ? $openCohort->sessions()
-                // reorder() clears the relation's baked-in position-first sort so
-                // the schedule (nulls last) actually governs, per the spec.
-                ->reorder()->orderByRaw('scheduled_at IS NULL, scheduled_at')
                 ->get()
                 ->map(fn ($session) => [
                     'title' => $session->title,
