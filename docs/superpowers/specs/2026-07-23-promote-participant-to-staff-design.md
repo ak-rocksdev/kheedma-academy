@@ -51,20 +51,27 @@ Route names/paths English per the language convention.
 
 A new "Angkat dari Peserta" button beside the existing add-staff button opens a dialog:
 
-1. **Search step** — a debounced text input queries `/admin/users/promotable?q=`; results
-   render as name + email rows; clicking one selects it.
-2. **Role step** — radio/select `mentor` (default) or `admin`, mirroring the existing
-   role select.
-3. **Submit** — goes through the house-style confirm dialog (binding PO decision: every
-   confirming action uses it) with copy naming the person and the target role, then
-   `POST /promote`, success toast, dialog closes, staff list refreshes (the promoted user
-   now appears in it).
+1. **Search step** — a debounced text input (admin idiom: `setTimeout` 300ms, see
+   `People.vue`) queries `/admin/users/promotable?q=`; results render as name + email rows;
+   clicking one selects it.
+2. **Role + confirm step** — `NativeSelect` with `mentor` (default) or `admin`, mirroring
+   the existing role select, plus copy naming the person and the target role. The explicit
+   submit button on this step IS the confirmation, following the admin Dialog-based
+   confirm pattern (`deleteTarget` + labeled action button, as in `Cohorts.vue`) — the
+   member-area SweetAlert-style component does not exist in the admin SPA and is not
+   introduced here.
+3. **Submit** — `POST /promote`, dialog closes, staff list refreshes (the promoted user
+   now appears in it). No toast: the admin SPA has no shared toast component; success is
+   communicated by the user appearing in the refreshed list, per existing admin convention.
 
-Validation errors from the backend render in the dialog the same way the existing create
-and edit dialogs render theirs. UI copy is Indonesian, warm register ("kamu"), no em-dashes;
-identifiers and routes stay English.
+`EnrollPersonDialog.vue` is the structural precedent (prop-driven dialog, `Alert` for
+errors, emit on success). API additions in `resources/js/admin/api.js` under the existing
+`users` block: `promotable(q)` and `promote(id, payload)`. Validation errors from the
+backend render in the dialog the same way the existing create and edit dialogs render
+theirs. UI copy is Indonesian, warm register ("kamu"), no em-dashes; identifiers and routes
+stay English.
 
-## Testing (PHPUnit feature tests)
+## Testing (PHPUnit feature tests, in the existing `tests/Feature/UserManagementTest.php` or a sibling)
 
 - `promotable` returns only participant-role accounts; staff never appear; `q` filters by
   name/email/phone; requires `users.manage` (mentor gets 403).
