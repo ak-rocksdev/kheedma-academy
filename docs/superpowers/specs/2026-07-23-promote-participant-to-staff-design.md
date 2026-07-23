@@ -54,15 +54,11 @@ A new "Angkat dari Peserta" button beside the existing add-staff button opens a 
 1. **Search step** — a debounced text input (admin idiom: `setTimeout` 300ms, see
    `People.vue`) queries `/admin/users/promotable?q=`; results render as name + email rows;
    clicking one selects it.
-2. **Role + confirm step** — `NativeSelect` with `mentor` (default) or `admin`, mirroring
-   the existing role select, plus copy naming the person and the target role. The explicit
-   submit button on this step IS the confirmation, following the admin Dialog-based
-   confirm pattern (`deleteTarget` + labeled action button, as in `Cohorts.vue`) — the
-   member-area SweetAlert-style component does not exist in the admin SPA and is not
-   introduced here.
-3. **Submit** — `POST /promote`, dialog closes, staff list refreshes (the promoted user
-   now appears in it). No toast: the admin SPA has no shared toast component; success is
-   communicated by the user appearing in the refreshed list, per existing admin convention.
+2. **Role step** — `NativeSelect` with `mentor` (default) or `admin`, mirroring the
+   existing role select, plus copy naming the person and the target role.
+3. **Submit** — opens the new reusable `ConfirmDialog` ("Angkat {nama} jadi {role}?"); on
+   confirm, `POST /promote`, both dialogs close, a success toast fires, and the staff list
+   refreshes (the promoted user now appears in it).
 
 `EnrollPersonDialog.vue` is the structural precedent (prop-driven dialog, `Alert` for
 errors, emit on success). API additions in `resources/js/admin/api.js` under the existing
@@ -70,6 +66,26 @@ errors, emit on success). API additions in `resources/js/admin/api.js` under the
 backend render in the dialog the same way the existing create and edit dialogs render
 theirs. UI copy is Indonesian, warm register ("kamu"), no em-dashes; identifiers and routes
 stay English.
+
+## New reusable admin components (PO-directed 2026-07-23)
+
+The admin SPA currently has no shared toast and repeats an ad-hoc `deleteTarget` + `Dialog`
+confirm pattern per view. Rather than working around that, this feature introduces both as
+reusable components, styled after the member-area house components (the binding PO
+decisions on confirm dialogs and toasts), implemented natively in Vue:
+
+1. **`ConfirmDialog.vue`** (`resources/js/admin/components/ui/confirm-dialog/`) — prop-driven
+   (title, message/slot, confirm label, variant e.g. destructive vs primary), emits
+   confirm/cancel. Built on the existing `Dialog` ui component.
+2. **Toast** (`resources/js/admin/components/ui/toast/` + a `useToast()` composable) — a
+   single viewport mounted in `App.vue`, success/error/warning/info variants, in+out
+   animation and a pausable timer bar matching the member-area house toast's behavior.
+   The existing ad-hoc session-renewed toast in `App.vue` migrates to it only if trivial;
+   otherwise it is left alone.
+
+Scope discipline: the promote flow is the first consumer of both. Existing views
+(Cohorts, Programs, etc.) are NOT refactored onto them in this feature — gradual adoption
+is a separate follow-up.
 
 ## Testing (PHPUnit feature tests, in the existing `tests/Feature/UserManagementTest.php` or a sibling)
 
