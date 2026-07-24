@@ -24,12 +24,7 @@ class UserController extends Controller
             ->with('roles:id,name')
             ->whereHas('roles', fn ($q) => $q->whereIn('name', ['admin', 'mentor']))
             ->when($request->filled('role'), fn ($q) => $q->whereHas('roles', fn ($r) => $r->where('name', $request->string('role'))))
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $q->where(fn ($w) => $w->where('name', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('phone', 'like', $term));
-            })
+            ->when($request->filled('q'), $this->searchFilter($request))
             ->orderBy('name')
             ->get()
             ->map(fn (User $u) => $this->row($u));
@@ -124,12 +119,7 @@ class UserController extends Controller
 
         $users = User::query()
             ->role('participant')
-            ->when($request->filled('q'), function ($q) use ($request) {
-                $term = '%'.$request->string('q').'%';
-                $q->where(fn ($w) => $w->where('name', 'like', $term)
-                    ->orWhere('email', 'like', $term)
-                    ->orWhere('phone', 'like', $term));
-            })
+            ->when($request->filled('q'), $this->searchFilter($request))
             ->orderBy('name')
             ->limit(20)
             ->get()
@@ -156,7 +146,18 @@ class UserController extends Controller
 
         $user->syncRoles([$data['role']]);
 
-        return response()->json(['user' => $this->row($user->fresh())]);
+        return response()->json(['user' => $this->row($user)]);
+    }
+
+    /** Shared name/email/phone LIKE filter for the staff and promotable lists. */
+    private function searchFilter(Request $request): \Closure
+    {
+        return function ($q) use ($request) {
+            $term = '%'.$request->string('q').'%';
+            $q->where(fn ($w) => $w->where('name', 'like', $term)
+                ->orWhere('email', 'like', $term)
+                ->orWhere('phone', 'like', $term));
+        };
     }
 
     /** Reject edits that would lock out the acting admin or empty the admin pool. */

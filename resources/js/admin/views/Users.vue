@@ -42,8 +42,8 @@ async function load() {
 
 onMounted(load);
 
-function onPromoted({ user, role }) {
-    toast.success(`${user.name} sekarang jadi ${role === 'admin' ? 'Admin' : 'Mentor'}.`);
+function onPromoted({ user, roleLabel }) {
+    toast.success(`${user.name} sekarang jadi ${roleLabel}.`);
     load();
 }
 

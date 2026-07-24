@@ -55,7 +55,7 @@ async function promote() {
         const res = await usersApi.promote(selected.value.id, { role: role.value });
         confirmOpen.value = false;
         open.value = false;
-        emit('promoted', { user: res.user, role: role.value });
+        emit('promoted', { user: res.user, roleLabel: roleLabel[role.value] });
     } catch (e) {
         if (e.sessionExpired) return;
         confirmOpen.value = false;
