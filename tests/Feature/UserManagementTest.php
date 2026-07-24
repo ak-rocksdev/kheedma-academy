@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Person;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -173,5 +174,48 @@ class UserManagementTest extends TestCase
         $this->actingAs(User::factory()->mentor()->create())
             ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'mentor'])
             ->assertForbidden();
+    }
+
+    public function test_promote_endpoints_require_authentication(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $this->getJson('/api/admin/users/promotable')->assertUnauthorized();
+        $this->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'mentor'])->assertUnauthorized();
+    }
+
+    public function test_promotable_filters_by_email_and_phone(): void
+    {
+        User::factory()->participant()->create(['email' => 'hafiidh@contoh.id', 'phone' => '0811222333']);
+        User::factory()->participant()->create(['email' => 'siti@contoh.id', 'phone' => '0899888777']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/users/promotable?q=hafiidh%40contoh')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.email', 'hafiidh@contoh.id');
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/users/promotable?q=0899888')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.phone', '0899888777');
+    }
+
+    public function test_promote_leaves_the_person_link_untouched(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $person = Person::create([
+            'name' => $participant->name,
+            'email' => $participant->email,
+            'phone' => '0811000111',
+        ]);
+        $person->user()->associate($participant)->save();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'mentor'])
+            ->assertOk();
+
+        $this->assertSame($participant->id, $person->fresh()->user_id);
     }
 }

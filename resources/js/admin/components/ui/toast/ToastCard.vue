@@ -50,7 +50,7 @@ const icon = { success: Check, error: X, warning: AlertTriangle, info: Info }[pr
 
 <template>
     <div
-        role="status"
+        :role="toast.type === 'error' ? 'alert' : 'status'"
         class="kh-toast pointer-events-auto w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-lg ring-1 ring-teal-900/10"
         :data-leaving="leaving || undefined"
         :style="{ '--kh-toast-duration': `${toast.duration}ms` }"

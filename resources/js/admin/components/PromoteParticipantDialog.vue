@@ -30,19 +30,26 @@ watch(query, () => {
 });
 
 watch(open, (isOpen) => {
-    if (!isOpen) return;
+    if (isOpen) {
+        search();
+        return;
+    }
+    // Reset on close so reopening starts clean without a duplicate fetch.
+    clearTimeout(debounce);
     query.value = '';
     results.value = [];
     selected.value = null;
     role.value = 'mentor';
     error.value = '';
-    search();
 });
 
+let searchSeq = 0;
 async function search() {
+    if (!open.value) return;
+    const seq = ++searchSeq;
     try {
         const res = await usersApi.promotable(query.value);
-        results.value = res.data;
+        if (seq === searchSeq) results.value = res.data;
     } catch (e) {
         if (!e.sessionExpired) error.value = e.message ?? 'Gagal memuat data.';
     }

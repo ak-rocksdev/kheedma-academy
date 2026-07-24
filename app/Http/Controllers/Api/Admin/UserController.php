@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -150,7 +151,7 @@ class UserController extends Controller
     }
 
     /** Shared name/email/phone LIKE filter for the staff and promotable lists. */
-    private function searchFilter(Request $request): \Closure
+    private function searchFilter(Request $request): Closure
     {
         return function ($q) use ($request) {
             $term = '%'.$request->string('q').'%';

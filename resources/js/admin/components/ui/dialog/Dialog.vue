@@ -1,3 +1,9 @@
+<script>
+// Module-level stack of open dialogs: when dialogs stack (e.g. a
+// ConfirmDialog over a form dialog), only the top-most reacts to Escape.
+const openStack = [];
+</script>
+
 <script setup>
 import { watch, onUnmounted } from 'vue';
 import { X } from 'lucide-vue-next';
@@ -9,19 +15,32 @@ defineProps({
     wide: { type: Boolean, default: false },
 });
 
+const stackId = Symbol();
+
 function onKey(e) {
-    if (e.key === 'Escape') open.value = false;
+    if (e.key === 'Escape' && openStack[openStack.length - 1] === stackId) {
+        open.value = false;
+    }
+}
+
+function leaveStack() {
+    const i = openStack.indexOf(stackId);
+    if (i !== -1) {
+        openStack.splice(i, 1);
+    }
+    document.removeEventListener('keydown', onKey);
 }
 
 watch(open, (isOpen) => {
     if (isOpen) {
+        openStack.push(stackId);
         document.addEventListener('keydown', onKey);
     } else {
-        document.removeEventListener('keydown', onKey);
+        leaveStack();
     }
 });
 
-onUnmounted(() => document.removeEventListener('keydown', onKey));
+onUnmounted(leaveStack);
 </script>
 
 <template>
