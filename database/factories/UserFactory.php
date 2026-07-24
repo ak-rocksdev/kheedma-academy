@@ -55,4 +55,10 @@ class UserFactory extends Factory
     {
         return $this->afterCreating(fn (User $user) => $user->assignRole('mentor'));
     }
+
+    /** Assign the participant role after creation (roles must be seeded first). */
+    public function participant(): static
+    {
+        return $this->afterCreating(fn (User $user) => $user->assignRole('participant'));
+    }
 }

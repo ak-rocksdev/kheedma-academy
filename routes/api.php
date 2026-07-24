@@ -39,7 +39,9 @@ Route::middleware(['auth:sanctum', EnsureUserIsActive::class])->group(function (
 
         Route::middleware('permission:users.manage')->group(function () {
             Route::get('/users', [UserController::class, 'index']);
+            Route::get('/users/promotable', [UserController::class, 'promotable']);
             Route::post('/users', [UserController::class, 'store']);
+            Route::post('/users/{user}/promote', [UserController::class, 'promote']);
             Route::patch('/users/{user}', [UserController::class, 'update']);
             Route::delete('/users/{user}', [UserController::class, 'destroy']);
         });

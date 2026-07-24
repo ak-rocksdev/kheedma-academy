@@ -83,4 +83,95 @@ class UserManagementTest extends TestCase
             ->patchJson("/api/admin/users/{$mentor->id}", ['is_active' => true])
             ->assertJsonPath('user.is_active', true);
     }
+
+    public function test_promotable_lists_only_participant_accounts(): void
+    {
+        $participant = User::factory()->participant()->create(['name' => 'Hafiidh']);
+        User::factory()->mentor()->create(['name' => 'Mentor Budi']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/users/promotable')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $participant->id)
+            ->assertJsonPath('data.0.email', $participant->email);
+    }
+
+    public function test_promotable_filters_by_query(): void
+    {
+        User::factory()->participant()->create(['name' => 'Hafiidh Ar Rasyiid']);
+        User::factory()->participant()->create(['name' => 'Siti Aminah']);
+
+        $this->actingAs($this->admin())
+            ->getJson('/api/admin/users/promotable?q=hafi')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.name', 'Hafiidh Ar Rasyiid');
+    }
+
+    public function test_promotable_requires_users_manage_permission(): void
+    {
+        User::factory()->participant()->create();
+
+        $this->actingAs(User::factory()->mentor()->create())
+            ->getJson('/api/admin/users/promotable')
+            ->assertForbidden();
+    }
+
+    public function test_admin_can_promote_a_participant_to_mentor(): void
+    {
+        $participant = User::factory()->participant()->create();
+        $originalPasswordHash = $participant->password;
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'mentor'])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'mentor')
+            ->assertJsonPath('user.id', $participant->id);
+
+        $fresh = $participant->fresh();
+        $this->assertSame(['mentor'], $fresh->getRoleNames()->all());
+        $this->assertSame($originalPasswordHash, $fresh->password);
+    }
+
+    public function test_admin_can_promote_a_participant_to_admin(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'admin'])
+            ->assertOk()
+            ->assertJsonPath('user.role', 'admin');
+
+        $this->assertSame(['admin'], $participant->fresh()->getRoleNames()->all());
+    }
+
+    public function test_cannot_promote_an_account_that_is_already_staff(): void
+    {
+        $mentor = User::factory()->mentor()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/users/{$mentor->id}/promote", ['role' => 'admin'])
+            ->assertStatus(422);
+
+        $this->assertSame(['mentor'], $mentor->fresh()->getRoleNames()->all());
+    }
+
+    public function test_promote_rejects_an_invalid_role(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $this->actingAs($this->admin())
+            ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'participant'])
+            ->assertStatus(422);
+    }
+
+    public function test_promote_requires_users_manage_permission(): void
+    {
+        $participant = User::factory()->participant()->create();
+
+        $this->actingAs(User::factory()->mentor()->create())
+            ->postJson("/api/admin/users/{$participant->id}/promote", ['role' => 'mentor'])
+            ->assertForbidden();
+    }
 }

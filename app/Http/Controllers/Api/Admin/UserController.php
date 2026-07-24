@@ -115,6 +115,50 @@ class UserController extends Controller
         return response()->json(null, 204);
     }
 
+    /** Participant accounts eligible for promotion, searchable by name/email/phone. */
+    public function promotable(Request $request): JsonResponse
+    {
+        $request->validate([
+            'q' => ['nullable', 'string', 'max:100'],
+        ]);
+
+        $users = User::query()
+            ->role('participant')
+            ->when($request->filled('q'), function ($q) use ($request) {
+                $term = '%'.$request->string('q').'%';
+                $q->where(fn ($w) => $w->where('name', 'like', $term)
+                    ->orWhere('email', 'like', $term)
+                    ->orWhere('phone', 'like', $term));
+            })
+            ->orderBy('name')
+            ->limit(20)
+            ->get()
+            ->map(fn (User $u) => [
+                'id' => $u->id,
+                'name' => $u->name,
+                'email' => $u->email,
+                'phone' => $u->phone,
+            ]);
+
+        return response()->json(['data' => $users]);
+    }
+
+    /** Promote a participant account to staff: a pure role switch, nothing else changes. */
+    public function promote(Request $request, User $user): JsonResponse
+    {
+        $data = $request->validate([
+            'role' => ['required', 'in:admin,mentor'],
+        ]);
+
+        if (! $user->hasRole('participant')) {
+            throw ValidationException::withMessages(['user' => 'Akun ini sudah staf.']);
+        }
+
+        $user->syncRoles([$data['role']]);
+
+        return response()->json(['user' => $this->row($user->fresh())]);
+    }
+
     /** Reject edits that would lock out the acting admin or empty the admin pool. */
     private function guardSelfAndLastAdmin(Request $request, User $user, array $data): void
     {
