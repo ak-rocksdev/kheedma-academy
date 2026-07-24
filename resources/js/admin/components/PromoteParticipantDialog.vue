@@ -25,6 +25,7 @@ const roleLabel = { mentor: 'Mentor', admin: 'Admin' };
 
 let debounce;
 watch(query, () => {
+    if (!open.value) return; // the on-close reset must not schedule a fetch
     clearTimeout(debounce);
     debounce = setTimeout(search, 300);
 });
