@@ -8,13 +8,17 @@ import { Alert } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog } from '@/components/ui/dialog';
+import { useToast } from '@/components/ui/toast';
 import PinInput from '@/components/PinInput.vue';
+import PromoteParticipantDialog from '@/components/PromoteParticipantDialog.vue';
 
 const items = ref([]);
 const loading = ref(false);
 const error = ref('');
 
 const dialogOpen = ref(false);
+const promoteOpen = ref(false);
+const toast = useToast();
 const editing = ref(null); // null = create mode
 const form = ref({ name: '', email: '', phone: '', role: 'mentor', password: '' });
 const formErrors = ref({});
@@ -37,6 +41,11 @@ async function load() {
 }
 
 onMounted(load);
+
+function onPromoted({ user, role }) {
+    toast.success(`${user.name} sekarang jadi ${role === 'admin' ? 'Admin' : 'Mentor'}.`);
+    load();
+}
 
 function openCreate() {
     editing.value = null;
@@ -100,7 +109,10 @@ async function toggleActive(user) {
                 <p class="font-display text-xs uppercase tracking-[0.3em] text-orange-600">Tim</p>
                 <h1 class="mt-2 text-2xl font-bold text-foreground">Akun Tim</h1>
             </div>
-            <Button variant="accent" size="sm" @click="openCreate">Tambah Akun</Button>
+            <div class="flex flex-wrap items-center gap-2">
+                <Button variant="outline" size="sm" @click="promoteOpen = true">Angkat dari Peserta</Button>
+                <Button variant="accent" size="sm" @click="openCreate">Tambah Akun</Button>
+            </div>
         </div>
 
         <Alert v-if="error" class="mt-4">{{ error }}</Alert>
@@ -233,5 +245,7 @@ async function toggleActive(user) {
                 </div>
             </form>
         </Dialog>
+
+        <PromoteParticipantDialog v-model:open="promoteOpen" @promoted="onPromoted" />
     </div>
 </template>

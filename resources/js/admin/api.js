@@ -141,6 +141,12 @@ export const users = {
     list(query = '') {
         return api(`/admin/users${query}`);
     },
+    promotable(q = '') {
+        return api(`/admin/users/promotable${q ? `?q=${encodeURIComponent(q)}` : ''}`);
+    },
+    promote(id, payload) {
+        return api(`/admin/users/${id}/promote`, { method: 'POST', body: payload });
+    },
     create(payload) {
         return api('/admin/users', { method: 'POST', body: payload });
     },
