@@ -3,6 +3,7 @@ import { ref, watch, onMounted, onUnmounted } from 'vue';
 import { RouterView } from 'vue-router';
 import { CheckCircle2 } from 'lucide-vue-next';
 import SessionExpiredDialog from './components/SessionExpiredDialog.vue';
+import { ToastViewport } from '@/components/ui/toast';
 import { useAuthStore } from './stores/auth';
 
 const auth = useAuthStore();
@@ -46,6 +47,9 @@ onUnmounted(() => clearTimeout(toastTimer));
 
         <!-- Global re-login dialog: keeps page state alive when the session dies. -->
         <SessionExpiredDialog v-if="auth.sessionExpired && auth.user" />
+
+        <!-- Shared toast queue (useToast() anywhere in the SPA). -->
+        <ToastViewport />
 
         <!-- Konfirmasi singkat setelah sesi diperpanjang. -->
         <Teleport to="body">
